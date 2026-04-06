@@ -2,28 +2,23 @@ import { useState, useEffect, useRef } from "react";
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  📦 藥物資料庫 — 加新藥只需要在這裡新增一個物件                    ║
-// ║  DRUG_REGISTRY: 所有藥物的「設定檔」                              ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 const DRUG_REGISTRY = {
 
-  // ── Baktar (TMP/SMX) ──────────────────────────────────────────
   baktar: {
     name: "Baktar",
     subtitle: "TMP/SMX",
     color: "#0D9488",
     needsRenal: true,
     needsWeight: true,
-
     indications: [
       { id: "general", label: "一般感染", desc: "8–10 mg/kg/day" },
       { id: "pjp",     label: "PJP 治療", desc: "15–20 mg/kg/day" },
     ],
-
     extraFields: [
       { key: "waterLimit", type: "toggle", label: "限水病人", default: false },
     ],
-
     calculate({ dosing_weight, crcl, rrt, indication, extras }) {
       const isPJP = indication === "pjp";
       const dose_min = isPJP ? 15 : 8;
@@ -31,27 +26,18 @@ const DRUG_REGISTRY = {
       const div = isPJP ? 4 : 2;
       let freq = isPJP ? "Q6H" : "Q12H";
       const warnings = [];
-
       let s_min = (dosing_weight * dose_min) / div;
       let s_max = (dosing_weight * dose_max) / div;
 
       if (rrt === "hd") {
         s_min /= 2; s_max /= 2;
-        freq = "Q24H（透析後）";
-        warnings.push("HD 病人建議劑量減半");
+        freq = "Q24H（透析後）"; warnings.push("HD 病人建議劑量減半");
       } else if (rrt === "cvvh") {
         s_min /= 2; s_max /= 2;
-        freq = "Q12H";
-        warnings.push("CVVH 建議維持 Q12H");
+        freq = "Q12H"; warnings.push("CVVH 建議維持 Q12H");
       } else {
-        if (crcl < 15) {
-          s_min /= 2; s_max /= 2;
-          freq = "Q24H";
-          warnings.push("CrCl < 15 建議減半並 Q24H");
-        } else if (crcl <= 30) {
-          s_min /= 2; s_max /= 2;
-          warnings.push("CrCl 15–30 建議劑量減半");
-        }
+        if (crcl < 15) { s_min /= 2; s_max /= 2; freq = "Q24H"; warnings.push("CrCl < 15 建議減半並 Q24H"); }
+        else if (crcl <= 30) { s_min /= 2; s_max /= 2; warnings.push("CrCl 15–30 建議劑量減半"); }
       }
 
       const amp_min = round2(s_min / 80);
@@ -83,49 +69,40 @@ const DRUG_REGISTRY = {
     },
   },
 
-  // ── Meropenem ─────────────────────────────────────────────────
   meropenem: {
     name: "Meropenem",
     subtitle: "Mepem",
     color: "#2563EB",
     needsRenal: true,
     needsWeight: true,
-
     indications: [
       { id: "standard", label: "一般重症",       desc: "起始 1g Q8H" },
       { id: "severe",   label: "腦膜炎/極嚴重感染", desc: "起始 2g Q8H" },
     ],
-
     extraFields: [],
-
     calculate({ crcl, rrt, indication }) {
       let dose_mg, freq, note;
       const isSevere = indication === "severe";
-
       if (rrt === "hd") {
         dose_mg = 500; freq = "Q24H（透析後）"; note = "HD 模式";
       } else if (rrt === "cvvh") {
-        dose_mg = 1000;
-        freq = isSevere ? "Q8H" : "Q12H";
-        note = "CVVH 模式";
+        dose_mg = 1000; freq = isSevere ? "Q8H" : "Q12H"; note = "CVVH 模式";
       } else {
         if (isSevere) {
-          if      (crcl > 50)  { dose_mg = 2000; freq = "Q8H"; }
+          if (crcl > 50) { dose_mg = 2000; freq = "Q8H"; }
           else if (crcl >= 26) { dose_mg = 2000; freq = "Q12H"; }
           else if (crcl >= 10) { dose_mg = 1000; freq = "Q12H"; }
-          else                 { dose_mg = 1000; freq = "Q24H"; }
+          else { dose_mg = 1000; freq = "Q24H"; }
         } else {
-          if      (crcl > 50)  { dose_mg = 1000; freq = "Q8H"; }
+          if (crcl > 50) { dose_mg = 1000; freq = "Q8H"; }
           else if (crcl >= 26) { dose_mg = 1000; freq = "Q12H"; }
-          else if (crcl >= 10) { dose_mg = 500;  freq = "Q12H"; }
-          else                 { dose_mg = 500;  freq = "Q24H"; }
+          else if (crcl >= 10) { dose_mg = 500; freq = "Q12H"; }
+          else { dose_mg = 500; freq = "Q24H"; }
         }
         note = "一般 CKD 調整";
       }
-
       const vials = Math.ceil(dose_mg / 500);
       const dose_str = dose_mg >= 1000 ? `${dose_mg / 1000} g` : `${dose_mg} mg`;
-
       return {
         rows: [
           { label: "適應症", value: isSevere ? "腦膜炎/極嚴重" : "一般重症" },
@@ -135,37 +112,28 @@ const DRUG_REGISTRY = {
           { label: "調整依據", value: note },
         ],
         warnings: [],
-        infoBox: {
-          text: "🕒 建議採用延長滴注（Prolonged Infusion）3 小時",
-          bg: "#EFF6FF", border: "#93C5FD", color: "#1E40AF",
-        },
+        infoBox: { text: "🕒 建議採用延長滴注（Prolonged Infusion）3 小時", bg: "#EFF6FF", border: "#93C5FD", color: "#1E40AF" },
       };
     },
   },
 
-  // ── Isavuconazole ─────────────────────────────────────────────
   isavuconazole: {
     name: "Isavuconazole",
     subtitle: "Cresemba",
     color: "#7C3AED",
     needsRenal: false,
     needsWeight: false,
-
     indications: [
       { id: "loading",     label: "Loading Dose",     desc: "負荷劑量" },
       { id: "maintenance", label: "Maintenance Dose", desc: "維持劑量" },
     ],
-
     extraFields: [],
-
     calculate({ indication }) {
       const isLoading = indication === "loading";
       return {
         rows: [
           { label: "劑量", value: "200 mg", highlight: true },
-          { label: "給藥頻率",
-            value: isLoading ? "Q8H（共 6 劑，歷時 48 小時）" : "QD（Q24H）",
-            highlight: true },
+          { label: "給藥頻率", value: isLoading ? "Q8H（共 6 劑，歷時 48 小時）" : "QD（Q24H）", highlight: true },
           { label: "肝腎評估", value: "無需依據腎功能（含 HD / CVVH）或輕中度肝功能不全調整劑量" },
         ],
         warnings: [
@@ -177,24 +145,16 @@ const DRUG_REGISTRY = {
     },
   },
 
-  // ┌──────────────────────────────────────────────────────────────┐
-  // │  🆕 加新藥範本：複製貼上，改內容就好                          │
-  // │                                                              │
-  // │  newDrug: {                                                  │
-  // │    name: "藥名",                                             │
-  // │    subtitle: "商品名",                                       │
-  // │    color: "#DC2626",                                         │
-  // │    needsRenal: true,                                         │
-  // │    needsWeight: true,                                        │
-  // │    indications: [                                            │
-  // │      { id: "ind1", label: "適應症1", desc: "說明" },          │
-  // │    ],                                                        │
-  // │    extraFields: [],                                          │
-  // │    calculate({ dosing_weight, crcl, rrt, indication }) {     │
-  // │      return { rows: [...], warnings: [...] };                │
-  // │    },                                                        │
-  // │  },                                                          │
-  // └──────────────────────────────────────────────────────────────┘
+  // 🆕 加新藥範本：複製貼上，改內容就好
+  // newDrug: {
+  //   name: "藥名", subtitle: "商品名", color: "#DC2626",
+  //   needsRenal: true, needsWeight: true,
+  //   indications: [{ id: "ind1", label: "適應症", desc: "說明" }],
+  //   extraFields: [],
+  //   calculate({ dosing_weight, crcl, rrt, indication }) {
+  //     return { rows: [...], warnings: [] };
+  //   },
+  // },
 };
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -215,11 +175,9 @@ function calcPatientParams({ tbw, height, age, gender, scr, rrt }) {
   const h = parseFloat(height);
   const a = parseFloat(age);
   const s = parseFloat(scr);
-
   let dosing_weight = w;
   let weight_note = "使用實際體重（TBW）";
-  let ibw = null;
-  let adjBw = null;
+  let ibw = null, adjBw = null;
 
   if (w > 0 && h > 0 && gender) {
     ibw = gender === "M" ? 50 + 0.91 * (h - 152.4) : 45.5 + 0.91 * (h - 152.4);
@@ -236,12 +194,135 @@ function calcPatientParams({ tbw, height, age, gender, scr, rrt }) {
     if (gender === "F") crcl *= 0.85;
     crcl = round1(crcl);
   }
-
   return { dosing_weight, weight_note, ibw: ibw ? round1(ibw) : null, adjBw, crcl };
 }
 
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  🧩 UI 元件                                                    ║
+// ║  🔍 可搜尋的下拉選單元件                                        ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+function SearchableSelect({ value, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const allDrugs = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({
+    id, name: cfg.name, subtitle: cfg.subtitle, color: cfg.color,
+  }));
+
+  const filtered = allDrugs.filter(d => {
+    const q = search.toLowerCase();
+    return d.name.toLowerCase().includes(q)
+      || d.subtitle.toLowerCase().includes(q)
+      || d.id.toLowerCase().includes(q);
+  });
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  const selectedDrug = value ? DRUG_REGISTRY[value] : null;
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative", marginBottom: 20 }}>
+      <label style={S.label}>選擇藥物</label>
+      <button
+        onClick={() => { setOpen(!open); setSearch(""); }}
+        style={{
+          width: "100%", padding: "12px 14px", borderRadius: 10,
+          border: selectedDrug ? `2px solid ${selectedDrug.color}` : "2px solid #E2E8F0",
+          background: selectedDrug ? `${selectedDrug.color}08` : "#fff",
+          cursor: "pointer", textAlign: "left",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          transition: "all 0.15s",
+        }}
+      >
+        {selectedDrug ? (
+          <div>
+            <span style={{ fontWeight: 700, fontSize: 15, color: selectedDrug.color }}>{selectedDrug.name}</span>
+            <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: 8 }}>{selectedDrug.subtitle}</span>
+          </div>
+        ) : (
+          <span style={{ color: "#94A3B8", fontSize: 15 }}>{placeholder || "點此選擇藥物..."}</span>
+        )}
+        <span style={{ fontSize: 12, color: "#94A3B8", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0)" }}>▼</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+          marginTop: 4, background: "#fff", borderRadius: 12,
+          border: "1.5px solid #E2E8F0", boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          overflow: "hidden",
+        }}>
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid #F1F5F9" }}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="🔍 搜尋藥名、商品名..."
+              style={{
+                width: "100%", padding: "8px 10px", borderRadius: 8,
+                border: "1.5px solid #E2E8F0", fontSize: 14, outline: "none",
+                background: "#F8FAFC", boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div style={{ maxHeight: 240, overflowY: "auto" }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: 16, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
+                找不到符合的藥物
+              </div>
+            ) : (
+              filtered.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => { onChange(d.id); setOpen(false); setSearch(""); }}
+                  style={{
+                    width: "100%", padding: "12px 14px", border: "none",
+                    background: value === d.id ? `${d.color}10` : "transparent",
+                    cursor: "pointer", textAlign: "left",
+                    display: "flex", alignItems: "center", gap: 10,
+                    borderBottom: "1px solid #F8FAFC",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={e => { if (value !== d.id) e.currentTarget.style.background = "#F8FAFC"; }}
+                  onMouseLeave={e => { if (value !== d.id) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <div style={{ width: 10, height: 10, borderRadius: 5, background: d.color, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: value === d.id ? d.color : "#334155" }}>{d.name}</div>
+                    <div style={{ fontSize: 12, color: "#94A3B8" }}>{d.subtitle}</div>
+                  </div>
+                  {value === d.id && <span style={{ marginLeft: "auto", color: d.color, fontSize: 14 }}>✓</span>}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  🧩 其他 UI 元件                                               ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 function Select({ label, value, onChange, options, placeholder }) {
@@ -312,7 +393,7 @@ function Warning({ text }) {
 }
 
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  🏗️ 主程式（通用引擎 — 加藥不需改這裡）                         ║
+// ║  🏗️ 主程式                                                     ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
@@ -371,35 +452,16 @@ export default function App() {
     } else { setExtras({}); }
   };
 
-  const drugList = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
-
   return (
     <div style={S.shell}>
       <div style={S.container}>
         <div style={S.header}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 }}>抗生素劑量與給藥計算</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 }}>ICU 抗生素</div>
           <div style={{ fontSize: 15, color: "#64748B", marginTop: 2 }}>臨床決策支援工具</div>
         </div>
 
-        {/* Drug Selection */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={S.label}>選擇藥物</label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {drugList.map(d => (
-              <button key={d.id} onClick={() => selectDrug(d.id)} style={{
-                flex: "1 1 0", minWidth: 90, padding: "14px 8px", borderRadius: 10,
-                border: drugId === d.id ? `2px solid ${d.color}` : "2px solid #E2E8F0",
-                background: drugId === d.id ? `${d.color}10` : "#fff",
-                cursor: "pointer", textAlign: "center", transition: "all 0.15s",
-              }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: drugId === d.id ? d.color : "#334155" }}>{d.name}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{d.subtitle}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+        <SearchableSelect value={drugId} onChange={selectDrug} placeholder="點此選擇或搜尋藥物..." />
 
-        {/* Patient Info */}
         {drugConfig?.needsRenal && (
           <div style={S.section}>
             <div style={S.sectionTitle}>病患資料</div>
@@ -437,7 +499,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Drug Settings */}
         {drugConfig && (
           <div style={S.section}>
             <div style={S.sectionTitle}>{drugConfig.name} 設定</div>
@@ -453,7 +514,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Result */}
         <div ref={resultRef}>
           {result && (
             <div style={{ background: "#fff", borderRadius: 12, padding: 20, marginTop: 16, borderLeft: `4px solid ${accentColor}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>

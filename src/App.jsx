@@ -377,7 +377,7 @@ export default function App() {
     <div style={S.shell}>
       <div style={S.container}>
         <div style={S.header}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 }}>ICU 抗生素</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 }}>抗生素劑量與給藥計算</div>
           <div style={{ fontSize: 15, color: "#64748B", marginTop: 2 }}>臨床決策支援工具</div>
         </div>
 

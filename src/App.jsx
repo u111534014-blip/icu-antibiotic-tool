@@ -117,7 +117,8 @@ const DRUG_REGISTRY = {
         scenarios: [
           {
             label: "標準口服 / 靜脈劑量",
-            preferred: "PO",
+            note: "UpToDate Adult dosing 同時列 Oral 與 IV，兩種劑型皆可",
+            // 無 preferred：兩種劑型並列
             po: {
               fixedDose: "1–2 DS tab Q12–24H",
               detail: "DS tab = TMP 160 mg + SMX 800 mg（= 2 錠 Morcasin）",
@@ -175,7 +176,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1–2 DS tab BID",
-              detail: "DS tab = TMP 160 mg + SMX 800 mg（= 2 錠 Morcasin）",
+              tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
             },
             iv: {
               dosePerKg: { min: 8, max: 10 },
@@ -189,7 +190,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1–2 DS tab BID",
-              detail: "DS tab = TMP 160 mg + SMX 800 mg（= 2 錠 Morcasin）",
+              tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
             },
             iv: {
               dosePerKg: { min: 8, max: 10 },
@@ -203,7 +204,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab QD–BID",
-              detail: "DS tab = TMP 160 mg + SMX 800 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "QD–BID",
             },
           },
           {
@@ -212,7 +213,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1–2 DS tab BID × 7 天",
-              detail: "DS tab = TMP 160 mg + SMX 800 mg",
+              tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
             },
           },
         ],
@@ -230,7 +231,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg + SMX 800 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
@@ -239,7 +240,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg + SMX 800 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
@@ -249,6 +250,7 @@ const DRUG_REGISTRY = {
             po: {
               fixedDose: "½ SS tab QD 或每週 3 次",
               detail: "SS tab = TMP 80 mg（= 1 錠 Morcasin）",
+              // 預防性用藥不產生 IV 換算
             },
           },
         ],
@@ -342,8 +344,8 @@ const DRUG_REGISTRY = {
         scenarios: [
           {
             label: "治療",
-            note: "至少 6 週；不完全反應時需延長",
-            preferred: "PO",
+            note: "至少 6 週；不完全反應時需延長。UpToDate 原文 \"Oral, IV:\"，兩種劑型皆可",
+            // 無 preferred：兩種劑型皆可
             po: {
               fixedDose: "10 mg/kg/day 分 2 次",
               detail: "依 TMP 計算",
@@ -414,7 +416,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "2 DS tab BID × 6 週",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 320, tmpMgMax: 320, tmpFreq: "Q12H",
             },
           },
         ],
@@ -431,13 +433,13 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1–2 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
             },
           },
           {
             label: "MRSA 感染",
-            note: "建議合併 rifampin。療程通常 6 週",
-            preferred: "PO",
+            note: "建議合併 rifampin。療程通常 6 週。PO 和 IV 劑量相同，UpToDate 未指定首選",
+            // 無 preferred：UpToDate 原文為 "Oral, IV:"，兩種劑型皆可
             po: {
               fixedDose: "5–10 mg/kg/day 分 2–3 次（依 TMP）",
               detail: "或 7–12 mg/kg/day 分 2–3 次",
@@ -463,7 +465,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "2 DS tab BID 或 4 mg/kg BID（max 320 mg/dose）",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 320, tmpMgMax: 320, tmpFreq: "Q12H",
             },
           },
         ],
@@ -481,7 +483,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -499,7 +501,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
@@ -508,7 +510,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -526,7 +528,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1–2 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
             },
           },
         ],
@@ -544,7 +546,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID + Metronidazole",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -562,7 +564,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab Q12H × 5–7 天",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -580,7 +582,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID × 10–14 天",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -599,6 +601,7 @@ const DRUG_REGISTRY = {
             po: {
               fixedDose: "1 DS tab QD",
               detail: "DS tab = TMP 160 mg",
+              // 預防用藥不產生 IV 換算
             },
           },
         ],
@@ -616,12 +619,12 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
             label: "Cystoisosporiasis 治療",
-            note: "免疫正常 7–10 天；免疫低下需更長療程",
+            note: "免疫正常 7–10 天；免疫低下需更長療程。IV 保留給無法吸收或無法耐受口服者",
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID 或 TMP 160 mg QID",
@@ -644,8 +647,8 @@ const DRUG_REGISTRY = {
         scenarios: [
           {
             label: "Nontyphoidal Salmonella（嚴重或高風險）",
-            note: "免疫正常 10–14 天；HIV 14 天以上",
-            preferred: "IV",
+            note: "免疫正常 10–14 天；HIV 14 天以上。UpToDate 同時列 Oral 與 IV",
+            // 無 preferred：兩種劑型皆可
             iv: {
               dosePerKg: { min: 8, max: 10 },
               divisions: 3,
@@ -653,16 +656,16 @@ const DRUG_REGISTRY = {
             },
             po: {
               fixedDose: "1 DS tab Q12H",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
             label: "Shigellosis",
-            note: "建議先確認藥敏；療程 5–7 天",
-            preferred: "PO",
+            note: "建議先確認藥敏；療程 5–7 天。UpToDate 同時列 Oral 與 IV",
+            // 無 preferred：兩種劑型皆可
             po: {
               fixedDose: "1 DS tab Q12H",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
             iv: {
               dosePerKg: { min: 4, max: 4 },
@@ -685,7 +688,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID × 14 天",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -708,8 +711,8 @@ const DRUG_REGISTRY = {
           },
           {
             label: "治療",
-            note: "療程 7–14 天，臨床改善後再多幾天",
-            preferred: "IV",
+            note: "療程 7–14 天，臨床改善後再多幾天。UpToDate 原文 \"Oral, IV:\"，兩種劑型皆可",
+            // 無 preferred：兩種劑型皆可
             iv: {
               dosePerKg: { min: 5, max: 5 },
               divisions: 3,
@@ -735,7 +738,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
@@ -744,7 +747,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID × 6 週",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -758,11 +761,11 @@ const DRUG_REGISTRY = {
         scenarios: [
           {
             label: "Initial intensive therapy（依體重調整）",
-            note: "與 ceftazidime 或 meropenem 合併，14 天起跳",
-            preferred: "PO",
+            note: "與 ceftazidime 或 meropenem 合併，14 天起跳。UpToDate 原文 \"Oral, IV:\"：IV 劑量與 PO 相同",
+            // 無 preferred：兩種劑型皆可
             po: {
               fixedDose: "<40 kg：160 mg Q12H｜40–60 kg：240 mg Q12H｜>60 kg：320 mg Q12H",
-              detail: "依 TMP 計算",
+              detail: "依 TMP 計算；IV 劑量同 PO",
             },
           },
           {
@@ -789,7 +792,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID × 7–10 天",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
           {
@@ -798,7 +801,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
             iv: {
               dosePerKg: { min: 4, max: 4 },
@@ -821,7 +824,7 @@ const DRUG_REGISTRY = {
             preferred: "PO",
             po: {
               fixedDose: "1 DS tab BID + 厭氧菌覆蓋",
-              detail: "DS tab = TMP 160 mg",
+              tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
             },
           },
         ],
@@ -853,6 +856,23 @@ const DRUG_REGISTRY = {
     calculate({ dosing_weight, crcl, rrt, indicationData, extras }) {
       let hasIV = false;
 
+      // 依腎功能調整劑量的 helper（IV、PO 共用邏輯）
+      // 回傳 { factor, freq, warning }
+      const renalAdjust = (origFreq) => {
+        if (rrt === "hd") {
+          return { factor: 0.5, freq: "Q24H（透析後）", warning: "HD 病人建議劑量減半" };
+        } else if (rrt === "cvvh") {
+          return { factor: 0.5, freq: "Q12H", warning: "CVVH 建議維持 Q12H" };
+        } else if (rrt === "pd") {
+          return { factor: 0.5, freq: "Q24H", warning: "PD 病人比照 CrCl <15 處理（劑量減半）" };
+        } else if (crcl < 15) {
+          return { factor: 0.5, freq: "Q24H", warning: "CrCl < 15 建議減半並 Q24H" };
+        } else if (crcl <= 30) {
+          return { factor: 0.5, freq: origFreq, warning: "CrCl 15–30 建議劑量減半" };
+        }
+        return { factor: 1, freq: origFreq, warning: null };
+      };
+
       const scenarioResults = indicationData.scenarios.map(sc => {
         const result = {
           title: sc.label,
@@ -863,47 +883,37 @@ const DRUG_REGISTRY = {
 
         // ── PO ──
         if (sc.po) {
+          const poRows = [
+            { label: "建議劑量", value: sc.po.fixedDose, highlight: true },
+          ];
+          // 若有提供 tmpMg，計算 Morcasin 錠數（DS tab = 2 錠）
+          if (sc.po.tmpMgMin != null) {
+            const tabMin = sc.po.tmpMgMin / 80;   // 1 錠 = 80 mg TMP
+            const tabMax = sc.po.tmpMgMax / 80;
+            const tabStr = tabMin === tabMax
+              ? `${tabMin} 錠`
+              : `${tabMin} – ${tabMax} 錠`;
+            poRows.push({ label: "院內品項", value: `${tabStr} Morcasin（每錠 TMP 80 mg）` });
+          }
+          if (sc.po.detail) {
+            poRows.push({ label: "品項說明", value: sc.po.detail });
+          }
           result.subResults.push({
             route: "PO",
             isPreferred: sc.preferred === "PO",
-            rows: [
-              { label: "建議劑量", value: sc.po.fixedDose, highlight: true },
-              ...(sc.po.detail ? [{ label: "品項說明", value: sc.po.detail }] : []),
-            ],
+            rows: poRows,
           });
         }
 
         // ── IV ──
+        // 情況 1：有明確的 iv 區塊（dosePerKg 公式）
         if (sc.iv) {
           hasIV = true;
-          let freq = sc.iv.freq;
-          const ivWarnings = [];
+          const adj = renalAdjust(sc.iv.freq);
+          const ivWarnings = adj.warning ? [adj.warning] : [];
 
-          let s_min = (dosing_weight * sc.iv.dosePerKg.min) / sc.iv.divisions;
-          let s_max = (dosing_weight * sc.iv.dosePerKg.max) / sc.iv.divisions;
-
-          if (rrt === "hd") {
-            s_min /= 2; s_max /= 2;
-            freq = "Q24H（透析後）";
-            ivWarnings.push("HD 病人建議劑量減半");
-          } else if (rrt === "cvvh") {
-            s_min /= 2; s_max /= 2;
-            freq = "Q12H";
-            ivWarnings.push("CVVH 建議維持 Q12H");
-          } else if (rrt === "pd") {
-            s_min /= 2; s_max /= 2;
-            freq = "Q24H";
-            ivWarnings.push("PD 病人建議比照 CrCl <15 處理（劑量減半）");
-          } else {
-            if (crcl < 15) {
-              s_min /= 2; s_max /= 2;
-              freq = "Q24H";
-              ivWarnings.push("CrCl < 15 建議減半並 Q24H");
-            } else if (crcl <= 30) {
-              s_min /= 2; s_max /= 2;
-              ivWarnings.push("CrCl 15–30 建議劑量減半");
-            }
-          }
+          let s_min = (dosing_weight * sc.iv.dosePerKg.min) / sc.iv.divisions * adj.factor;
+          let s_max = (dosing_weight * sc.iv.dosePerKg.max) / sc.iv.divisions * adj.factor;
 
           const amp_min = round2(s_min / 80);
           const amp_max = round2(s_max / 80);
@@ -913,8 +923,39 @@ const DRUG_REGISTRY = {
             isPreferred: sc.preferred === "IV",
             rows: [
               { label: "建議單次劑量", value: `TMP ${round1(s_min)} – ${round1(s_max)} mg`, highlight: true },
-              { label: "給藥頻率", value: freq, highlight: true },
+              { label: "給藥頻率", value: adj.freq, highlight: true },
               { label: "建議抽藥支數", value: `${amp_min} – ${amp_max} 支（Sevatrim）` },
+            ],
+            warnings: ivWarnings,
+          });
+        }
+        // 情況 2：PO 有 tmpMg 但沒有 iv 區塊 → 自動產生 IV 換算
+        //   依據：TMP/SMX 的 PO 生體可用率接近 100%，臨床常 PO ↔ IV 等量換算
+        else if (sc.po?.tmpMgMin != null && !sc.iv) {
+          hasIV = true;
+          const adj = renalAdjust(sc.po.tmpFreq || "（依 PO 頻率）");
+          const ivWarnings = ["此 IV 劑量為由 PO 等量換算（TMP/SMX 口服生體可用率接近 100%）"];
+          if (adj.warning) ivWarnings.push(adj.warning);
+
+          const s_min = sc.po.tmpMgMin * adj.factor;
+          const s_max = sc.po.tmpMgMax * adj.factor;
+          const amp_min = round2(s_min / 80);
+          const amp_max = round2(s_max / 80);
+
+          const doseStr = s_min === s_max
+            ? `TMP ${round1(s_min)} mg`
+            : `TMP ${round1(s_min)} – ${round1(s_max)} mg`;
+          const ampStr = amp_min === amp_max
+            ? `${amp_min} 支（Sevatrim）`
+            : `${amp_min} – ${amp_max} 支（Sevatrim）`;
+
+          result.subResults.push({
+            route: "IV",
+            isPreferred: false,   // UpToDate 原文首選 PO，IV 為等量換算
+            rows: [
+              { label: "建議單次劑量", value: doseStr, highlight: true },
+              { label: "給藥頻率", value: adj.freq, highlight: true },
+              { label: "建議抽藥支數", value: ampStr },
             ],
             warnings: ivWarnings,
           });

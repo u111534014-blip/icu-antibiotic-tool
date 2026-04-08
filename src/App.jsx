@@ -1017,6 +1017,7 @@ const DRUG_REGISTRY = {
             note: "膽囊切除後再給 1 天或保守治療直至臨床改善",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1026,6 +1027,7 @@ const DRUG_REGISTRY = {
             note: "Source control 後總療程 4–5 天；穿孔性闌尾炎術後 2–4 天可能足夠",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1042,6 +1044,7 @@ const DRUG_REGISTRY = {
             note: "重症或 MIC 偏高時可考慮 2 g Q8H 與延長/連續滴注。療程 7–14 天；ANC <500 延長至中性球恢復",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1058,6 +1061,7 @@ const DRUG_REGISTRY = {
             note: "需合併其他適當藥物。最少 5 天；P. aeruginosa 或重症需更長療程",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1067,6 +1071,7 @@ const DRUG_REGISTRY = {
             note: "MDR 革蘭氏陰性菌（P. aeruginosa、Acinetobacter、ESBL）。療程通常 7 天；重症建議延長/連續滴注",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1115,6 +1120,7 @@ const DRUG_REGISTRY = {
             note: "識別後盡速給藥，需合併其他適當藥物。重症首選延長/連續滴注",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1–2 g Q8H",
@@ -1131,6 +1137,7 @@ const DRUG_REGISTRY = {
             note: "持續至退燒 ≥48 小時且 ANC ≥500 並回升。重症首選延長/連續滴注",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1147,6 +1154,7 @@ const DRUG_REGISTRY = {
             note: "壞死性感染、術後感染、MDR 病原（含 P. aeruginosa）。療程 5–14 天；壞死性感染至無需 debridement",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1163,6 +1171,7 @@ const DRUG_REGISTRY = {
             note: "保留給重症或 MDR 風險（含 ESBL）。48 小時內改善者總療程 5–7 天",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1–2 g Q8H",
@@ -1179,6 +1188,7 @@ const DRUG_REGISTRY = {
             note: "療程通常 2–4 週（無骨髓炎時）",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1195,6 +1205,7 @@ const DRUG_REGISTRY = {
             note: "Empiric 用合併治療。療程通常 6 週，可考慮 IV 後改口服",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1211,6 +1222,7 @@ const DRUG_REGISTRY = {
             note: "Resection arthroplasty 病人通常 4–6 週",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1243,6 +1255,7 @@ const DRUG_REGISTRY = {
             note: "療程 5–7 天，需發燒與疼痛緩解",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H",
@@ -1275,6 +1288,7 @@ const DRUG_REGISTRY = {
             note: "至少 14 天；CNS 受侵犯時用 2 g Q8H。完成後接續口服 ≥12 週 eradication",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1 g Q8H（CNS：2 g Q8H）",
@@ -1291,6 +1305,7 @@ const DRUG_REGISTRY = {
             note: "需合併用藥；建議感染科會診。療程 6 個月至 ≥1 年",
             preferred: "IV",
             crclTable: STANDARD_1G_TABLE,
+            allowEscalation: true,
             hdDose: { dose_mg: 500, freq: "Q24H（透析後）" },
             cvvhDose: { dose_mg: 1000, freq: "Q8H" },
             usualDoseLabel: "1–2 g Q8H",
@@ -1302,48 +1317,81 @@ const DRUG_REGISTRY = {
     extraFields: [],
 
     calculate({ crcl, rrt, indicationData }) {
-      const scenarioResults = indicationData.scenarios.map(sc => {
-        let dose_mg, freq, note;
-
+      // Helper：依 RRT 或 CrCl 從劑量表查詢實際劑量
+      const lookupDose = (sc, table) => {
         if (rrt === "hd") {
-          ({ dose_mg, freq } = sc.hdDose);
-          note = "HD 模式";
+          return { dose_mg: sc.hdDose.dose_mg, freq: sc.hdDose.freq, note: "HD 模式" };
         } else if (rrt === "pd") {
-          ({ dose_mg, freq } = sc.hdDose);    // PD 與 HD 相同建議
-          note = "PD 模式（建議同 HD）";
+          return { dose_mg: sc.hdDose.dose_mg, freq: sc.hdDose.freq, note: "PD 模式（建議同 HD）" };
         } else if (rrt === "cvvh") {
-          ({ dose_mg, freq } = sc.cvvhDose);
-          note = "CVVH / CVVHDF 模式";
+          return { dose_mg: sc.cvvhDose.dose_mg, freq: sc.cvvhDose.freq, note: "CVVH / CVVHDF 模式" };
         } else {
-          const match = sc.crclTable.find(row => crcl >= row.min);
-          dose_mg = match.dose_mg;
-          freq = match.freq;
-          note = "依 CrCl 調整";
+          const match = table.find(row => crcl >= row.min);
+          return { dose_mg: match.dose_mg, freq: match.freq, note: "依 CrCl 調整" };
         }
+      };
 
-        const vials = Math.ceil(dose_mg / 500);
-        const dose_str = dose_mg >= 1000 ? `${dose_mg / 1000} g` : `${dose_mg} mg`;
+      // Helper：把劑量資料轉成顯示用 rows
+      const buildRows = (sc, doseInfo, useTable) => {
+        const vials = Math.ceil(doseInfo.dose_mg / 500);
+        const dose_str = doseInfo.dose_mg >= 1000 ? `${doseInfo.dose_mg / 1000} g` : `${doseInfo.dose_mg} mg`;
 
         const rows = [
-          { label: "適應症常規劑量", value: sc.usualDoseLabel },
+          { label: "適應症常規劑量", value: useTable === "2g" ? "2 g Q8H" : sc.usualDoseLabel },
           { label: "建議劑量", value: `${dose_str} IV`, highlight: true },
-          { label: "給藥頻率", value: freq, highlight: true },
+          { label: "給藥頻率", value: doseInfo.freq, highlight: true },
           { label: "每次取藥", value: `${vials} 支麥羅（每支 500 mg）` },
-          { label: "調整依據", value: note },
+          { label: "調整依據", value: doseInfo.note },
         ];
 
-        // ARC 警示
         if (rrt === "none" && crcl >= 130) {
           rows.push({ label: "⚠️ ARC", value: "CrCl ≥130：可能需更高劑量或延長/連續滴注" });
+        }
+        return rows;
+      };
+
+      const scenarioResults = indicationData.scenarios.map(sc => {
+        const subResults = [];
+
+        // ── 常規劑量 ──
+        const regularDose = lookupDose(sc, sc.crclTable);
+        subResults.push({
+          customLabel: "常規劑量",
+          customLabelBg: "#FEF3C7",
+          customLabelColor: "#92400E",
+          rows: buildRows(sc, regularDose, "regular"),
+        });
+
+        // ── 升級劑量（若 scenario 允許）──
+        if (sc.allowEscalation) {
+          // 升級永遠用 STANDARD_2G_TABLE，但 HD/PD/CVVH 用 escalation 專用 dose
+          const escalDoseInfo = (() => {
+            if (rrt === "hd") {
+              return { dose_mg: 1000, freq: "Q24H 或 500 mg Q12H（透析後）", note: "HD 模式" };
+            } else if (rrt === "pd") {
+              return { dose_mg: 1000, freq: "Q24H 或 500 mg Q12H", note: "PD 模式（建議同 HD）" };
+            } else if (rrt === "cvvh") {
+              return { dose_mg: 1000, freq: "Q8H", note: "CVVH / CVVHDF 模式" };
+            } else {
+              const match = STANDARD_2G_TABLE.find(row => crcl >= row.min);
+              return { dose_mg: match.dose_mg, freq: match.freq, note: "依 CrCl 調整" };
+            }
+          })();
+
+          subResults.push({
+            customLabel: "⬆️ 升級劑量",
+            customLabelBg: "#FEE2E2",
+            customLabelColor: "#991B1B",
+            rows: buildRows(sc, escalDoseInfo, "2g"),
+            warnings: [
+              "重症、致病菌 MIC 偏高、或對常規劑量反應不佳時，部分專家建議升級至 2 g Q8H（合併延長/連續滴注更佳）",
+            ],
+          });
         }
 
         return {
           title: sc.label,
-          subResults: [{
-            route: "IV",
-            isPreferred: true,
-            rows,
-          }],
+          subResults,
         };
       });
 
@@ -3003,10 +3051,10 @@ export default function App() {
                             <span style={{
                               fontSize: 11, fontWeight: 700,
                               padding: "2px 8px", borderRadius: 10,
-                              backgroundColor: sub.route === "PO" ? "#DBEAFE" : "#FEF3C7",
-                              color: sub.route === "PO" ? "#1E40AF" : "#92400E",
+                              backgroundColor: sub.customLabelBg || (sub.route === "PO" ? "#DBEAFE" : "#FEF3C7"),
+                              color: sub.customLabelColor || (sub.route === "PO" ? "#1E40AF" : "#92400E"),
                             }}>
-                              {sub.route === "PO" ? "口服 PO" : "靜脈 IV"}
+                              {sub.customLabel || (sub.route === "PO" ? "口服 PO" : "靜脈 IV")}
                             </span>
                             {showPreferredBadge && (
                               <span style={{

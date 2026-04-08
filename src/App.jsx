@@ -2358,7 +2358,7 @@ const DRUG_REGISTRY = {
       return {
         scenarioResults,
         infoBox: {
-          text: "🕒 重症、抗藥菌（MIC ≥16）、CrCl >100 病人首選延長滴注（Q6H over 3hr）。肝功能 A–C 不需調整",
+          text: "🕒 以下情況首選延長滴注（4.5 g Q6H over 3hr）：① 重症病人；② 致病菌 MIC 偏高（≥16 mg/L）；③ GFR 較高（如 >100 mL/min）。實務上以 CrCl 為參考。肝功能 Child-Pugh A–C 不需調整",
           bg: "#EFF6FF", border: "#93C5FD", color: "#1E40AF",
         },
       };
@@ -2432,13 +2432,15 @@ const DRUG_REGISTRY = {
     calculate({ crcl, rrt, indicationData }) {
       const scenarioResults = indicationData.scenarios.map(sc => {
         let dose_mg, freq, note;
+        const scWarnings = [];
 
         if (rrt === "hd") {
           ({ dose_mg, freq } = sc.hdDose);
           note = "HD 模式（廠商：HD 不需減量）";
         } else if (rrt === "pd") {
           ({ dose_mg, freq } = sc.pdDose);
-          note = "PD 模式（同 HD 處理）";
+          note = "PD 模式（比照 HD 推估）";
+          scWarnings.push("廠商無 PD 劑量資料。此建議為比照 HD 之推估");
         } else if (rrt === "cvvh") {
           ({ dose_mg, freq } = sc.cvvhDose);
           note = "CRRT / CVVH 模式";
@@ -2470,6 +2472,7 @@ const DRUG_REGISTRY = {
             route: "IV",
             isPreferred: true,
             rows,
+            warnings: scWarnings,
           }],
         };
       });
@@ -2939,40 +2942,47 @@ export default function App() {
                     </div>
                   )}
 
-                  {sc.subResults && sc.subResults.map((sub, sIdx) => (
-                    <div key={sIdx} style={{
-                      marginTop: sIdx > 0 ? 12 : 0,
-                      padding: "10px 12px",
-                      borderRadius: 8,
-                      background: sub.isPreferred ? "#F0FDFA" : "#F8FAFC",
-                      border: sub.isPreferred ? `1.5px solid ${ACCENT}` : "1px solid #E2E8F0",
-                    }}>
-                      <div style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        marginBottom: 8, flexWrap: "wrap",
-                      }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700,
-                          padding: "2px 8px", borderRadius: 10,
-                          backgroundColor: sub.route === "PO" ? "#DBEAFE" : "#FEF3C7",
-                          color: sub.route === "PO" ? "#1E40AF" : "#92400E",
+                  {sc.subResults && (() => {
+                    // 只有當同時存在 PO 和 IV 時才顯示「UpToDate 首選」標籤
+                    const hasMultipleRoutes = sc.subResults.length > 1;
+                    return sc.subResults.map((sub, sIdx) => {
+                      const showPreferredBadge = hasMultipleRoutes && sub.isPreferred;
+                      return (
+                        <div key={sIdx} style={{
+                          marginTop: sIdx > 0 ? 12 : 0,
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          background: showPreferredBadge ? "#F0FDFA" : "#F8FAFC",
+                          border: showPreferredBadge ? `1.5px solid ${ACCENT}` : "1px solid #E2E8F0",
                         }}>
-                          {sub.route === "PO" ? "口服 PO" : "靜脈 IV"}
-                        </span>
-                        {sub.isPreferred && (
-                          <span style={{
-                            fontSize: 11, fontWeight: 700,
-                            padding: "2px 8px", borderRadius: 10,
-                            backgroundColor: ACCENT, color: "#fff",
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 6,
+                            marginBottom: 8, flexWrap: "wrap",
                           }}>
-                            ⭐ UpToDate 首選
-                          </span>
-                        )}
-                      </div>
-                      {sub.rows.map((r, i) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
-                      {sub.warnings?.map((w, i) => <Warning key={i} text={w} />)}
-                    </div>
-                  ))}
+                            <span style={{
+                              fontSize: 11, fontWeight: 700,
+                              padding: "2px 8px", borderRadius: 10,
+                              backgroundColor: sub.route === "PO" ? "#DBEAFE" : "#FEF3C7",
+                              color: sub.route === "PO" ? "#1E40AF" : "#92400E",
+                            }}>
+                              {sub.route === "PO" ? "口服 PO" : "靜脈 IV"}
+                            </span>
+                            {showPreferredBadge && (
+                              <span style={{
+                                fontSize: 11, fontWeight: 700,
+                                padding: "2px 8px", borderRadius: 10,
+                                backgroundColor: ACCENT, color: "#fff",
+                              }}>
+                                ⭐ UpToDate 首選
+                              </span>
+                            )}
+                          </div>
+                          {sub.rows.map((r, i) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
+                          {sub.warnings?.map((w, i) => <Warning key={i} text={w} />)}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               ))}
 

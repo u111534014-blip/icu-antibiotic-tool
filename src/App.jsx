@@ -883,18 +883,48 @@ const DRUG_REGISTRY = {
 
         // ── PO ──
         if (sc.po) {
-          const poRows = [
-            { label: "建議劑量", value: sc.po.fixedDose, highlight: true },
-          ];
-          // 若有提供 tmpMg，計算 Morcasin 錠數（DS tab = 2 錠）
+          const poRows = [];
+          const poWarnings = [];
+
+          // 若有提供 tmpMg，套用腎功能調整邏輯
           if (sc.po.tmpMgMin != null) {
-            const tabMin = sc.po.tmpMgMin / 80;   // 1 錠 = 80 mg TMP
-            const tabMax = sc.po.tmpMgMax / 80;
-            const tabStr = tabMin === tabMax
-              ? `${tabMin} 錠`
-              : `${tabMin} – ${tabMax} 錠`;
-            poRows.push({ label: "院內品項", value: `${tabStr} Morcasin（每錠 TMP 80 mg）` });
+            const adj = renalAdjust(sc.po.tmpFreq || "");
+            if (adj.warning) poWarnings.push(adj.warning);
+
+            // 原始（未調整）劑量作為參考
+            poRows.push({ label: "常規劑量", value: sc.po.fixedDose });
+
+            // 若腎功能需調整，顯示調整後的 mg 和頻率
+            if (adj.factor < 1) {
+              const adjMin = sc.po.tmpMgMin * adj.factor;
+              const adjMax = sc.po.tmpMgMax * adj.factor;
+              const doseStr = adjMin === adjMax
+                ? `TMP ${round1(adjMin)} mg`
+                : `TMP ${round1(adjMin)} – ${round1(adjMax)} mg`;
+              poRows.push({ label: "調整後單次劑量", value: doseStr, highlight: true });
+              poRows.push({ label: "給藥頻率", value: adj.freq, highlight: true });
+
+              // 顯示調整後的 Morcasin 錠數（1 錠 = 80 mg TMP）
+              const tabMin = adjMin / 80;
+              const tabMax = adjMax / 80;
+              const tabStr = tabMin === tabMax
+                ? `${round2(tabMin)} 錠`
+                : `${round2(tabMin)} – ${round2(tabMax)} 錠`;
+              poRows.push({ label: "院內品項（調整後）", value: `${tabStr} Morcasin（每錠 TMP 80 mg）` });
+            } else {
+              // 腎功能正常：顯示原始的 Morcasin 錠數
+              const tabMin = sc.po.tmpMgMin / 80;
+              const tabMax = sc.po.tmpMgMax / 80;
+              const tabStr = tabMin === tabMax
+                ? `${tabMin} 錠`
+                : `${tabMin} – ${tabMax} 錠`;
+              poRows.push({ label: "院內品項", value: `${tabStr} Morcasin（每錠 TMP 80 mg）` });
+            }
+          } else {
+            // 沒有 tmpMg（預防性用藥、固定劑量）→ 不做腎調整
+            poRows.push({ label: "建議劑量", value: sc.po.fixedDose, highlight: true });
           }
+
           if (sc.po.detail) {
             poRows.push({ label: "品項說明", value: sc.po.detail });
           }
@@ -902,6 +932,7 @@ const DRUG_REGISTRY = {
             route: "PO",
             isPreferred: sc.preferred === "PO",
             rows: poRows,
+            warnings: poWarnings,
           });
         }
 

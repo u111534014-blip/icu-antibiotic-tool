@@ -2414,9 +2414,30 @@ const DRUG_REGISTRY = {
     extraFields: [],
 
     calculate({ crcl, rrt, indicationData }) {
+      // ── 熱病通則（不分適應症）──
+      // Normal / CrCl ≥20: 4.5 g Q8H over 4hr
+      // CrCl <20: 4.5 g Q12H over 4hr
+      // HD: 4.5 g Q12H over 4hr
+      // CAPD: 無資料
+      // CRRT: 3.375–4.5 g Q8H over 4hr
+      // SLED（PIRRT）: 僅有傳統輸注資料 4.5 g Q8H，可考慮延長輸注
+      const getHotlineDose = () => {
+        if (rrt === "hd") {
+          return { doseStr: "4.5 g", freq: "Q12H over 4hr（透析後）", vialsStr: "2", note: "熱病 HD 建議" };
+        } else if (rrt === "pd") {
+          return { doseStr: null, freq: null, vialsStr: null, note: "熱病：CAPD 無資料", noData: true };
+        } else if (rrt === "cvvh") {
+          return { doseStr: "3.375–4.5 g", freq: "Q8H over 4hr", vialsStr: "1.5–2", note: "熱病 CRRT 建議" };
+        } else if (crcl < 20) {
+          return { doseStr: "4.5 g", freq: "Q12H over 4hr", vialsStr: "2", note: "CrCl <20" };
+        } else {
+          return { doseStr: "4.5 g", freq: "Q8H over 4hr", vialsStr: "2", note: "CrCl ≥20，無需調整" };
+        }
+      };
+
       const scenarioResults = indicationData.scenarios.map(sc => {
+        // ── UpToDate 常規劑量 ──
         let dose_mg, freq, note;
-        let useExtended = false;
 
         if (rrt === "hd") {
           ({ dose_mg, freq } = sc.hdDose);
@@ -2428,22 +2449,18 @@ const DRUG_REGISTRY = {
           ({ dose_mg, freq } = sc.cvvhDose);
           note = "CRRT / CVVH 模式";
         } else if (crcl >= 130) {
-          // ARC：CrCl ≥130 → 改用延長/連續滴注高劑量
           dose_mg = 4500;
           freq = crcl >= 170
             ? "Loading 4.5 g + 22.5 g/day CI"
             : "Q6H over 3hr（延長滴注）";
           note = "ARC 模式";
-          useExtended = true;
         } else {
           const match = sc.crclTable.find(row => crcl >= row.min);
           dose_mg = match.dose_mg;
           freq = match.freq;
           note = "依 CrCl 調整";
-          if (crcl >= 100) useExtended = true;
         }
 
-        // 1 支帝斯坦 = 2.25 g 總量
         const vials = (dose_mg / 2250).toFixed(2).replace(/\.?0+$/, "");
         const dose_str = dose_mg >= 1000 ? `${dose_mg / 1000} g` : `${dose_mg} mg`;
 
@@ -2464,14 +2481,44 @@ const DRUG_REGISTRY = {
           });
         }
 
+        // ── 熱病建議（通則，不分適應症）──
+        const hotline = getHotlineDose();
+
+        let hotlineRows;
+        if (hotline.noData) {
+          hotlineRows = [
+            { label: "建議劑量", value: "無資料", highlight: true },
+            { label: "說明", value: hotline.note },
+          ];
+        } else {
+          hotlineRows = [
+            { label: "建議劑量", value: `${hotline.doseStr} IV`, highlight: true },
+            { label: "給藥頻率", value: hotline.freq, highlight: true },
+            { label: "每次取藥", value: `${hotline.vialsStr} 支帝斯坦` },
+            { label: "調整依據", value: hotline.note },
+          ];
+        }
+
         return {
           title: sc.title || sc.label,
           note: sc.note,
-          subResults: [{
-            route: "IV",
-            isPreferred: true,
-            rows,
-          }],
+          subResults: [
+            {
+              customLabel: "📘 UpToDate 常規劑量",
+              customLabelBg: "#FEF3C7",
+              customLabelColor: "#92400E",
+              rows,
+            },
+            {
+              customLabel: "🔥 熱病建議（延長滴注）",
+              customLabelBg: "#FEE2E2",
+              customLabelColor: "#991B1B",
+              rows: hotlineRows,
+              warnings: [
+                "熱病通則：不分適應症一律採延長滴注。急重症傾向積極抗生素給予",
+              ],
+            },
+          ],
         };
       });
 

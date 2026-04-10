@@ -1799,7 +1799,9 @@ const DRUG_REGISTRY = {
         let loading = sc.iv.loading_mg;
         let maintenance = sc.iv.maintenance_mg;
         const freq = sc.iv.freq;
-        let note = "Child-Pugh A 或 B：無需調整";
+        let note = hepatic === "normal"
+          ? "肝功能正常：無需調整"
+          : "Child-Pugh A 或 B：無需調整";
 
         // Mycobacterial 例外：Child-Pugh C 也不調整
         const isException = indicationData.hepaticOverride === "noAdjust";
@@ -3145,6 +3147,7 @@ const DRUG_REGISTRY = {
 
     calculate({ dosing_weight, crcl, rrt, hepatic, indicationData }) {
       // ── 肝功能調整 factor（依熱病 PK 研究建議）──
+      // Normal：無調整
       // Child-Pugh A/B：Loading 標準 + Maintenance 50%
       // Child-Pugh C：Loading 50% + Maintenance 25%
       const hepFactor = (() => {
@@ -3153,6 +3156,7 @@ const DRUG_REGISTRY = {
         } else if (hepatic === "C") {
           return { loadF: 0.5, maintF: 0.25, note: "Child-Pugh C：Loading 50%、Maintenance 25%（熱病 PK 研究）" };
         }
+        // normal 或未選
         return { loadF: 1, maintF: 1, note: null };
       })();
 
@@ -3160,6 +3164,46 @@ const DRUG_REGISTRY = {
       const ivVehicleWarning = (rrt === "none" && crcl > 0 && crcl < 50)
         ? "⚠️ 熱病建議：CrCl <50 避免 IV 劑型（vehicle SBECD 蓄積風險）。建議改用 PO 劑型"
         : null;
+
+      // ── Helper：把原始 mg 數取整到最接近的整支（200 mg 倍數）──
+      const roundToVial = (mg) => Math.round(mg / 200) * 200;
+
+      // ── Helper：組出「適應症常規劑量」文字（描述 UpToDate 原始建議，不含調整）──
+      const buildUsualDoseLabel = (sc) => {
+        const parts = [];
+        if (sc.iv) {
+          const ivParts = [];
+          if (sc.iv.loadingPerKg) {
+            const L = sc.iv.loadingPerKg.min === sc.iv.loadingPerKg.max
+              ? `${sc.iv.loadingPerKg.min} mg/kg`
+              : `${sc.iv.loadingPerKg.min}–${sc.iv.loadingPerKg.max} mg/kg`;
+            ivParts.push(`${L} ${sc.iv.freq} × ${sc.iv.loadingDoses} doses`);
+          }
+          if (sc.iv.loadingFixed_mg) {
+            ivParts.push(`或 ${sc.iv.loadingFixed_mg} mg ${sc.iv.freq} × ${sc.iv.loadingDoses} doses`);
+          }
+          if (sc.iv.maintPerKg) {
+            const M = sc.iv.maintPerKg.min === sc.iv.maintPerKg.max
+              ? `${sc.iv.maintPerKg.min} mg/kg`
+              : `${sc.iv.maintPerKg.min}–${sc.iv.maintPerKg.max} mg/kg`;
+            const prefix = sc.iv.loadingPerKg ? "then " : "";
+            ivParts.push(`${prefix}${M} ${sc.iv.freq}`);
+          }
+          if (sc.iv.maintFixed_mg_min) {
+            const MF = sc.iv.maintFixed_mg_min === sc.iv.maintFixed_mg_max
+              ? `${sc.iv.maintFixed_mg_min} mg`
+              : `${sc.iv.maintFixed_mg_min}–${sc.iv.maintFixed_mg_max} mg`;
+            ivParts.push(`或 ${MF} ${sc.iv.freq}`);
+          }
+          if (ivParts.length) parts.push(`IV: ${ivParts.join(", ")}`);
+        }
+        if (sc.po) {
+          const poParts = [sc.po.fixedDose];
+          if (sc.po.weightBased) poParts.push(`或 ${sc.po.weightBased}`);
+          parts.push(`PO: ${poParts.join(" ")}`);
+        }
+        return parts.join("｜");
+      };
 
       const scenarioResults = indicationData.scenarios.map(sc => {
         const result = {
@@ -3174,59 +3218,82 @@ const DRUG_REGISTRY = {
           const ivRows = [];
           const ivWarnings = [];
 
-          // Loading dose
+          // 最上面顯示適應症常規劑量
+          ivRows.push({ label: "適應症常規劑量", value: buildUsualDoseLabel(sc) });
+
+          // Loading dose（weight-based）
           if (sc.iv.loadingPerKg) {
-            const load_min = dosing_weight * sc.iv.loadingPerKg.min * hepFactor.loadF;
-            const load_max = dosing_weight * sc.iv.loadingPerKg.max * hepFactor.loadF;
-            const vialMin = Math.ceil(load_min / 200);
-            const vialMax = Math.ceil(load_max / 200);
+            const load_min_raw = dosing_weight * sc.iv.loadingPerKg.min * hepFactor.loadF;
+            const load_max_raw = dosing_weight * sc.iv.loadingPerKg.max * hepFactor.loadF;
+            const load_min = roundToVial(load_min_raw);
+            const load_max = roundToVial(load_max_raw);
+            const vialMin = load_min / 200;
+            const vialMax = load_max / 200;
+
             const loadStr = load_min === load_max
-              ? `${round1(load_min)} mg`
-              : `${round1(load_min)} – ${round1(load_max)} mg`;
+              ? `${load_min} mg`
+              : `${load_min} – ${load_max} mg`;
             const vialStr = vialMin === vialMax ? `${vialMin} 支` : `${vialMin}–${vialMax} 支`;
+            const rawStr = load_min_raw === load_max_raw
+              ? `原始計算 ${round1(load_min_raw)} mg`
+              : `原始計算 ${round1(load_min_raw)}–${round1(load_max_raw)} mg`;
+
             ivRows.push({
               label: "Loading Dose",
-              value: `${loadStr} IV × ${sc.iv.loadingDoses} doses（約 ${vialStr} Vfend / 劑）`,
+              value: `${loadStr} IV × ${sc.iv.loadingDoses} doses（${vialStr} Vfend / 劑）`,
               highlight: true,
             });
+            ivRows.push({ label: "取整依據", value: `${rawStr}，取整到最近的整支（200 mg 倍數）` });
             ivRows.push({ label: "頻率", value: sc.iv.freq });
           }
 
-          // Maintenance dose
+          // Loading fixed (candidemia only) - alternative
+          if (sc.iv.loadingFixed_mg) {
+            const adjLoad = sc.iv.loadingFixed_mg * hepFactor.loadF;
+            ivRows.push({
+              label: "── 固定劑量替代方案 ──",
+              value: "",
+            });
+            ivRows.push({
+              label: "Loading（固定劑量）",
+              value: `${adjLoad} mg IV × ${sc.iv.loadingDoses} doses（${Math.ceil(adjLoad / 200)} 支 Vfend）`,
+            });
+          }
+
+          // Maintenance dose（weight-based）
           if (sc.iv.maintPerKg) {
-            const maint_min = dosing_weight * sc.iv.maintPerKg.min * hepFactor.maintF;
-            const maint_max = dosing_weight * sc.iv.maintPerKg.max * hepFactor.maintF;
-            const vialMin = Math.ceil(maint_min / 200);
-            const vialMax = Math.ceil(maint_max / 200);
+            const maint_min_raw = dosing_weight * sc.iv.maintPerKg.min * hepFactor.maintF;
+            const maint_max_raw = dosing_weight * sc.iv.maintPerKg.max * hepFactor.maintF;
+            const maint_min = roundToVial(maint_min_raw);
+            const maint_max = roundToVial(maint_max_raw);
+            const vialMin = maint_min / 200;
+            const vialMax = maint_max / 200;
+
             const maintStr = maint_min === maint_max
-              ? `${round1(maint_min)} mg`
-              : `${round1(maint_min)} – ${round1(maint_max)} mg`;
+              ? `${maint_min} mg`
+              : `${maint_min} – ${maint_max} mg`;
             const vialStr = vialMin === vialMax ? `${vialMin} 支` : `${vialMin}–${vialMax} 支`;
+            const rawStr = maint_min_raw === maint_max_raw
+              ? `原始計算 ${round1(maint_min_raw)} mg`
+              : `原始計算 ${round1(maint_min_raw)}–${round1(maint_max_raw)} mg`;
+
             ivRows.push({
               label: sc.iv.loadingPerKg ? "Maintenance Dose" : "建議劑量",
-              value: `${maintStr} IV（約 ${vialStr} Vfend / 劑）`,
+              value: `${maintStr} IV（${vialStr} Vfend / 劑）`,
               highlight: true,
             });
+            ivRows.push({ label: "取整依據", value: `${rawStr}，取整到最近的整支（200 mg 倍數）` });
             if (!sc.iv.loadingPerKg) ivRows.push({ label: "頻率", value: sc.iv.freq });
           }
 
-          // Loading fixed (candidemia only)
-          if (sc.iv.loadingFixed_mg) {
-            ivRows.push({ label: "── 或固定劑量 ──", value: "" });
-            ivRows.push({
-              label: "Loading Dose",
-              value: `${sc.iv.loadingFixed_mg} mg IV × ${sc.iv.loadingDoses} doses（${Math.ceil(sc.iv.loadingFixed_mg / 200)} 支 Vfend）`,
-            });
-          }
-
-          // Maintenance fixed
+          // Maintenance fixed - alternative
           if (sc.iv.maintFixed_mg_min) {
             const adjMin = sc.iv.maintFixed_mg_min * hepFactor.maintF;
             const adjMax = sc.iv.maintFixed_mg_max * hepFactor.maintF;
             const mFixStr = adjMin === adjMax ? `${adjMin} mg` : `${adjMin}–${adjMax} mg`;
             ivRows.push({
-              label: "Maintenance（固定劑量）",
-              value: `${mFixStr} IV Q12H`,
+              label: "Maintenance（固定劑量替代）",
+              value: `${mFixStr} IV ${sc.iv.freq}`,
             });
           }
 
@@ -3246,6 +3313,9 @@ const DRUG_REGISTRY = {
         if (sc.po) {
           const poRows = [];
           const poWarnings = [];
+
+          // 最上面顯示適應症常規劑量
+          poRows.push({ label: "適應症常規劑量", value: buildUsualDoseLabel(sc) });
 
           poRows.push({ label: "建議劑量", value: sc.po.fixedDose, highlight: true });
           if (sc.po.weightBased) {
@@ -3304,6 +3374,7 @@ const RRT_OPTIONS = [
 ];
 
 const CHILD_PUGH_OPTIONS = [
+  { id: "normal", label: "肝功能正常" },
   { id: "A", label: "Child-Pugh A（輕度）" },
   { id: "B", label: "Child-Pugh B（中度）" },
   { id: "C", label: "Child-Pugh C（重度）" },

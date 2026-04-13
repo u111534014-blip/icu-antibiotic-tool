@@ -163,12 +163,12 @@ export const cresemba: Drug = {
   extraFields: [],
 
   calculate({ indicationData }) {
-    const scenarioResults = indicationData.scenarios.map(sc => {
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
       const result = {
         title: sc.label,
         note: sc.note,
         preferred: sc.preferred,
-        subResults: [],
+        subResults: [] as any[],
       };
 
       if (sc.iv) {

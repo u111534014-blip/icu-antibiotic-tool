@@ -67,9 +67,9 @@ export const brosym: Drug = {
   extraFields: [],
 
   calculate({ crcl, rrt, indicationData }) {
-    const scenarioResults = indicationData.scenarios.map(sc => {
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
       let dose_mg, freq, note;
-      const scWarnings = [];
+      const scWarnings: any[] = [];
 
       if (rrt === "hd") {
         ({ dose_mg, freq } = sc.hdDose);
@@ -82,9 +82,9 @@ export const brosym: Drug = {
         ({ dose_mg, freq } = sc.cvvhDose);
         note = "CRRT / CVVH 模式";
       } else {
-        const match = sc.crclTable.find(row => crcl >= row.min);
-        dose_mg = match.dose_mg;
-        freq = match.freq;
+        const match = sc.crclTable.find((row: any) => crcl >= row.min);
+        dose_mg = match!.dose_mg;
+        freq = match!.freq;
         note = "腎功能不論高低均同劑量（廠商建議）";
       }
 

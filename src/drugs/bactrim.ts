@@ -764,7 +764,7 @@ export const bactrim: Drug = {
 
     // 依腎功能調整劑量的 helper（IV、PO 共用邏輯）
     // 回傳 { factor, freq, warning }
-    const renalAdjust = (origFreq) => {
+    const renalAdjust = (origFreq: any) => {
       if (rrt === "hd") {
         return { factor: 0.5, freq: "Q24H（透析後）", warning: "HD 病人建議劑量減半" };
       } else if (rrt === "cvvh") {
@@ -779,18 +779,18 @@ export const bactrim: Drug = {
       return { factor: 1, freq: origFreq, warning: null };
     };
 
-    const scenarioResults = indicationData.scenarios.map(sc => {
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
       const result = {
         title: sc.label,
         note: sc.note,
         preferred: sc.preferred,
-        subResults: [],
+        subResults: [] as any[],
       };
 
       // ── PO ──
       if (sc.po) {
-        const poRows = [];
-        const poWarnings = [];
+        const poRows: any[] = [];
+        const poWarnings: any[] = [];
 
         // 若有提供 tmpMg，套用腎功能調整邏輯
         if (sc.po.tmpMgMin != null) {
@@ -905,7 +905,7 @@ export const bactrim: Drug = {
       label: "💉 藥師決定給予支數（IV 配藥用）",
       placeholder: "例：2 或 2.5",
       suffix: "支",
-      calcDilution(ampules) {
+      calcDilution(ampules: any) {
         const a = parseFloat(ampules);
         if (!a || a <= 0) return null;
         const vol = extras.waterLimit ? a * 75 : a * 125;

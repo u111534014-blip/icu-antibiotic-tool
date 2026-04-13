@@ -511,13 +511,13 @@ export const vfend: Drug = {
       : null;
 
     // ── Helper：把原始 mg 數取整到最接近的半支（100 mg 倍數 = 0.5 支）──
-    const roundToHalfVial = (mg) => Math.round(mg / 100) * 100;
+    const roundToHalfVial = (mg: number) => Math.round(mg / 100) * 100;
 
     // ── Helper：組出「適應症常規劑量」文字（描述 UpToDate 原始建議，不含調整）──
-    const buildUsualDoseLabel = (sc) => {
-      const parts = [];
+    const buildUsualDoseLabel = (sc: any) => {
+      const parts: any[] = [];
       if (sc.iv) {
-        const ivParts = [];
+        const ivParts: any[] = [];
         if (sc.iv.loadingPerKg) {
           const L = sc.iv.loadingPerKg.min === sc.iv.loadingPerKg.max
             ? `${sc.iv.loadingPerKg.min} mg/kg`
@@ -550,18 +550,18 @@ export const vfend: Drug = {
       return parts.join("｜");
     };
 
-    const scenarioResults = indicationData.scenarios.map(sc => {
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
       const result = {
         title: sc.label,
         note: sc.note,
         preferred: sc.preferred,
-        subResults: [],
+        subResults: [] as any[],
       };
 
       // ── IV ──
       if (sc.iv) {
-        const ivRows = [];
-        const ivWarnings = [];
+        const ivRows: any[] = [];
+        const ivWarnings: any[] = [];
 
         // 最上面顯示適應症常規劑量
         ivRows.push({ label: "適應症常規劑量", value: buildUsualDoseLabel(sc) });
@@ -656,8 +656,8 @@ export const vfend: Drug = {
 
       // ── PO ──
       if (sc.po) {
-        const poRows = [];
-        const poWarnings = [];
+        const poRows: any[] = [];
+        const poWarnings: any[] = [];
 
         // 最上面顯示適應症常規劑量
         poRows.push({ label: "適應症常規劑量", value: buildUsualDoseLabel(sc) });

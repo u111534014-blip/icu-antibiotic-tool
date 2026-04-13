@@ -280,7 +280,7 @@ export const tazocin: Drug = {
       }
     };
 
-    const scenarioResults = indicationData.scenarios.map(sc => {
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
       // ── UpToDate 常規劑量 ──
       let dose_mg, freq, note;
 
@@ -300,9 +300,9 @@ export const tazocin: Drug = {
           : "Q6H over 3hr（延長滴注）";
         note = "ARC 模式";
       } else {
-        const match = sc.crclTable.find(row => crcl >= row.min);
-        dose_mg = match.dose_mg;
-        freq = match.freq;
+        const match = sc.crclTable.find((row: any) => crcl >= row.min);
+        dose_mg = match!.dose_mg;
+        freq = match!.freq;
         note = "依 CrCl 調整";
       }
 

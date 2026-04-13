@@ -253,7 +253,7 @@ export const unasyn: Drug = {
   extraFields: [],
 
   calculate({ crcl, rrt, indicationData }) {
-    const scenarioResults = indicationData.scenarios.map(sc => {
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
       let dose_mg, freq, note;
 
       if (rrt === "hd") {
@@ -266,9 +266,9 @@ export const unasyn: Drug = {
         ({ dose_mg, freq } = sc.cvvhDose);
         note = "CRRT / CVVH 模式";
       } else {
-        const match = sc.crclTable.find(row => crcl >= row.min);
-        dose_mg = match.dose_mg;
-        freq = match.freq;
+        const match = sc.crclTable.find((row: any) => crcl >= row.min);
+        dose_mg = match!.dose_mg;
+        freq = match!.freq;
         note = "依 CrCl 調整";
       }
 

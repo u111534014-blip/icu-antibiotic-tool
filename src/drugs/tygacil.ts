@@ -152,8 +152,8 @@ export const tygacil: Drug = {
   extraFields: [],
 
   calculate({ indicationData, hepatic }) {
-    const scenarioResults = indicationData.scenarios.map(sc => {
-      const scWarnings = [];
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
+      const scWarnings: any[] = [];
       let loading = sc.iv.loading_mg;
       let maintenance = sc.iv.maintenance_mg;
       const freq = sc.iv.freq;
@@ -172,7 +172,7 @@ export const tygacil: Drug = {
         note = "Child-Pugh C：NTM 感染無需調整";
       }
 
-      const rows = [];
+      const rows: any[] = [];
       if (sc.iv.fixedDoseText) {
         rows.push({ label: "建議劑量", value: sc.iv.fixedDoseText, highlight: true });
       } else {

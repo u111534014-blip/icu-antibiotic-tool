@@ -2,135 +2,127 @@
 // ║  📐 藥物資料的「合法格式」定義                                     ║
 // ║                                                                ║
 // ║  這個檔案定義了每個藥物物件「應該長什麼樣子」                       ║
-// ║  當你寫藥物資料時，VS Code 會根據這裡的定義：                       ║
-// ║    ✅ 自動補完欄位名稱                                            ║
-// ║    ✅ 打錯字時用紅字警告                                          ║
-// ║    ✅ 忘記必填欄位時提醒                                          ║
+// ║                                                                ║
+// ║  🎯 設計原則：                                                    ║
+// ║    - 藥物外層（name、needsRenal、indications 等）：嚴格檢查        ║
+// ║    - Scenario 內部 & calculate 函數內部：寬鬆                     ║
+// ║                                                                ║
+// ║  🌟 這樣你會得到什麼：                                             ║
+// ║    ✅ 新藥物忘了寫 name/subtitle/needsRenal 等 → 紅字提醒          ║
+// ║    ✅ indications 結構錯誤 → 紅字                                  ║
+// ║    ✅ 自動補完 Drug 頂層欄位                                       ║
+// ║    ⚠️ scenario 內部欄位打錯 → 不會提醒（容忍各藥物結構差異）        ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 // ── 劑量表（CrCl 對應劑量）─────────────────────────────────────
-// 例：{ min: 50, dose_mg: 1000, freq: "Q8H" }
-//     代表「CrCl ≥ 50 時，每次 1000 mg，Q8H 給藥」
 export type CrClRow = {
-  min: number;           // CrCl 下限
-  dose_mg: number;       // 單次劑量（mg）
-  freq: string;          // 給藥頻率，如 "Q8H"、"Q12H"
+  min: number;
+  dose_mg: number;
+  freq: string;
 };
 
 // ── 一個「劑量列」，顯示在結果裡 ──────────────────────────────
-// 例：{ label: "建議單次劑量", value: "500 mg", highlight: true }
 export type ResultRow = {
   label: string;
   value: string;
-  highlight?: boolean;   // 要不要加強顯示（預設 false）
+  highlight?: boolean;
 };
 
-// ── 一個「子結果」，例如一個 scenario 算出的內容 ────────────────
+// ── 子結果（一個情境裡的單一路徑，如 PO 或 IV）─────────────────
 export type SubResult = {
-  title?: string;
-  note?: string;
+  route?: string;
   rows: ResultRow[];
   warnings?: string[];
-  preferred?: boolean;   // 是否為 UpToDate 首選（多個子結果時）
-  routeLabel?: string;   // "IV" / "PO" / "Loading" / "Maintenance" 等
+  isPreferred?: boolean;
+  customLabel?: string;
+  customLabelBg?: string;
+  customLabelColor?: string;
+  [key: string]: any;
 };
 
-// ── 藥師配藥輸入（算抽藥支數、加水量的區塊）─────────────────────
+// ── 情境結果 ─────────────────────────────────────────────────
+export type ScenarioResult = {
+  title?: string;
+  note?: string;
+  rows?: ResultRow[];
+  subResults?: SubResult[];
+  warnings?: string[];
+  [key: string]: any;
+};
+
+// ── 資訊方塊 ─────────────────────────────────────────────────
+export type InfoBox = {
+  text: string;
+  bg: string;
+  border: string;
+  color: string;
+};
+
+// ── 藥師配藥輸入 ─────────────────────────────────────────────
 export type DilutionResult = {
-  text: string;          // 主要說明，如 "請抽取 2 支，加入 250 mL D5W"
-  note?: string;         // 補充說明
+  text: string;
+  note?: string;
 };
 
 export type PharmacistInput = {
-  label: string;         // 輸入框的 label
-  placeholder?: string;  // 輸入框提示文字
-  suffix?: string;       // 輸入框後面的單位，如 "支"
+  label: string;
+  placeholder?: string;
+  suffix?: string;
   calcDilution: (value: string) => DilutionResult | null;
 };
 
-// ── 一個「情境 Scenario」（一種適應症下的一個給藥方式）───────────
-export type Scenario = {
-  label: string;                              // 顯示名稱
-  route?: "IV" | "PO";                        // 給藥路徑
-  note?: string;                              // 臨床備註
-  freq?: string;                              // 給藥頻率
-
-  // IV 計算用（mg/kg 公式）
-  dosePerKg?: { min: number; max: number };
-  divisions?: number;                         // 一日分幾次
-
-  // 固定劑量（不用 kg 算）
-  fixedDose?: string;                         // 如 "1–2 DS tab BID"
-  detail?: string;                            // 補充說明
-
-  // 其他覆寫設定
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";
-  hepaticOverride?: "noAdjust";
-};
+// ── Scenario（給 calculate 函數自由存取）──────────────────────
+// 每個藥物的 scenario 結構不同，用 any 允許任何欄位
+export type Scenario = any;
 
 // ── 一個「適應症 Indication」─────────────────────────────────
 export type Indication = {
-  id: string;                      // 程式內部用的 ID（英文，不顯示）
-  label: string;                   // 顯示在下拉選單的名字
-  desc?: string;                   // 選單中附在後面的補充說明
-  scenarios: Scenario[];           // 至少一個情境
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";  // 整個適應症共用
+  id: string;
+  label: string;
+  desc?: string;
+  scenarios: Scenario[];
+  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";
+  hepaticOverride?: "noAdjust";
+  [key: string]: any;
 };
 
-// ── 額外欄位（如限水 toggle、肝功能下拉）─────────────────────
+// ── 額外欄位（toggle / select）───────────────────────────────
 export type ExtraField = {
   key: string;
   type: "toggle" | "select";
   label: string;
   default?: boolean | string;
-  options?: { id: string; label: string }[];  // 只 select 才需要
+  options?: { id: string; label: string }[];
 };
 
-// ── calculate 函數的輸入參數 ─────────────────────────────────
+// ── calculate 函數的輸入 ──────────────────────────────────────
 export type CalculateParams = {
-  tbw: number;                     // 實際體重
-  ibw: number;                     // 理想體重
-  adjbw: number;                   // 調整體重
-  dosing_weight: number;           // 最後採用的劑量體重
-  bmi: number;
-  crcl: number;                    // Cockcroft-Gault CrCl
-  rrt: "none" | "hd" | "pd" | "cvvh";
-  childPugh?: "normal" | "A" | "B" | "C";
+  dosing_weight: number;
+  crcl: number;
+  rrt: string;
+  hepatic?: string;
   indicationData: Indication;
-  extras: Record<string, boolean | string>;  // 動態欄位（如 waterLimit）
+  extras: Record<string, any>;
 };
 
-// ── calculate 函數的輸出 ──────────────────────────────────────
-export type CalculateResult = {
-  // 多情境結果（用 scenarioResults 或 subResults）
-  scenarioResults?: SubResult[];
-  subResults?: SubResult[];
+// ── calculate 函數的輸出（寬鬆，因為每個藥回傳結構不同）──────────
+export type CalculateResult = any;
 
-  // 單一結果（不分情境時）
-  rows?: ResultRow[];
-  warnings?: string[];
-
-  // 藥師輸入區
-  pharmacistInput?: PharmacistInput | null;
-};
-
-// ── 一個完整的「藥物」定義 ────────────────────────────────────
+// ── 一個完整的「藥物」定義（外層嚴格）─────────────────────────
 export type Drug = {
-  name: string;                    // 商品名，如 "Bactrim"
-  subtitle: string;                // 學名，如 "Trimethoprim-sulfamethoxazole"
-  searchTerms?: string[];          // 別名、院內品項、中文名
+  name: string;                    // 必填：商品名
+  subtitle: string;                // 必填：學名
+  searchTerms?: string[];
 
-  // 這個藥要哪些欄位
-  needsRenal: boolean;             // 是否需要腎功能（CrCl）
-  needsWeight: boolean;            // 是否需要體重
-  needsHepatic?: boolean;          // 是否需要肝功能（Child-Pugh）
+  needsRenal: boolean;             // 必填
+  needsWeight: boolean;            // 必填
+  needsHepatic?: boolean;
 
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";  // 預設體重策略
+  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";
 
-  indications: Indication[];       // 適應症列表
+  indications: Indication[];       // 必填
 
-  extraFields?: ExtraField[];      // 額外欄位（toggle、select）
+  extraFields?: ExtraField[];
 
-  // 計算函數：接收病人資料 + 選項，回傳結果
   calculate: (params: CalculateParams) => CalculateResult;
 };

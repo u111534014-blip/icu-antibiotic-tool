@@ -336,7 +336,7 @@ export const mepem: Drug = {
 
   calculate({ crcl, rrt, indicationData }) {
     // Helper：依 RRT 或 CrCl 從劑量表查詢實際劑量
-    const lookupDose = (sc, table) => {
+    const lookupDose = (sc: any, table: any) => {
       if (rrt === "hd") {
         return { dose_mg: sc.hdDose.dose_mg, freq: sc.hdDose.freq, note: "HD 模式" };
       } else if (rrt === "pd") {
@@ -344,13 +344,13 @@ export const mepem: Drug = {
       } else if (rrt === "cvvh") {
         return { dose_mg: sc.cvvhDose.dose_mg, freq: sc.cvvhDose.freq, note: "CVVH / CVVHDF 模式" };
       } else {
-        const match = table.find(row => crcl >= row.min);
-        return { dose_mg: match.dose_mg, freq: match.freq, note: "依 CrCl 調整" };
+        const match = table.find((row: any) => crcl >= row.min);
+        return { dose_mg: match!.dose_mg, freq: match!.freq, note: "依 CrCl 調整" };
       }
     };
 
     // Helper：把劑量資料轉成顯示用 rows
-    const buildRows = (sc, doseInfo, useTable) => {
+    const buildRows = (sc: any, doseInfo: any, useTable: any) => {
       const vials = Math.ceil(doseInfo.dose_mg / 500);
       const dose_str = doseInfo.dose_mg >= 1000 ? `${doseInfo.dose_mg / 1000} g` : `${doseInfo.dose_mg} mg`;
 
@@ -368,8 +368,8 @@ export const mepem: Drug = {
       return rows;
     };
 
-    const scenarioResults = indicationData.scenarios.map(sc => {
-      const subResults = [];
+    const scenarioResults = indicationData.scenarios.map((sc: any) => {
+      const subResults: any[] = [];
 
       // ── 常規劑量 ──
       const regularDose = lookupDose(sc, sc.crclTable);
@@ -391,8 +391,8 @@ export const mepem: Drug = {
           } else if (rrt === "cvvh") {
             return { dose_mg: 1000, freq: "Q8H", note: "CVVH / CVVHDF 模式" };
           } else {
-            const match = STANDARD_2G_TABLE.find(row => crcl >= row.min);
-            return { dose_mg: match.dose_mg, freq: match.freq, note: "依 CrCl 調整" };
+            const match = STANDARD_2G_TABLE.find((row: any) => crcl >= row.min);
+            return { dose_mg: match!.dose_mg, freq: match!.freq, note: "依 CrCl 調整" };
           }
         })();
 

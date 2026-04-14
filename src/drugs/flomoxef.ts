@@ -38,7 +38,7 @@ export const flomoxef: Drug = {
   searchTerms: [
     "flumarin", "flomoxef", "氟黴寧",
     "flumarin 針", "3 代頭孢", "3rd gen cephalosporin",
-    "carbapenem sparing", "ESBL", "日本藥"
+    "ESBL", "日本藥"
   ],
 
   needsRenal: true,

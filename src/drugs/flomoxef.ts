@@ -11,7 +11,6 @@ import type { Drug } from './types';
 //
 // 特性：
 //   - 3 代頭孢，G+/G-/厭氧皆涵蓋（不涵蓋 PsA、AB）
-//   - 不需要體重（固定劑量）
 //   - 不需要肝功能評估
 // ═══════════════════════════════════════════════════════════════
 
@@ -42,7 +41,8 @@ export const flomoxef: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: false,
+  needsWeight: true,    // 保留所有病患資料欄位（體重、身高、年齡、性別、Scr）
+                        // 程式會用 CG 公式算 CrCl，BMI ≥30 自動用 AdjBW
   needsHepatic: false,
 
   indications: [

@@ -74,7 +74,7 @@ export const ertapenem: Drug = {
   indications: [
     {
       id: "bite",
-      label: "咬傷感染（動物/人）",
+      label: "Bite wound infection（動物/人咬傷感染）",
       desc: "1 g Q24H · 5–14 天",
       scenarios: [
         {
@@ -85,7 +85,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "bsi",
-      label: "菌血症（GNB 導向治療）",
+      label: "Bloodstream infection（菌血症，GNB 導向）",
       desc: "1 g Q24H · 7–14 天",
       scenarios: [
         {
@@ -96,7 +96,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "diabeticFoot",
-      label: "糖尿病足感染（中度-重度）",
+      label: "Diabetic foot infection（糖尿病足感染，中度-重度）",
       desc: "1 g Q24H · 2–4 週",
       scenarios: [
         {
@@ -107,7 +107,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "iai_cholecystitis",
-      label: "腹內感染 - 急性膽囊炎",
+      label: "Intra-abdominal infection - Acute cholecystitis（急性膽囊炎）",
       desc: "1 g Q24H · 術後 1 天或臨床緩解",
       scenarios: [
         {
@@ -118,7 +118,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "iai_other",
-      label: "腹內感染 - 其他（穿孔闌尾、闌尾膿瘍、膽管炎、憩室炎）",
+      label: "Intra-abdominal infection - Other（腹內感染：穿孔闌尾、膽管炎、憩室炎等）",
       desc: "1 g Q24H · 療程因病況而異",
       scenarios: [
         {
@@ -132,18 +132,18 @@ export const ertapenem: Drug = {
     },
     {
       id: "osteomyelitis",
-      label: "骨髓炎 / 椎間盤炎",
+      label: "Osteomyelitis / Discitis（骨髓炎 / 椎間盤炎）",
       desc: "1 g Q24H · 通常 6 週",
       scenarios: [
         {
-          label: "骨髓炎 / 椎間盤炎",
+          label: "Osteomyelitis / Discitis（骨髓炎 / 椎間盤炎）",
           note: "針對 GNB 導向治療。通常 6 週，依臨床反應與殘餘感染/植入物而定。部分病人可改口服降階。若截肢完全切除感染骨，療程可較短",
         },
       ],
     },
     {
       id: "pid",
-      label: "骨盆感染（產後 / 術後婦科）",
+      label: "Pelvic infection（產後 / 術後婦科感染）",
       desc: "1 g Q24H · 依感染類型",
       scenarios: [
         {
@@ -154,7 +154,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "cap",
-      label: "CAP（住院、無 Pseudomonas 風險）",
+      label: "Community-acquired pneumonia（CAP，住院、無 Pseudomonas 風險）",
       desc: "1 g Q24H · ≥5 天",
       scenarios: [
         {
@@ -165,7 +165,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "hapVap",
-      label: "HAP / VAP（ESBL 導向治療）",
+      label: "HAP / VAP（院內 / 呼吸器相關肺炎，ESBL 導向）",
       desc: "1 g Q24H · 通常 7 天",
       scenarios: [
         {
@@ -176,7 +176,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "pji",
-      label: "人工關節感染（PJI）",
+      label: "Prosthetic joint infection（PJI 人工關節感染）",
       desc: "1 g Q24H · 通常 4–6 週",
       scenarios: [
         {
@@ -187,7 +187,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "ssti",
-      label: "皮膚軟組織感染（中度-重度）",
+      label: "Skin & Soft Tissue Infection（SSTI 皮膚軟組織感染，中度-重度）",
       desc: "1 g Q24H · 5–14 天",
       scenarios: [
         {
@@ -200,7 +200,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "surgicalProphylaxis",
-      label: "手術預防（大腸直腸手術）",
+      label: "Surgical prophylaxis（手術預防，大腸直腸手術）",
       desc: "1 g 術前 60 分鐘內單次",
       scenarios: [
         {
@@ -211,7 +211,7 @@ export const ertapenem: Drug = {
     },
     {
       id: "uti",
-      label: "複雜性 UTI / 腎盂腎炎",
+      label: "Complicated UTI / Pyelonephritis（複雜性尿路感染 / 腎盂腎炎）",
       desc: "1 g Q24H · 5–7 天",
       scenarios: [
         {

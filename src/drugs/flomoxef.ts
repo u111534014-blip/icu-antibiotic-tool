@@ -11,6 +11,7 @@ import type { Drug } from './types';
 //
 // 特性：
 //   - 3 代頭孢，G+/G-/厭氧皆涵蓋（不涵蓋 PsA、AB）
+//   - 不需要體重（固定劑量）
 //   - 不需要肝功能評估
 // ═══════════════════════════════════════════════════════════════
 
@@ -88,10 +89,26 @@ export const flomoxef: Drug = {
       ];
     } else {
       const match = HOSPITAL_TABLE.find((row: any) => crcl >= row.min);
+      // 院內版劑量多以「每日總量」表示，此處註記每次單劑換算支數
+      const daily_g = match!.total_mg / 1000;
+      let vialsPerDoseStr = "";
+      if (match!.min === 80) {
+        vialsPerDoseStr = "4 g/day（例：1 g Q6H = 1 支/次；或 2 g Q12H = 2 支/次）";
+      } else if (match!.min === 50) {
+        vialsPerDoseStr = "1 支/次（1 g Q8H）";
+      } else if (match!.min === 25) {
+        vialsPerDoseStr = "1 支/次（1 g Q12H）";
+      } else if (match!.min === 5) {
+        vialsPerDoseStr = "1 支/次（1 g Q24H）";
+      } else {
+        vialsPerDoseStr = "0.5 支/次（0.5 g Q24H）";
+      }
+
       hospitalRows = [
         { label: "建議劑量", value: match!.dose_str, highlight: true },
         { label: "給藥頻率", value: match!.freq },
-        { label: "每日總量", value: `${match!.total_mg / 1000} g/day` },
+        { label: "每日總量", value: `${daily_g} g/day` },
+        { label: "每次取藥", value: vialsPerDoseStr },
       ];
       if (crcl >= 80) {
         hospitalRows.push({ label: "備註", value: "院內處方集未明列 >80，依文件提及上限" });

@@ -22,6 +22,7 @@ import { unasyn } from './unasyn';
 import { tazocin } from './tazocin';
 import { brosym } from './brosym';
 import { vfend } from './vfend';
+import { flomoxef } from './flomoxef';
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
   bactrim,
@@ -32,4 +33,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   tazocin,
   brosym,
   vfend,
+  flomoxef,
 };

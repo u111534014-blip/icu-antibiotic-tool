@@ -58,6 +58,18 @@ export type InfoBox = {
   color: string;
 };
 
+// ── 臨床參考區塊（可展開，適合放非 UpToDate 的補充知識）──────
+// 每個 section 是一段獨立主題（如抗菌譜、治療角色、副作用等）
+export type ClinicalPearlSection = {
+  heading: string;       // 小節標題
+  body: string;          // 內容文字（支援換行 \n）
+};
+
+export type ClinicalPearls = {
+  title?: string;                        // 總標題（預設「臨床參考（非 UpToDate）」）
+  sections: ClinicalPearlSection[];      // 多個小節
+};
+
 // ── 藥師配藥輸入 ─────────────────────────────────────────────
 export type DilutionResult = {
   text: string;
@@ -123,6 +135,8 @@ export type Drug = {
   indications: Indication[];       // 必填
 
   extraFields?: ExtraField[];
+
+  clinicalPearls?: ClinicalPearls; // 選填：臨床參考（可展開的補充知識）
 
   calculate: (params: CalculateParams) => CalculateResult;
 };

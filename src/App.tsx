@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { DRUG_REGISTRY } from './drugs';
 import { round1 } from './drugs/shared/helpers';
-import type { Drug, Indication, ExtraField } from './drugs/types';
+import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -330,6 +330,76 @@ function Warning({ text }: { text: string }) {
   );
 }
 
+// ── 臨床參考（可展開）─────────────────────────────────────
+function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
+  const [open, setOpen] = useState(false);
+  const title = pearls.title || "臨床參考（非 UpToDate）";
+
+  return (
+    <div style={{
+      background: "#fff",
+      borderRadius: 12,
+      marginTop: 16,
+      border: "1px solid #E2E8F0",
+      overflow: "hidden",
+    }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%",
+          padding: "14px 16px",
+          background: "#F8FAFC",
+          border: "none",
+          borderBottom: open ? "1px solid #E2E8F0" : "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#475569",
+          textAlign: "left",
+        }}
+      >
+        <span>📖 {title}</span>
+        <svg
+          width="14" height="14" viewBox="0 0 16 16" fill="none"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
+        >
+          <path d="M4 6L8 10L12 6" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{ padding: "16px 16px 20px" }}>
+          {pearls.sections.map((sec, idx) => (
+            <div key={idx} style={{ marginBottom: idx < pearls.sections.length - 1 ? 16 : 0 }}>
+              <div style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#0F172A",
+                marginBottom: 6,
+                paddingBottom: 4,
+                borderBottom: "2px solid #F0FDFA",
+              }}>
+                {sec.heading}
+              </div>
+              <div style={{
+                fontSize: 13,
+                color: "#475569",
+                lineHeight: 1.7,
+                whiteSpace: "pre-wrap",   // 保留 \n 換行
+              }}>
+                {sec.body}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  🏗️ 主程式                                                     ║
 // ╚══════════════════════════════════════════════════════════════════╝
@@ -588,6 +658,10 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {drugConfig?.clinicalPearls && (
+          <ClinicalPearlsBox pearls={drugConfig.clinicalPearls} />
+        )}
 
         {drugId && <button onClick={resetAll} style={S.resetBtn}>重新評估</button>}
         <div style={{ textAlign: "center", padding: "24px 0 8px", fontSize: 11, color: "#94A3B8" }}>僅供臨床參考，請依實際情境調整</div>

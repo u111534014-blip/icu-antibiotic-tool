@@ -22,11 +22,112 @@
 // 肝功能：Child-Pugh A–C 均不需調整
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { round1 } from './shared/helpers';
+import type { Drug } from './types';
 
 // ── 院內品項常數 ───────────────────────────────────────────────────────────
 const IV_MG_PER_VIAL = 100;   // 泰復肯靜脈注射劑 100 mg/支
 const PO_MG_PER_CAP  = 50;    // 膚黴克膠囊 50 mg/顆
+
+// ── Helper：把 mg 換算成「最接近的半支」數字字串 ──────────────────────────
+// 例：210 mg, 100 mg/支 → 210/100 = 2.1 → 取最近 0.5 → 2 支
+//     240 mg, 100 mg/支 → 2.4 → 2.5 支
+//     260 mg, 100 mg/支 → 2.6 → 2.5 支
+//     290 mg, 100 mg/支 → 2.9 → 3 支
+function toHalfVials(mg: number, mg_per_vial: number): string {
+  const raw = mg / mg_per_vial;
+  const half = Math.round(raw * 2) / 2;   // 取最近 0.5
+  if (half === 0.5) return "0.5 支（半支）";
+  if (half % 1 === 0) return `${half} 支`;
+  return `${half} 支`;
+}
+
+// ── Helper：顯示「固定 / kg 計算」兩個選項（若兩者都有） ──────────────────
+// 回傳格式：
+//   - 只有固定：「400 mg（常用固定量）」
+//   - 只有 kg：「420 mg（6 mg/kg × 70 kg）」
+//   - 兩者都有：「400 mg（常用固定量）｜ 或 420 mg（6 mg/kg × 70 kg）」
+//   - 範圍版本會顯示 lo–hi 格式
+function formatMaintDose(
+  sc: any,
+  dosing_weight: number,
+  factor: number,
+): { maint_mg: number; display: string } {
+  // 計算固定劑量字串（若有定義）
+  let stdStr: string | null = null;
+  let stdMid: number | null = null;
+  if (sc.std_maint_mg_min !== undefined && sc.std_maint_mg_max !== undefined) {
+    const lo = Math.round(sc.std_maint_mg_min * factor);
+    const hi = Math.round(sc.std_maint_mg_max * factor);
+    stdStr = lo === hi ? `${lo} mg（常用固定量）` : `${lo}–${hi} mg（常用固定量）`;
+    stdMid = Math.round((lo + hi) / 2);
+  } else if (sc.std_maint_mg !== undefined) {
+    const v = Math.round(sc.std_maint_mg * factor);
+    stdStr = `${v} mg（常用固定量）`;
+    stdMid = v;
+  }
+
+  // 計算 kg-based 劑量字串（若有定義）
+  let kgStr: string | null = null;
+  let kgMid: number | null = null;
+  if (sc.wt_maint_mg_per_kg_min !== undefined && sc.wt_maint_mg_per_kg_max !== undefined) {
+    const lo = Math.round(dosing_weight * sc.wt_maint_mg_per_kg_min * factor);
+    const hi = Math.round(dosing_weight * sc.wt_maint_mg_per_kg_max * factor);
+    kgStr = lo === hi
+      ? `${lo} mg（${sc.wt_maint_mg_per_kg_min} mg/kg × ${dosing_weight} kg）`
+      : `${lo}–${hi} mg（${sc.wt_maint_mg_per_kg_min}–${sc.wt_maint_mg_per_kg_max} mg/kg × ${dosing_weight} kg）`;
+    kgMid = Math.round((lo + hi) / 2);
+  } else if (sc.wt_maint_mg_per_kg !== undefined) {
+    const v = Math.round(dosing_weight * sc.wt_maint_mg_per_kg * factor);
+    kgStr = `${v} mg（${sc.wt_maint_mg_per_kg} mg/kg × ${dosing_weight} kg）`;
+    kgMid = v;
+  }
+
+  // 兩者都有：並列
+  if (stdStr && kgStr) {
+    return {
+      maint_mg: stdMid!,   // 用固定劑量當支數計算基準（UpToDate 原文「400 mg（或 6 mg/kg）」）
+      display: `${stdStr}\n或 ${kgStr}`,
+    };
+  }
+  // 只有其中一個
+  return {
+    maint_mg: (stdMid ?? kgMid ?? 0),
+    display: stdStr ?? kgStr ?? "—",
+  };
+}
+
+// ── Helper：Loading dose 同樣處理 ──────────────────────────────────────────
+function formatLoadDose(
+  sc: any,
+  dosing_weight: number,
+  factor: number,
+): { load_mg: number | null; display: string | null } {
+  if (!sc.hasLoading) return { load_mg: null, display: null };
+
+  let stdStr: string | null = null;
+  let stdVal: number | null = null;
+  if (sc.std_load_mg !== undefined) {
+    const v = Math.round(sc.std_load_mg * factor);
+    stdStr = `${v} mg（常用固定量）`;
+    stdVal = v;
+  }
+
+  let kgStr: string | null = null;
+  let kgVal: number | null = null;
+  if (sc.wt_load_mg_per_kg !== undefined) {
+    const v = Math.round(dosing_weight * sc.wt_load_mg_per_kg * factor);
+    kgStr = `${v} mg（${sc.wt_load_mg_per_kg} mg/kg × ${dosing_weight} kg）`;
+    kgVal = v;
+  }
+
+  if (stdStr && kgStr) {
+    return { load_mg: stdVal!, display: `${stdStr}\n或 ${kgStr}` };
+  }
+  return {
+    load_mg: stdVal ?? kgVal,
+    display: stdStr ?? kgStr,
+  };
+}
 
 // CRRT 劑量上調表
 function getCRRTDose(usualMaint_mg: number): {
@@ -40,16 +141,23 @@ function getCRRTDose(usualMaint_mg: number): {
 }
 
 // ── 藥物主體 ──────────────────────────────────────────────────────────────
-export const fluconazole = {
-  id: "fluconazole",
+export const fluconazole: Drug = {
   name: "Fluconazole",
   subtitle: "Diflucan",
-  color: "#0891B2",   // cyan-600
+  searchTerms: [
+    "fluconazole", "diflucan", "泰復肯",
+    "fluene", "膚黴克", "fluconazole 針", "fluconazole 膠囊",
+    "candida", "cryptococcus", "念珠菌", "隱球菌", "azole", "antifungal",
+  ],
 
   // ★ needsRenal = true 時，needsWeight 也必須 true（計算 CrCl 所需）
-  needsWeight: true,
   needsRenal:  true,
+  needsWeight: true,
   needsHepatic: false,  // CTP A–C 均不需調整，不顯示肝功能欄位
+
+  // UpToDate 肥胖建議：invasive candidiasis 使用實際體重（TBW）計算
+  // 因此這裡統一用 TBW（不用 AdjBW_if_obese）
+  weightStrategy: "TBW",
 
   // ──────────────────────────────────────────────────────────────────────
   // 適應症清單（情境資料）
@@ -409,14 +517,14 @@ export const fluconazole = {
         if (crrtLoad_mg) {
           rows.push({
             label: "Loading dose（Day 1）",
-            value: `${crrtLoad_mg} mg IV（${Math.ceil(crrtLoad_mg / IV_MG_PER_VIAL)} 支）`,
+            value: `${crrtLoad_mg} mg IV（${toHalfVials(crrtLoad_mg, IV_MG_PER_VIAL)}）`,
             highlight: true,
           });
         }
         rows.push(
           { label: "維持劑量",   value: `${crrt.maint_mg} mg IV`, highlight: true },
           { label: "給藥頻率",   value: crrt.freq,                highlight: true },
-          { label: "每次取藥（維持）", value: `${Math.ceil(crrt.maint_mg / IV_MG_PER_VIAL)} 支泰復肯（每支 100 mg / 50 mL）` },
+          { label: "每次取藥（維持）", value: `${toHalfVials(crrt.maint_mg, IV_MG_PER_VIAL)}泰復肯（每支 100 mg / 50 mL）` },
           { label: "稀釋方式",   value: "原液直接輸注，速率 ≤200 mg/hr（建議輸注 ≥30 分鐘）" },
           { label: "腎功能調整", value: renalNote },
         );
@@ -460,7 +568,7 @@ export const fluconazole = {
         if (hdLoad_mg) {
           rows3x.push({
             label: "Loading dose（Day 1）",
-            value: `${hdLoad_mg} mg IV（${Math.ceil(hdLoad_mg / IV_MG_PER_VIAL)} 支）`,
+            value: `${hdLoad_mg} mg IV（${toHalfVials(hdLoad_mg, IV_MG_PER_VIAL)}）`,
             highlight: true,
           });
         }
@@ -468,7 +576,7 @@ export const fluconazole = {
           { label: "維持劑量（每次）", value: `${hdFullMaint_mg} mg`, highlight: true },
           { label: "給藥頻率",        value: "每週三次，透析後給藥", highlight: true },
           { label: "每次取藥（維持）",
-            value: `${Math.ceil(hdFullMaint_mg / IV_MG_PER_VIAL)} 支泰復肯（每支 100 mg）或 ${Math.ceil(hdFullMaint_mg / PO_MG_PER_CAP)} 顆膚黴克膠囊（每顆 50 mg）` },
+            value: `${toHalfVials(hdFullMaint_mg, IV_MG_PER_VIAL)}泰復肯（每支 100 mg）或 ${Math.ceil(hdFullMaint_mg / PO_MG_PER_CAP)} 顆膚黴克膠囊（每顆 50 mg）` },
           { label: "說明", value: "透析可移除 33–38% fluconazole；透析後補足；透析間隔日不需額外補給" },
         );
 
@@ -477,7 +585,7 @@ export const fluconazole = {
         if (hdLoad_mg) {
           rowsQD.push({
             label: "Loading dose（Day 1）",
-            value: `${hdLoad_mg} mg IV（${Math.ceil(hdLoad_mg / IV_MG_PER_VIAL)} 支）`,
+            value: `${hdLoad_mg} mg IV（${toHalfVials(hdLoad_mg, IV_MG_PER_VIAL)}）`,
             highlight: true,
           });
         }
@@ -485,7 +593,7 @@ export const fluconazole = {
           { label: "維持劑量",   value: `${hdHalfMaint_mg} mg QD`, highlight: true },
           { label: "給藥頻率",   value: "QD（透析日：透析後給藥）", highlight: true },
           { label: "每次取藥（維持）",
-            value: `${Math.ceil(hdHalfMaint_mg / IV_MG_PER_VIAL)} 支泰復肯（每支 100 mg）或 ${Math.ceil(hdHalfMaint_mg / PO_MG_PER_CAP)} 顆膚黴克膠囊（每顆 50 mg）` },
+            value: `${toHalfVials(hdHalfMaint_mg, IV_MG_PER_VIAL)}泰復肯（每支 100 mg）或 ${Math.ceil(hdHalfMaint_mg / PO_MG_PER_CAP)} 顆膚黴克膠囊（每顆 50 mg）` },
           { label: "說明", value: "每日給藥的替代方案，住院病人管理更方便" },
         );
 
@@ -512,51 +620,15 @@ export const fluconazole = {
 
       // ── 一般 CKD / 無透析（含 PD）───────────────────────────────────
 
-      // 計算 loading dose
-      let load_mg: number | null = null;
-      if (sc.hasLoading) {
-        if (sc.wt_load_mg_per_kg) {
-          load_mg = Math.round(dosing_weight * sc.wt_load_mg_per_kg * loadFactor);
-        } else if (sc.std_load_mg) {
-          load_mg = Math.round(sc.std_load_mg * loadFactor);
-        }
-      }
+      // 計算 loading dose（同時提供固定劑量與 kg 計算兩種顯示）
+      const loadInfo = formatLoadDose(sc, dosing_weight, loadFactor);
+      const load_mg = loadInfo.load_mg;
+      const load_display = loadInfo.display;
 
-      // 計算維持劑量（含腎功能 factor）
-      let maint_mg: number;
-      let maint_display: string;   // 顯示給使用者的字串（可能是範圍）
-
-      if (sc.fixedDose) {
-        // 純固定劑量
-        if (sc.std_maint_mg_min !== undefined) {
-          const lo = Math.round(sc.std_maint_mg_min * maintFactor);
-          const hi = Math.round(sc.std_maint_mg_max * maintFactor);
-          maint_mg = Math.round((lo + hi) / 2);
-          maint_display = lo === hi ? `${lo} mg` : `${lo}–${hi} mg`;
-        } else {
-          maint_mg = Math.round(sc.std_maint_mg * maintFactor);
-          maint_display = `${maint_mg} mg`;
-        }
-      } else if (sc.wt_maint_mg_per_kg_min !== undefined) {
-        // 體重 × 範圍
-        const lo = Math.round(dosing_weight * sc.wt_maint_mg_per_kg_min * maintFactor);
-        const hi = Math.round(dosing_weight * sc.wt_maint_mg_per_kg_max * maintFactor);
-        maint_mg = Math.round((lo + hi) / 2);
-        maint_display = lo === hi ? `${lo} mg` : `${lo}–${hi} mg`;
-      } else if (sc.wt_maint_mg_per_kg !== undefined) {
-        // 體重 × 單一值
-        maint_mg = Math.round(dosing_weight * sc.wt_maint_mg_per_kg * maintFactor);
-        maint_display = `${maint_mg} mg`;
-      } else if (sc.std_maint_mg_min !== undefined) {
-        // 固定範圍（非 fixedDose flag）
-        const lo = Math.round(sc.std_maint_mg_min * maintFactor);
-        const hi = Math.round(sc.std_maint_mg_max * maintFactor);
-        maint_mg = Math.round((lo + hi) / 2);
-        maint_display = lo === hi ? `${lo} mg` : `${lo}–${hi} mg`;
-      } else {
-        maint_mg = Math.round(sc.std_maint_mg * maintFactor);
-        maint_display = `${maint_mg} mg`;
-      }
+      // 計算維持劑量（同時提供固定劑量與 kg 計算兩種顯示）
+      const maintInfo = formatMaintDose(sc, dosing_weight, maintFactor);
+      const maint_mg = maintInfo.maint_mg;
+      const maint_display = maintInfo.display;
 
       const warnings: string[] = [];
       if (maintFactor < 1.0) {
@@ -565,28 +637,34 @@ export const fluconazole = {
       if (sc.std_maint_mg_min !== undefined || sc.wt_maint_mg_per_kg_min !== undefined) {
         warnings.push("⚖️ 劑量範圍：實際劑量請依感染嚴重度、感受性（MIC）及臨床反應調整");
       }
+      // UpToDate 原文「X mg（或 Y mg/kg）」時，提醒使用者兩者擇一
+      const hasBothStdAndKg =
+        (sc.std_maint_mg !== undefined || sc.std_maint_mg_min !== undefined) &&
+        (sc.wt_maint_mg_per_kg !== undefined || sc.wt_maint_mg_per_kg_min !== undefined);
+      if (hasBothStdAndKg) {
+        warnings.push("💊 兩版本擇一給藥：可用「常用固定量」或「依體重計算」，請依臨床習慣與病人狀況選擇");
+      }
       if (sc.noteReduced) {
         warnings.push(`💡 ${sc.noteReduced}`);
       }
 
       // ── 建立 subResults（IV + PO 均提供）────────────────────────────
       const subResults: any[] = [];
-      const buildLoadRow = (unit: "IV" | "PO"): any => ({
-        label: "Loading dose（Day 1）",
-        value: unit === "IV"
-          ? `${load_mg} mg IV（${Math.ceil(load_mg! / IV_MG_PER_VIAL)} 支）`
-          : `${load_mg} mg PO（${Math.ceil(load_mg! / PO_MG_PER_CAP)} 顆）`,
-        highlight: true,
-      });
 
       // IV sub-result
       const ivRows: any[] = [];
-      if (load_mg) ivRows.push(buildLoadRow("IV"));
+      if (load_mg !== null && load_display) {
+        ivRows.push({
+          label: "Loading dose（Day 1）",
+          value: `${load_display}\n→ ${toHalfVials(load_mg, IV_MG_PER_VIAL)}泰復肯 IV`,
+          highlight: true,
+        });
+      }
       ivRows.push(
-        { label: "維持劑量", value: `${maint_display} IV`, highlight: true },
+        { label: "維持劑量", value: `${maint_display}`, highlight: true },
         { label: "給藥頻率", value: sc.freq ?? "QD", highlight: true },
         { label: "每次取藥（維持）",
-          value: `${Math.ceil(maint_mg / IV_MG_PER_VIAL)} 支泰復肯（每支 100 mg / 50 mL）` },
+          value: `${toHalfVials(maint_mg, IV_MG_PER_VIAL)}泰復肯（每支 100 mg / 50 mL）` },
         { label: "稀釋方式",
           value: "原液直接輸注，速率 ≤200 mg/hr（輸注 ≥30 分鐘）" },
         { label: "腎功能調整", value: renalNote },
@@ -601,9 +679,15 @@ export const fluconazole = {
 
       // PO sub-result
       const poRows: any[] = [];
-      if (load_mg) poRows.push(buildLoadRow("PO"));
+      if (load_mg !== null && load_display) {
+        poRows.push({
+          label: "Loading dose（Day 1）",
+          value: `${load_display}\n→ ${Math.ceil(load_mg / PO_MG_PER_CAP)} 顆膚黴克膠囊 PO`,
+          highlight: true,
+        });
+      }
       poRows.push(
-        { label: "維持劑量", value: `${maint_display} PO`, highlight: true },
+        { label: "維持劑量", value: `${maint_display}`, highlight: true },
         { label: "給藥頻率", value: sc.freq ?? "QD", highlight: true },
         { label: "每次取藥（維持）",
           value: `${Math.ceil(maint_mg / PO_MG_PER_CAP)} 顆膚黴克膠囊（每顆 50 mg）` },
@@ -625,24 +709,85 @@ export const fluconazole = {
       };
     });
 
-    // ── infoBox：底部臨床提醒 ─────────────────────────────────────────
+    // ── infoBox：底部臨床提醒（精簡版，詳細內容見 clinicalPearls）────────
     return {
       scenarioResults,
       infoBox: {
-        text: [
-          "🔬 抗黴菌譜：C. krusei 天然抗藥；C. glabrata MIC 偏高（敏感性下降），",
-          "建議使用前確認藥敏結果。",
-          "⚗️ 藥物交互作用：Fluconazole 強效抑制 CYP2C9 / CYP3A4，",
-          "與 warfarin（↑ INR）、tacrolimus、cyclosporine、statins、",
-          "phenytoin 等藥物有顯著交互作用，請務必確認並評估調整。",
-          "🫀 肝功能：Child-Pugh A–C 均不需調整劑量。",
-          "若出現 fluconazole 引起之肝損傷（罕見），",
-          "停藥後通常 ≈2 週內恢復，一般不需特別處置。",
-        ].join(""),
+        text: "⚗️ 注意：Fluconazole 為 CYP2C9/3A4 強效抑制劑，與 warfarin、tacrolimus、cyclosporine、statins、phenytoin 等有顯著交互作用，處方前請核對並評估調整。詳細抗菌譜、肝功能、藥物交互作用請展開下方「臨床參考」。",
         bg:     "#FFF7ED",
         border: "#FED7AA",
         color:  "#92400E",
       },
     };
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 臨床參考（整理自 UpToDate / Lexicomp）
+  // ═══════════════════════════════════════════════════════════════
+  clinicalPearls: {
+    title: "臨床參考",
+    sections: [
+      {
+        heading: "抗菌譜與敏感性",
+        body:
+          "• C. albicans、C. parapsiloisis、C. tropicalis：通常敏感，first-line 可用\n" +
+          "• C. glabrata：MIC 偏高（敏感性下降），若藥敏確認 susceptible 或 susceptible-dose-dependent 可用（劑量加倍）\n" +
+          "• C. krusei：天然抗藥，不建議使用\n" +
+          "• Cryptococcus：敏感，適用於 consolidation、maintenance 期\n" +
+          "• 黴菌（mold，如 Aspergillus、Mucor）：無效，不可用於 mold-active prophylaxis\n\n" +
+          "⚠️ 建議用藥前確認藥敏結果，特別是 C. glabrata 或臨床反應不佳時。",
+      },
+      {
+        heading: "藥物交互作用（CYP450 強效抑制）",
+        body:
+          "Fluconazole 是 CYP2C9、CYP3A4、CYP2C19 的強效抑制劑，與許多藥物會有顯著交互作用：\n\n" +
+          "• Warfarin：INR 顯著上升，需加強監測並可能需減量\n" +
+          "• Tacrolimus、Cyclosporine：血中濃度上升，需監測濃度並調整劑量\n" +
+          "• Statins（simvastatin、atorvastatin）：肌肉毒性風險增加\n" +
+          "• Phenytoin：血中濃度上升，需監測\n" +
+          "• Sulfonylureas（如 glipizide）：低血糖風險增加\n" +
+          "• QT-prolonging agents：QT 延長風險增加，避免合併使用\n\n" +
+          "開立 fluconazole 時務必進行藥物交互作用檢核。",
+      },
+      {
+        heading: "肝功能（Child-Pugh A–C 皆不需調整）",
+        body:
+          "• 治療前已有肝硬化（Child-Pugh A–C）：不需劑量調整\n" +
+          "• 使用期間肝功能惡化（慢性或急性）：不需常規調整\n" +
+          "• Fluconazole-induced liver injury（罕見）：停藥後通常 ≈2 週內恢復，一般不需特別處置；再次使用可能復發",
+      },
+      {
+        heading: "腎功能調整原則（Lexicomp 2026）",
+        body:
+          "• CrCl > 50：不需調整\n" +
+          "• CrCl ≤ 50：維持量減半（Loading 不減）\n" +
+          "• HD（每週 3 次）：\n" +
+          "  - 標準方案：3x/week 透析後 full dose（透析間隔日不需額外補給）\n" +
+          "  - 替代方案：QD 減半，透析日透析後給（住院病人管理更方便）\n" +
+          "• PD：維持量減半（同 CrCl ≤50）\n" +
+          "• CRRT (CVVH/D/HDF)：劑量需增加\n" +
+          "  - 常規 200 mg → CRRT 400 mg QD\n" +
+          "  - 常規 400 mg → Loading 800 mg → 維持 800 mg/day\n" +
+          "  - 常規 800 mg → Loading 1200 mg → 維持 1200 mg/day\n" +
+          "  原因：Fluconazole 在正常腎功能有大量 tubular reabsorption，無尿病人此機制消失，CRRT clearance 為正常人 1.5–2.3×",
+      },
+      {
+        heading: "肥胖病人劑量",
+        body:
+          "UpToDate 建議：Class 1、2、3 肥胖（BMI ≥30）使用**實際體重（TBW）**計算：\n" +
+          "• Loading：12 mg/kg（上限 1,600 mg）\n" +
+          "• Maintenance：6 mg/kg（上限依臨床情境 800–1,600 mg）\n" +
+          "• Monte Carlo 模擬顯示無論 BMI 或體重，此策略都能達到 fAUC/MIC target\n" +
+          "• 非危重症病人可省略 loading dose\n\n" +
+          "⚠️ 此工具預設 Fluconazole 使用 TBW 計算（不同於其他藥物多預設 AdjBW_if_obese）。",
+      },
+      {
+        heading: "院內品項",
+        body:
+          "• IV：泰復肯靜脈注射劑（Diflucan 針）100 mg / 50 mL / 支（2 mg/mL 溶液）\n" +
+          "• PO：膚黴克膠囊（Fluene）50 mg / 顆\n\n" +
+          "IV 輸注速率：≤200 mg/hr（建議 ≥30 分鐘）；原液直接輸注，不需另外稀釋。",
+      },
+    ],
   },
 };

@@ -24,6 +24,7 @@ import { brosym } from './brosym';
 import { vfend } from './vfend';
 import { flomoxef } from './flomoxef';
 import { ertapenem } from './ertapenem';
+import { fluconazole } from './fluconazole';
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
   bactrim,
@@ -36,4 +37,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   vfend,
   flomoxef,
   ertapenem,
+  fluconazole,
 };

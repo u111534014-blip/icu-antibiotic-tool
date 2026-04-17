@@ -189,7 +189,7 @@ export const ceftriaxone: Drug = {
         },
         {
           label: "HACEK organisms, native/prosthetic valve",
-          note: "Native valve 4 週；prosthetic valve 6 週",
+          note: "HACEK = Haemophilus spp.、Aggregatibacter、Cardiobacterium、Eikenella、Kingella（口腔/上呼吸道慢生長 GNB，佔 culture-negative endocarditis 5–10%）。Native valve 4 週；prosthetic valve 6 週",
           dose: "2 g",
           freq: "QD",
           duration: "4–6 週",
@@ -713,7 +713,7 @@ export const ceftriaxone: Drug = {
           "• Streptococci（包括 S. pneumoniae，但高度抗藥需看 MIC）\n" +
           "• N. meningitidis、N. gonorrhoeae\n" +
           "• H. influenzae（含 β-lactamase 陽性株）\n" +
-          "• HACEK organisms\n\n" +
+          "• HACEK organisms（Haemophilus spp.、Aggregatibacter、Cardiobacterium、Eikenella、Kingella — 口腔慢生長 GNB，culture-negative endocarditis 常見原因）\n\n" +
           "【不涵蓋】\n" +
           "• MRSA\n" +
           "• Enterococcus spp.\n" +
@@ -748,7 +748,7 @@ export const ceftriaxone: Drug = {
       {
         heading: "重要注意事項",
         body:
-          "• 不可與含鈣溶液（如 Ringer's lactate、TPN）混合或同時從同一管路輸注（沉澱風險）\n" +
+          "• 不可與含鈣溶液（如 Ringer's lactate、TPN）混合或同時從同一管路輸注（沈澱風險）\n" +
           "• 新生兒（≤28 天）禁忌與含鈣 IV 液併用\n" +
           "• 高劑量或長期使用可能導致膽汁淤積或膽道假性結石（biliary sludging/pseudolithiasis）\n" +
           "• 與 aminoglycoside 合用時需分開給藥（physical incompatibility）",

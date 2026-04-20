@@ -101,8 +101,7 @@ export const zavicefta: Drug = {
   subtitle: "Ceftazidime / Avibactam",
   searchTerms: [
     "zavicefta", "ceftazidime", "avibactam",
-    "贊飛得", "CRE", "DTR",
-    "carbapenem-resistant", "KPC",
+    "贊飛得",
   ],
 
   needsRenal: true,

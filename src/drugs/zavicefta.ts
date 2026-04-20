@@ -255,6 +255,22 @@ export const zavicefta: Drug = {
           "（Avibactam 保護 aztreonam 不被 serine β-lactamases 破壞 → synergy）",
       },
       {
+        heading: "什麼是 DTR-Pseudomonas？（IDSA 2020 定義）",
+        body:
+          "DTR = Difficult-to-Treat Resistance\n\n" +
+          "定義：對以下【所有類別】的抗 PsA 抗生素都「非敏感」（I 或 R）：\n" +
+          "• Piperacillin/tazobactam\n" +
+          "• Ceftazidime\n" +
+          "• Cefepime\n" +
+          "• Aztreonam\n" +
+          "• Meropenem\n" +
+          "• Imipenem/cilastatin\n" +
+          "• Ciprofloxacin\n" +
+          "• Levofloxacin\n\n" +
+          "簡單說：傳統上所有有抗 PsA 活性的藥都不能用了。\n" +
+          "剩餘選項包括：Ceftazidime/avibactam、Ceftolozane/tazobactam、Imipenem/relebactam 等新型 β-lactam/β-lactamase inhibitor combinations。",
+      },
+      {
         heading: "抗菌譜重點",
         body:
           "【涵蓋】\n" +
@@ -295,14 +311,10 @@ export const zavicefta: Drug = {
           "Ceftazidime 最終濃度須為 8–40 mg/mL\n" +
           "可用稀釋液：0.9% NaCl、5% Dextrose、乳酸林格氏液\n\n" +
           "【配置速查表（仿單）】\n" +
-          "┌────────────────┬──────────┬──────────────┬──────────────┐\n" +
-          "│ 劑量(ceftazidime)│ 抽取量    │ 輸注袋容量     │ 針筒容量      │\n" +
-          "├────────────────┼──────────┼──────────────┼──────────────┤\n" +
-          "│ 2 g (整支 2.5g) │ 全量≈12mL │ 50–250 mL    │ 50 mL        │\n" +
-          "│ 1 g (半支 1.25g)│ 6 mL     │ 25–125 mL    │ 25–50 mL     │\n" +
-          "│ 0.75g (0.94g)   │ 4.5 mL   │ 19–93 mL     │ 19–50 mL     │\n" +
-          "│ 其他劑量         │ mg÷167.3 │ 依 8-40mg/mL │ 依 8-40mg/mL │\n" +
-          "└────────────────┴──────────┴──────────────┴──────────────┘\n\n" +
+          "▸ 2 g（整支 2.5 g）：抽取全量約 12 mL → 輸注袋 50–250 mL / 針筒 50 mL\n" +
+          "▸ 1 g（半支 1.25 g）：抽取 6 mL → 輸注袋 25–125 mL / 針筒 25–50 mL\n" +
+          "▸ 0.75 g（0.94 g）：抽取 4.5 mL → 輸注袋 19–93 mL / 針筒 19–50 mL\n" +
+          "▸ 其他劑量：抽取量 = 劑量(mg) ÷ 167.3 mg/mL；稀釋至 8–40 mg/mL\n\n" +
           "【穩定性】\n" +
           "• 濃度 8 mg/mL（最大稀釋）：2–8°C 最長 12 小時，隨後 ≤25°C 最長 4 小時\n" +
           "• 濃度 >8–40 mg/mL：≤25°C 最長 4 小時\n" +

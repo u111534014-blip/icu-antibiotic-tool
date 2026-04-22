@@ -40,6 +40,7 @@ type PatientParamsResult = {
   adjBw: number | null;
   bmi: number | null;
   crcl: number | null;
+  egfr: number | null;
 };
 
 function calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy }: PatientParamsInput): PatientParamsResult {
@@ -90,11 +91,28 @@ function calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy 
     crcl = round1(crcl);
   }
 
+  // eGFR（CKD-EPI 2021，不含種族）
+  // 用於 Teicoplanin 等以 eGFR 調整劑量的藥物
+  let egfr: number | null = null;
+  if (a > 0 && s > 0 && gender && rrt === "none") {
+    if (gender === "F") {
+      const kappa = 0.7;
+      const alpha = s <= kappa ? -0.241 : -1.2;
+      egfr = 142 * Math.pow(Math.min(s / kappa, 1), alpha) * Math.pow(Math.max(s / kappa, 1), -1.2) * Math.pow(0.9938, a);
+    } else {
+      const kappa = 0.9;
+      const alpha = s <= kappa ? -0.302 : -1.2;
+      egfr = 142 * Math.pow(Math.min(s / kappa, 1), alpha) * Math.pow(Math.max(s / kappa, 1), -1.2) * Math.pow(0.9938, a);
+    }
+    egfr = round1(egfr);
+  }
+
   return {
     dosing_weight, weight_note,
     ibw: ibw ? round1(ibw) : null,
     adjBw, bmi: bmi ? round1(bmi) : null,
     crcl,
+    egfr,
   };
 }
 
@@ -372,7 +390,7 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
 
       {open && (
         <div style={{ padding: "16px 16px 20px" }}>
-          {pearls.sections.map((sec, idx) => (
+          {pearls.sections.map((sec: any, idx: number) => (
             <div key={idx} style={{ marginBottom: idx < pearls.sections.length - 1 ? 16 : 0 }}>
               <div style={{
                 fontSize: 13,
@@ -411,6 +429,7 @@ export default function App() {
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [scr, setScr] = useState("");
+  const [directCrcl, setDirectCrcl] = useState("");   // 藥物不需體重時，直接輸入 CrCl
   const [rrt, setRrt] = useState("");
   const [hepatic, setHepatic] = useState("");
   const [indication, setIndication] = useState("");
@@ -431,16 +450,21 @@ export default function App() {
     "AdjBW_if_obese";
 
   const patientParams: PatientParamsResult = drugConfig?.needsRenal
-    ? calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy: activeWeightStrategy })
-    : { dosing_weight: 0, crcl: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+    ? (drugConfig.needsWeight === false
+        ? { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" }
+        : calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy: activeWeightStrategy }))
+    : { dosing_weight: 0, crcl: null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
 
   const canCalc = (() => {
     if (!drugConfig || !indicationData) return false;
     if (drugConfig.needsRenal) {
       if (!rrt) return false;
-      // 只有需要體重的藥才檢查體重相關欄位
       if (drugConfig.needsWeight !== false) {
+        // 需要體重的藥：檢查所有人口學欄位
         if (!tbw || !age || !scr || !gender) return false;
+        if (rrt === "none" && patientParams.crcl === null) return false;
+      } else {
+        // 不需要體重的藥：若 rrt=none 則要求 CrCl 直接輸入
         if (rrt === "none" && patientParams.crcl === null) return false;
       }
     }
@@ -451,7 +475,8 @@ export default function App() {
   const result = canCalc && drugConfig && indicationData ? drugConfig.calculate({
     dosing_weight: patientParams.dosing_weight,
     crcl: patientParams.crcl || 0,
-    rrt, hepatic, indicationData, extras,
+    rrt, hepatic, indicationData,
+    extras: { ...extras, egfr: patientParams.egfr },
   }) : null;
 
   useEffect(() => {
@@ -462,7 +487,7 @@ export default function App() {
 
   const resetAll = () => {
     setDrugId(""); setTbw(""); setHeight(""); setAge(""); setGender("");
-    setScr(""); setRrt(""); setHepatic(""); setIndication(""); setAmpules(""); setExtras({});
+    setScr(""); setDirectCrcl(""); setRrt(""); setHepatic(""); setIndication(""); setAmpules(""); setExtras({});
   };
 
   const selectDrug = (id: string) => {
@@ -562,7 +587,7 @@ export default function App() {
                 {indicationData?.label}
               </div>
 
-              {result.scenarioResults?.map((sc, idx) => (
+              {result.scenarioResults?.map((sc: any, idx: number) => (
                 <div key={idx} style={{
                   marginBottom: idx < (result.scenarioResults?.length ?? 0) - 1 ? 16 : 0,
                   paddingBottom: idx < (result.scenarioResults?.length ?? 0) - 1 ? 16 : 0,
@@ -585,14 +610,14 @@ export default function App() {
                   )}
 
                   {/* 簡單情境：直接用 rows */}
-                  {sc.rows?.map((r, i) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
-                  {sc.warnings?.map((w, i) => <Warning key={i} text={w} />)}
+                  {sc.rows?.map((r: any, i: number) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
+                  {sc.warnings?.map((w: any, i: number) => <Warning key={i} text={w} />)}
 
                   {/* 複雜情境：有多個路徑 subResults */}
                   {sc.subResults && (() => {
                     // 只有當同時存在 PO 和 IV 時才顯示「UpToDate 首選」標籤
                     const hasMultipleRoutes = sc.subResults.length > 1;
-                    return sc.subResults.map((sub, sIdx) => {
+                    return sc.subResults.map((sub: any, sIdx: number) => {
                       const showPreferredBadge = hasMultipleRoutes && sub.isPreferred;
                       return (
                         <div key={sIdx} style={{
@@ -624,8 +649,8 @@ export default function App() {
                               </span>
                             )}
                           </div>
-                          {sub.rows.map((r, i) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
-                          {sub.warnings?.map((w, i) => <Warning key={i} text={w} />)}
+                          {sub.rows.map((r: any, i: number) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
+                          {sub.warnings?.map((w: any, i: number) => <Warning key={i} text={w} />)}
                         </div>
                       );
                     });
@@ -681,7 +706,7 @@ const S: Record<string, React.CSSProperties> = {
   section: { background: "#fff", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", boxSizing: "border-box", overflow: "hidden" },
   sectionTitle: { fontSize: 13, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 },
   label: { display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 },
-  select: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", appearance: "auto", WebkitAppearance: "auto", boxSizing: "border-box" },
+  select: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", appearance: "auto" as const, boxSizing: "border-box" },
   input: { flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box", width: "100%" },
   resetBtn: { width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 15, fontWeight: 600, cursor: "pointer" },
 };

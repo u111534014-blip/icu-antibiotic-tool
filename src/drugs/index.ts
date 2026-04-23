@@ -28,6 +28,7 @@ import { fluconazole } from './fluconazole';
 import { ceftriaxone } from './ceftriaxone';
 import { zavicefta } from './zavicefta';
 import { teicoplanin } from './teicoplanin';
+import { cefepime } from './cefepime';
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
   bactrim,
@@ -44,4 +45,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   ceftriaxone,
   zavicefta,
   teicoplanin,
+  cefepime,
 };

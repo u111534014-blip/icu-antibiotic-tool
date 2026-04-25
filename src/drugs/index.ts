@@ -49,4 +49,6 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   zavicefta,
   teicoplanin,
   cefepime,
+  levofloxacin,
+  ciprofloxacin,
 };

@@ -33,6 +33,7 @@ import { levofloxacin } from './levofloxacin';
 import { ciprofloxacin } from './ciprofloxacin';
 import { imipenem } from './imipenem';
 import { ceftazidime } from './ceftazidime';
+import { cefoxitin } from './cefoxitin';
 
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
@@ -55,4 +56,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   ciprofloxacin,
   imipenem,
   ceftazidime,
+  cefoxitin,
 };

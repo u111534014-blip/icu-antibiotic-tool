@@ -113,9 +113,7 @@ export const cefoxitin: Drug = {
   name: "Mefoxin",
   subtitle: "Cefoxitin",
   searchTerms: [
-    "cefoxitin", "mefoxin", "世優",
-    "cephamycin", "二代", "2nd gen",
-    "手術預防",
+    "cefoxitin", "mefoxin", "世優", "Cefmore",
   ],
 
   needsRenal: true,
@@ -185,10 +183,9 @@ export const cefoxitin: Drug = {
       scenarios: [
         {
           label: "Surgical prophylaxis（手術預防）",
-          note: "術前 60 分鐘內。手術時間長或大量失血可在 2 小時後追加一劑。Clean/clean-contaminated 不需術後再給。院內大多依腎功能調整打三天",
+          note: "UpToDate 建議術前 60 分鐘單劑即可。手術時間長或大量失血可在 2 小時後追加一劑。Clean/clean-contaminated 不需術後再給。院內大多依腎功能調整打三天",
           baseDose: "q8h",
-          doseDisplay: "2 g IV 單劑（術前 60 分鐘）",
-          singleDose: true,
+          doseDisplay: "2 g Q8H IV（UpToDate 建議單劑）",
         },
       ],
     },

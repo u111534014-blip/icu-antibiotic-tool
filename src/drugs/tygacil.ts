@@ -21,7 +21,7 @@ export const tygacil: Drug = {
   needsHepatic: true,
   searchTerms: [
     "tygacil", "tigecycline", "glycylcycline",
-    "老虎黴素", "老虎黴",
+    "老虎黴素",
   ],
 
   indications: [

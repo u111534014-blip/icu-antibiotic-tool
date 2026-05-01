@@ -29,8 +29,7 @@ export const ceftriaxone: Drug = {
   name: "Rocephin",
   subtitle: "Ceftriaxone",
   searchTerms: [
-    "rocephin", "ceftriaxone", "cefin", "舒復",
-    "三代", "3rd gen cephalosporin",
+    "rocephin", "ceftriaxone", "cefin", "舒復", "羅氏芬"
   ],
 
   needsRenal: true,   // 因為 ARC 判斷需要 CrCl

@@ -168,7 +168,7 @@ export const fluconazole: Drug = {
   searchTerms: [
     "fluconazole", "diflucan", "泰復肯",
     "fluene", "膚黴克", "fluconazole 針", "fluconazole 膠囊",
-    "candida", "cryptococcus", "念珠菌", "隱球菌", "azole", "antifungal",
+    "azole", "antifungal",
   ],
 
   // ★ needsRenal = true 時，needsWeight 也必須 true（計算 CrCl 所需）

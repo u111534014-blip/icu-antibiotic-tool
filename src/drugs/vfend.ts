@@ -22,7 +22,7 @@ export const vfend: Drug = {
   weightStrategy: "AdjBW_if_obese",
   searchTerms: [
     "vfend", "voriconazole", "triazole",
-    "黴飛", "威剋黴",
+    "黴飛", "威剋黴", "antifungal",
   ],
 
   indications: [

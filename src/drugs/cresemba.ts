@@ -13,7 +13,7 @@ export const cresemba: Drug = {
   needsHepatic: false,
   searchTerms: [
     "cresemba", "isavuconazole", "isavuconazonium",
-    "黴菌", "aspergillus", "mucor", "antifungal", "azole",
+    "antifungal", "azole",
   ],
 
   indications: [

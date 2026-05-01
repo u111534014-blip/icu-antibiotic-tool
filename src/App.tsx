@@ -476,7 +476,7 @@ export default function App() {
     dosing_weight: patientParams.dosing_weight,
     crcl: patientParams.crcl || 0,
     rrt, hepatic, indicationData,
-    extras: { ...extras, egfr: patientParams.egfr },
+    extras: { ...extras, egfr: patientParams.egfr, ibw: patientParams.ibw, tbw: parseFloat(tbw) || 0, bmi: patientParams.bmi },
   }) : null;
 
   useEffect(() => {

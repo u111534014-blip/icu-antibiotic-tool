@@ -163,8 +163,8 @@ function getCRRTDose(usualMaint_mg: number): {
 
 // ── 藥物主體 ──────────────────────────────────────────────────────────────
 export const fluconazole: Drug = {
-  name: "Fluconazole",
-  subtitle: "Diflucan",
+  name: "Diflucan",
+  subtitle: "Fluconazole",
   searchTerms: [
     "fluconazole", "diflucan", "泰復肯",
     "fluene", "膚黴克", "fluconazole 針", "fluconazole 膠囊",

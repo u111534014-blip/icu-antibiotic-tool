@@ -37,6 +37,7 @@ import { cefoxitin } from './cefoxitin';
 import { acyclovir } from './acyclovir';
 import { ceftaroline } from './ceftaroline';
 import { cefmetazole } from './cefmetazole'; 
+import { ganciclovir } from './ganciclovir';
 
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
@@ -63,4 +64,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   acyclovir,
   ceftaroline,
   cefmetazole,
+  ganciclovir,
 };

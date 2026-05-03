@@ -127,7 +127,7 @@ export const ganciclovir: Drug = {
   needsRenal: true,
   needsWeight: true,
   needsHepatic: false,
-  weightStrategy: "IBW", // UpToDate 建議用 IBW
+  weightStrategy: "TBW", // calculate 內部依 BMI 判斷用 TBW 或 IBW
 
   // ──────────────────────────────────────────────────────────────
   // 適應症（照 UpToDate 原文標題）
@@ -270,6 +270,12 @@ export const ganciclovir: Drug = {
   // ──────────────────────────────────────────────────────────────
   calculate({ dosing_weight, crcl, rrt, indicationData, extras }) {
     const ibw: number = extras?.ibw ?? dosing_weight;
+    const tbw: number = extras?.tbw ?? dosing_weight;
+    const bmi: number = extras?.bmi ?? 0;
+    const isObese = bmi >= 30;
+    // 非肥胖用 TBW；肥胖用 IBW
+    const calcWeight = isObese ? ibw : tbw;
+    const weightLabel = isObese ? `IBW ${r(ibw)} kg` : `${r(tbw)} kg`;
 
     const scenarioResults = indicationData.scenarios.map((sc: any) => {
       const baseKey: string = sc.baseDose ?? "induction";
@@ -286,24 +292,19 @@ export const ganciclovir: Drug = {
       } else {
         // IV 計算
         const d = getGanciclovirDose(crcl, rrt, baseKey);
-        const dose_mg = r(d.mgPerKg * ibw);
+        const dose_mg = r(d.mgPerKg * calcWeight);
 
         rows.push({
-          label: `腎調後劑量（IBW ${r(ibw)} kg）`,
+          label: `腎調後劑量（${weightLabel}）`,
           value: `${d.mgPerKg} mg/kg = ${dose_mg} mg ${d.freq}`,
           highlight: true,
-        });
-        rows.push({
-          label: "每次取藥",
-          value: `${toHalfVials(dose_mg)} Ganciclovir（每支 500 mg）`,
         });
         rows.push({ label: "腎功能調整", value: d.note });
 
         // PIRRT 提醒
         if (rrt === "cvvh") {
-          const pirrtDose = baseKey === "maintenance" || baseKey === "induction" ?
-            (baseKey === "induction" ? "2.5" : "1.25") : "2.5";
-          warnings.push(`📌 PIRRT：${pirrtDose} mg/kg Q24H（PIRRT 日在 PIRRT 後給）`);
+          const pirrtMgPerKg = baseKey === "maintenance" ? "1.25" : "2.5";
+          warnings.push(`📌 PIRRT：${pirrtMgPerKg} mg/kg Q24H（PIRRT 日在 PIRRT 後給）`);
         }
       }
 
@@ -313,12 +314,12 @@ export const ganciclovir: Drug = {
       // 骨髓抑制監測
       warnings.push("🔬 主要毒性：骨髓抑制（嗜中性球低下、血小板低下、貧血）。治療期間定期監測 CBC");
 
-      // 體重提醒
-      if (!isIntravitreal) {
-        warnings.push("⚖️ 體重：UpToDate 建議用 IBW 計算（避免過量致血液毒性）。肥胖者考慮 TDM");
+      // 體重提醒（僅肥胖時顯示）
+      if (isObese && !isIntravitreal) {
+        warnings.push("⚖️ 肥胖病人：UpToDate 建議用 IBW 計算（避免過量致血液毒性）。考慮 TDM");
       }
 
-      // ARC（無特殊建議，用最高劑量 + TDM）
+      // ARC
       const isARC = rrt === "none" && crcl >= 130;
       if (isARC && !isIntravitreal) {
         warnings.push("⚡ ARC（CrCl ≥130）：使用適應症允許的最高劑量 + TDM（若可取得）");

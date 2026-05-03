@@ -196,12 +196,13 @@ export const acyclovir: Drug = {
   subtitle: "Acyclovir",
   searchTerms: [
     "acyclovir", "zovirax", "acylete", "熱威樂素", "敵庖治",
+    "HSV", "VZV", "herpes", "zoster", "varicella",
   ],
 
   needsRenal: true,
   needsWeight: true,
   needsHepatic: false,
-  weightStrategy: "IBW", // UpToDate 建議用 IBW（BMI ≥40 用 ABW）
+  weightStrategy: "TBW", // calculate 內部依 BMI 判斷用 TBW 或 IBW/ABW
 
   // ──────────────────────────────────────────────────────────────
   // 適應症（照 UpToDate 原文標題）

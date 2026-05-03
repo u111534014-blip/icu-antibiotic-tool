@@ -93,7 +93,7 @@ export type Indication = {
   label: string;
   desc?: string;
   scenarios: Scenario[];
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";
+  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW" | "IBW_if_obese";
   hepaticOverride?: "noAdjust";
   [key: string]: any;
 };
@@ -130,7 +130,7 @@ export type Drug = {
   needsWeight: boolean;            // 必填
   needsHepatic?: boolean;
 
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";
+  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW" | "IBW_if_obese";
 
   indications: Indication[];       // 必填
 

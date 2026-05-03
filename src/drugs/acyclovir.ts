@@ -202,7 +202,7 @@ export const acyclovir: Drug = {
   needsRenal: true,
   needsWeight: true,
   needsHepatic: false,
-  weightStrategy: "TBW", // calculate 內部依 BMI 判斷用 TBW 或 IBW/ABW
+  weightStrategy: "IBW_if_obese", // BMI ≥30 用 IBW；BMI <30 用 TBW
 
   // ──────────────────────────────────────────────────────────────
   // 適應症（照 UpToDate 原文標題）

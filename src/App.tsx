@@ -30,7 +30,7 @@ type PatientParamsInput = {
   gender: string;
   scr: string;
   rrt: string;
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW";
+  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW" | "IBW_if_obese";
 };
 
 type PatientParamsResult = {
@@ -74,6 +74,15 @@ function calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy 
   } else if (strategy === "IBW" && ibw) {
     dosing_weight = round1(ibw);
     weight_note = `策略：使用 IBW（${round1(ibw)} kg）`;
+  } else if (strategy === "IBW_if_obese") {
+    // BMI ≥30 用 IBW；BMI <30 用 TBW（Acyclovir、Ganciclovir 用）
+    if (ibw && bmi && bmi >= 30) {
+      dosing_weight = round1(ibw);
+      weight_note = `肥胖（BMI ${round1(bmi)}）→ 使用 IBW（${round1(ibw)} kg）`;
+    } else {
+      dosing_weight = w;
+      weight_note = `使用 TBW（${round1(w)} kg）`;
+    }
   } else {
     // AdjBW_if_obese（預設）：依 UpToDate，BMI ≥ 30 判定肥胖
     if (ibw && bmi && bmi >= 30) {

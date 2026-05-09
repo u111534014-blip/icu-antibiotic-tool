@@ -38,7 +38,7 @@ import { acyclovir } from './acyclovir';
 import { ceftaroline } from './ceftaroline';
 import { cefmetazole } from './cefmetazole'; 
 import { ganciclovir } from './ganciclovir';
-
+import { anidulafungin } from './anidulafungin';
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
   bactrim,
@@ -65,4 +65,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   ceftaroline,
   cefmetazole,
   ganciclovir,
+  anidulafungin,
 };

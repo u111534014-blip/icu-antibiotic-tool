@@ -83,143 +83,71 @@ export const anidulafungin: Drug = {
       ],
     },
 
-    // ═══ 2. Candidemia ═══
+    // ═══ 2. Candidiasis — LD 200 → MD 100 mg 組 ═══
     {
-      id: "candidemia",
-      label: "Candidemia（念珠菌菌血症）",
-      desc: "含 disseminated · LD 200 → MD 100 mg QD",
+      id: "candidiasis_ld",
+      label: "Candidiasis — LD 200 → MD 100 mg（念珠菌感染，標準 LD 組）",
+      desc: "Candidemia / IAI / 肝脾 / 經驗 ICU / 口咽 / 骨關節",
       scenarios: [
         {
-          label: "Candidemia, neutropenic and nonneutropenic（念珠菌菌血症，含播散性）",
+          label: "Candidemia, including disseminated（念珠菌菌血症，含播散性）",
           note: "含口服降階，總療程 ≥首次血液培養陰性後 14 天 + 症狀/中性球低下緩解。遠端轉移需更長",
           hasLD: true,
         },
-      ],
-    },
-
-    // ═══ 3. Cardiac device infection ═══
-    {
-      id: "cardiacDevice",
-      label: "Candida cardiac device infection（念珠菌心臟裝置感染）",
-      desc: "200 mg QD（無 LD）",
-      scenarios: [
         {
-          label: "Cardiac device infection（ICD、pacemaker、VAD）",
-          note: "穩定後可降階為 azole。單純 generator pocket 感染：裝置移除後 ≥4 週；wire 感染：裝置移除後 ≥6 週",
-          hasLD: false,
-          fixedDose: 200,
-        },
-      ],
-    },
-
-    // ═══ 4. Chronic disseminated candidiasis ═══
-    {
-      id: "chronicDisseminated",
-      label: "Candida chronic disseminated (hepatosplenic)（慢性播散性/肝脾念珠菌症）",
-      desc: "LD 200 → MD 100 mg QD → 口服 azole",
-      scenarios: [
-        {
-          label: "Chronic disseminated candidiasis（肝脾念珠菌症）",
+          label: "Chronic disseminated (hepatosplenic)（慢性播散性/肝脾念珠菌症）",
           note: "IV 數週後轉口服 azole，持續至病灶消退 + 貫穿免疫抑制期",
           hasLD: true,
         },
-      ],
-    },
-
-    // ═══ 5. Empiric therapy ═══
-    {
-      id: "empiricICU",
-      label: "Candida empiric therapy, suspected invasive（疑似侵襲性念珠菌，ICU 經驗治療）",
-      desc: "非中性球低下 ICU · LD 200 → MD 100 mg QD",
-      scenarios: [
         {
-          label: "Empiric antifungal, nonneutropenic ICU（ICU 經驗抗黴菌治療）",
-          note: "⚠️ 非常規用於 sepsis 初始治療。保留給不明原因發燒/低血壓 + 廣效抗生素無效 + 有侵襲性念珠菌風險因子（中央靜脈導管、HD、外傷/燒傷、近期手術、TPN）。改善者持續 2 週；4-5 天無反應且無侵襲性念珠菌證據可考慮停藥",
+          label: "Empiric therapy, suspected invasive（疑似侵襲性念珠菌，ICU 經驗治療）",
+          note: "⚠️ 非常規用於 sepsis 初始治療。保留給不明原因發燒/低血壓 + 廣效抗生素無效 + 有侵襲性念珠菌風險因子（中央靜脈導管、HD、外傷/燒傷、近期手術、TPN）。改善者持續 2 週；4-5 天無反應且無證據可考慮停藥",
           hasLD: true,
         },
-      ],
-    },
-
-    // ═══ 6. Endocarditis ═══
-    {
-      id: "endocarditis",
-      label: "Candida endocarditis（念珠菌心內膜炎）",
-      desc: "200 mg QD（無 LD）",
-      scenarios: [
-        {
-          label: "Endocarditis, native or prosthetic valve（心內膜炎，自體或人工瓣膜）",
-          note: "穩定後可降階為 azole。瓣膜置換後 ≥6 週；有瓣膜周圍膿瘍、併發症、或非手術者需更長",
-          hasLD: false,
-          fixedDose: 200,
-        },
-      ],
-    },
-
-    // ═══ 7. Esophageal candidiasis ═══
-    {
-      id: "esophageal",
-      label: "Candida esophageal, refractory（食道念珠菌症，fluconazole 無效）",
-      desc: "替代藥物 · 200 mg QD（無 LD）",
-      scenarios: [
-        {
-          label: "Esophageal candidiasis, refractory（食道念珠菌症，fluconazole 無效）",
-          note: "替代藥物。保留給 fluconazole 無效且需 IV 治療者。可耐受口服後轉口服 azole。總療程 14-28 天",
-          hasLD: false,
-          fixedDose: 200,
-        },
-      ],
-    },
-
-    // ═══ 8. IAI ═══
-    {
-      id: "iai",
-      label: "Candida intra-abdominal infection（念珠菌腹腔內感染）",
-      desc: "LD 200 → MD 100 mg QD",
-      scenarios: [
         {
           label: "Intra-abdominal infection（腹膜炎、腹腔膿瘍）",
           note: "含口服降階。總療程 ≥14 天 + 源頭控制 + 臨床緩解",
           hasLD: true,
         },
-      ],
-    },
-
-    // ═══ 9. Oropharyngeal candidiasis ═══
-    {
-      id: "oropharyngeal",
-      label: "Candida oropharyngeal, refractory（口咽念珠菌症，fluconazole 無效）",
-      desc: "替代藥物 · LD 200 → MD 100 mg QD",
-      scenarios: [
         {
-          label: "Oropharyngeal candidiasis, refractory（口咽念珠菌症，fluconazole 無效）",
+          label: "Oropharyngeal, refractory（口咽念珠菌症，fluconazole 無效）",
           note: "替代藥物。保留給 fluconazole 無效且需 IV 者。可耐受口服後轉口服 azole。總療程 14-28 天",
           hasLD: true,
         },
-      ],
-    },
-
-    // ═══ 10. Osteoarticular ═══
-    {
-      id: "osteoarticular",
-      label: "Candida osteoarticular infection（念珠菌骨關節感染）",
-      desc: "LD 200 → MD 100 mg QD · ≥2 週 IV",
-      scenarios: [
         {
-          label: "Osteomyelitis or septic arthritis（骨髓炎 / 化膿性關節炎）",
+          label: "Osteoarticular infection（骨髓炎 / 化膿性關節炎）",
           note: "IV ≥2 週後轉口服 azole。骨髓炎總療程 6-12 個月；關節炎 ≥6 週",
           hasLD: true,
         },
       ],
     },
 
-    // ═══ 11. Thrombophlebitis ═══
+    // ═══ 3. Candidiasis — 200 mg QD（無 LD）組 ═══
     {
-      id: "thrombophlebitis",
-      label: "Candida thrombophlebitis, suppurative（念珠菌化膿性血栓性靜脈炎）",
-      desc: "200 mg QD（無 LD）",
+      id: "candidiasis_noLD",
+      label: "Candidiasis — 200 mg QD 無 LD（念珠菌感染，高劑量無 LD 組）",
+      desc: "心內膜炎 / 心臟裝置 / 食道 / 血栓性靜脈炎",
       scenarios: [
         {
-          label: "Suppurative thrombophlebitis（化膿性血栓性靜脈炎）",
+          label: "Cardiac device infection（心臟裝置感染，ICD / pacemaker / VAD）",
+          note: "穩定後可降階為 azole。單純 generator pocket 感染：裝置移除後 ≥4 週；wire 感染：裝置移除後 ≥6 週",
+          hasLD: false,
+          fixedDose: 200,
+        },
+        {
+          label: "Endocarditis, native or prosthetic valve（心內膜炎，自體或人工瓣膜）",
+          note: "穩定後可降階為 azole。瓣膜置換後 ≥6 週；有瓣膜周圍膿瘍、併發症、或非手術者需更長",
+          hasLD: false,
+          fixedDose: 200,
+        },
+        {
+          label: "Esophageal, refractory（食道念珠菌症，fluconazole 無效）",
+          note: "替代藥物。保留給 fluconazole 無效且需 IV 治療者。可耐受口服後轉口服 azole。總療程 14-28 天",
+          hasLD: false,
+          fixedDose: 200,
+        },
+        {
+          label: "Thrombophlebitis, suppurative（化膿性血栓性靜脈炎）",
           note: "持續至導管移除 + 血栓消退 + 念珠菌菌血症清除後 ≥2 週",
           hasLD: false,
           fixedDose: 200,

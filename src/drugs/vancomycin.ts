@@ -156,7 +156,7 @@ export const vancomycin: Drug = {
   subtitle: "Vancomycin",
   searchTerms: [
     "vancomycin", "vancocin", "vanco", "優凡可",
-    "glycopeptide", 
+    "glycopeptide",
   ],
 
   needsRenal: true,
@@ -397,6 +397,11 @@ export const vancomycin: Drug = {
       // TDM 提醒
       warnings.push("📊 TDM：嚴重 MRSA 感染首選 AUC-guided dosing（目標 AUC/MIC 400-600）。非嚴重感染可用 trough 10-20 mg/L。連續輸注目標 Css 20-25 mg/L");
 
+      // UpToDate vs 熱病差異提醒
+      if (crcl < 50 && rrt === "none") {
+        warnings.push("📖 UpToDate vs 熱病差異：CrCl <50 時 UpToDate 減量至 10-15 mg/kg，熱病維持 15-20 mg/kg（只減頻率）。請依臨床判斷及 TDM 結果調整");
+      }
+
       // 輸注速率
       warnings.push("💉 輸注速率：10-15 mg/min（避免 Red Man Syndrome）");
 
@@ -445,13 +450,19 @@ export const vancomycin: Drug = {
           "⚠️ 非 MRSA 菌株（MSSA、CoNS、Streptococci、Enterococci）目前無 AUC 監測證據",
       },
       {
-        heading: "間歇輸注腎調速查表（UpToDate）",
+        heading: "間歇輸注腎調速查表（UpToDate vs 熱病）",
         body:
-          "CrCl >90-<130：LD 25-30 mg/kg → MD 15-20 mg/kg Q8-12H\n" +
-          "CrCl 50-90：LD 20-25 mg/kg → MD 15-20 mg/kg Q12H\n" +
-          "CrCl 15-<50：LD 20-25 mg/kg → MD 10-15 mg/kg Q24H\n" +
-          "CrCl <15：LD 20-25 mg/kg → MD 10-15 mg/kg Q48-72H（濃度 >20 時勿給）\n" +
-          "ARC (≥130)：LD 25-35 mg/kg → 15-20 mg/kg Q8H（部分需 Q6H）\n\n" +
+          "【UpToDate】\n" +
+          "  CrCl >90-<130：LD 25-30 mg/kg → MD 15-20 mg/kg Q8-12H\n" +
+          "  CrCl 50-90：LD 20-25 mg/kg → MD 15-20 mg/kg Q12H\n" +
+          "  CrCl 15-<50：LD 20-25 mg/kg → MD 10-15 mg/kg Q24H\n" +
+          "  CrCl <15：LD 20-25 mg/kg → MD 10-15 mg/kg Q48-72H（濃度 >20 時勿給）\n\n" +
+          "【熱病】（差異：CrCl <50 不減 mg/kg，只減頻率）\n" +
+          "  CrCl >100：15-20 mg/kg Q8-12H\n" +
+          "  CrCl >50-100：15-20 mg/kg Q12H\n" +
+          "  CrCl 20-50：15-20 mg/kg Q24H ← UpToDate 減至 10-15\n" +
+          "  CrCl <20：15-20 mg/kg Q48H ← UpToDate 減至 10-15\n\n" +
+          "ARC (≥130)：LD 25-35 mg/kg → 15-20 mg/kg Q8H（部分需 Q6H）\n" +
           "重症 LD 可達 35 mg/kg（max 3 g）",
       },
       {

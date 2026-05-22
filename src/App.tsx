@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { DRUG_REGISTRY } from './drugs';
 import { round1 } from './drugs/shared/helpers';
 import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types';
+import VancoTDM from './VancoTDM';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -432,6 +433,8 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
+  const [page, setPage] = useState<"dose" | "vancoTDM">("dose");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [tbw, setTbw] = useState("");
   const [height, setHeight] = useState("");
@@ -514,6 +517,35 @@ export default function App() {
   return (
     <div style={S.shell}>
       <div style={S.container}>
+        {/* ── 漢堡選單 ── */}
+        <div style={{ position: "relative" }}>
+          <button onClick={() => setMenuOpen(!menuOpen)}
+            style={{ position: "absolute", top: 16, left: 0, background: "none", border: "none", fontSize: 24, cursor: "pointer", zIndex: 100, padding: 4 }}>
+            ☰
+          </button>
+          {menuOpen && (
+            <div style={{ position: "absolute", top: 46, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 99, minWidth: 200, overflow: "hidden" }}>
+              <button onClick={() => { setPage("dose"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "dose" ? S.menuItemActive : {}) }}>
+                💊 抗生素劑量及給藥方法
+              </button>
+              <button onClick={() => { setPage("vancoTDM"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "vancoTDM" ? S.menuItemActive : {}) }}>
+                📊 Vancomycin TDM
+              </button>
+            </div>
+          )}
+          {menuOpen && (
+            <div onClick={() => setMenuOpen(false)}
+              style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 98 }} />
+          )}
+        </div>
+
+        {/* ── 頁面路由 ── */}
+        {page === "vancoTDM" ? (
+          <VancoTDM />
+        ) : (
+        <>
         <div style={S.header}>
           <div style={{ fontSize: 26, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 }}>抗生素劑量及給藥方法</div>
           <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>臨床決策支援工具</div>
@@ -699,6 +731,8 @@ export default function App() {
 
         {drugId && <button onClick={resetAll} style={S.resetBtn}>重新評估</button>}
         <div style={{ textAlign: "center", padding: "24px 0 8px", fontSize: 11, color: "#94A3B8" }}>僅供臨床參考，請依實際情境調整</div>
+        </>
+        )}
       </div>
     </div>
   );
@@ -718,4 +752,6 @@ const S: Record<string, React.CSSProperties> = {
   select: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", appearance: "auto" as const, boxSizing: "border-box" },
   input: { flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box", width: "100%" },
   resetBtn: { width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 15, fontWeight: 600, cursor: "pointer" },
+  menuItem: { display: "block", width: "100%", padding: "12px 16px", border: "none", background: "none", textAlign: "left" as const, fontSize: 14, color: "#334155", cursor: "pointer", borderBottom: "1px solid #F1F5F9" },
+  menuItemActive: { background: "#F0FDFA", color: "#0D9488", fontWeight: 700 },
 };

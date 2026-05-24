@@ -1,921 +1,698 @@
-import { round1, round2 } from './shared/helpers';
 import type { Drug } from './types';
+
+// ═══════════════════════════════════════════════════════════════
+// Bactrim（Trimethoprim / Sulfamethoxazole, TMP-SMX）
+// ═══════════════════════════════════════════════════════════════
+// 院內品項：
+//   PO：Morcasin 錠（孟克杏）TMP 80 mg / SMX 400 mg（= SS tab）
+//       DS tab = 2 錠 Morcasin = TMP 160 mg / SMX 800 mg
+//   IV：Sevatrim 針（雪白淨）TMP 80 mg / SMX 400 mg 每支（5 mL）
+//
+// 劑量以 TMP 成分表示
+// 肥胖：用 AdjBW（App.tsx 預設 AdjBW_if_obese 策略）
+// PO 生體可用率接近 100% → PO ↔ IV 等量換算
+// ═══════════════════════════════════════════════════════════════
+
+const TMP_PER_TAB = 80;   // Morcasin 每錠 TMP 80 mg（SS tab）
+const TMP_PER_AMP = 80;   // Sevatrim 每支 TMP 80 mg
+const r = (n: number) => Math.round(n);
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
+// Helper：PO 錠數
+function toTabs(tmpMg: number): string {
+  const tabs = tmpMg / TMP_PER_TAB;
+  if (tabs === 1) return "1 錠 Morcasin（= ½ DS tab）";
+  if (tabs === 2) return "2 錠 Morcasin（= 1 DS tab）";
+  if (tabs === 4) return "4 錠 Morcasin（= 2 DS tab）";
+  return `${r1(tabs)} 錠 Morcasin`;
+}
+
+// Helper：IV 支數
+function toAmps(tmpMg: number): string {
+  const amps = tmpMg / TMP_PER_AMP;
+  return `${r1(amps)} 支 Sevatrim`;
+}
+
+// ── 腎調 Helper ─────────────────────────────────────────────
+// CrCl 15-30：劑量減半
+// CrCl <15 / HD / PD：劑量減半 + Q24H
+// CRRT：劑量減半 + Q12H
+function renalAdjust(crcl: number, rrt: string): {
+  factor: number; freqOverride: string | null; note: string;
+} {
+  if (rrt === "hd") return { factor: 0.5, freqOverride: "Q24H（透析後）", note: "HD：劑量減半，透析後給藥" };
+  if (rrt === "pd") return { factor: 0.5, freqOverride: "Q24H", note: "PD：比照 CrCl <15（劑量減半）" };
+  if (rrt === "cvvh") return { factor: 0.5, freqOverride: "Q12H", note: "CRRT：劑量減半，維持 Q12H" };
+  if (crcl < 15) return { factor: 0.5, freqOverride: "Q24H", note: "CrCl <15：劑量減半 + Q24H" };
+  if (crcl <= 30) return { factor: 0.5, freqOverride: null, note: "CrCl 15-30：劑量減半" };
+  return { factor: 1, freqOverride: null, note: "CrCl >30：不需調整" };
+}
+
+// ── 建立通用 rows ────────────────────────────────────────────
+function buildDoseRows(
+  dosing_weight: number, crcl: number, rrt: string,
+  sc: any, isWaterLimit: boolean
+): { rows: any[]; warnings: string[] } {
+  const rows: any[] = [];
+  const warnings: string[] = [];
+  const adj = renalAdjust(crcl, rrt);
+
+  // ── 固定劑量 PO（預防、簡單感染）──
+  if (sc.fixedPO && !sc.tmpPerKg) {
+    rows.push({ label: "建議劑量（PO）", value: sc.fixedPO, highlight: true });
+    if (sc.fixedPO_tabs) rows.push({ label: "院內品項", value: sc.fixedPO_tabs });
+    if (adj.factor < 1 && !sc.noRenalAdj) {
+      warnings.push(`⚠️ ${adj.note}。考慮減量或延長間隔`);
+    }
+    if (sc.note) rows.push({ label: "療程與備註", value: sc.note });
+    return { rows, warnings };
+  }
+
+  // ── mg/kg 計算（PO + IV）──
+  const tmpPerKg = sc.tmpPerKg ?? { min: 8, max: 10 };
+  const divisions = sc.divisions ?? 2;
+  const freq = sc.freq ?? "Q12H";
+  const route = sc.route ?? "BOTH"; // "PO" | "IV" | "BOTH"
+
+  // 每日總劑量
+  const dailyMin = r(tmpPerKg.min * dosing_weight);
+  const dailyMax = r(tmpPerKg.max * dosing_weight);
+  // 單次劑量
+  const singleMin = r(dailyMin / divisions * adj.factor);
+  const singleMax = r(dailyMax / divisions * adj.factor);
+
+  const adjFreq = adj.freqOverride ?? freq;
+
+  rows.push({
+    label: "原始劑量（TMP）",
+    value: tmpPerKg.min === tmpPerKg.max
+      ? `${tmpPerKg.min} mg/kg/day ÷ ${divisions} 次 = ${dailyMin} mg/day`
+      : `${tmpPerKg.min}-${tmpPerKg.max} mg/kg/day ÷ ${divisions} 次`,
+    highlight: true,
+  });
+
+  if (adj.factor < 1) {
+    rows.push({ label: "腎功能調整", value: adj.note });
+  }
+
+  const singleStr = singleMin === singleMax
+    ? `TMP ${singleMin} mg`
+    : `TMP ${singleMin}-${singleMax} mg`;
+
+  rows.push({
+    label: `單次劑量（${adj.factor < 1 ? "調整後" : "計算後"}）`,
+    value: `${singleStr} ${adjFreq}`,
+    highlight: true,
+  });
+
+  // PO 顯示
+  if (route === "PO" || route === "BOTH") {
+    const tabStr = singleMin === singleMax
+      ? toTabs(singleMin)
+      : `${toTabs(singleMin)} ~ ${toTabs(singleMax)}`;
+    rows.push({ label: "PO 取藥", value: `${tabStr} ${adjFreq}` });
+  }
+
+  // IV 顯示
+  if (route === "IV" || route === "BOTH") {
+    const ampStr = singleMin === singleMax
+      ? toAmps(singleMin)
+      : `${toAmps(singleMin)} ~ ${toAmps(singleMax)}`;
+    rows.push({ label: "IV 取藥", value: `${ampStr} ${adjFreq}` });
+
+    // 稀釋
+    const ampMax = singleMax / TMP_PER_AMP;
+    const dilVol = isWaterLimit ? r(ampMax * 75) : r(ampMax * 125);
+    rows.push({
+      label: "IV 稀釋",
+      value: `加入 ${dilVol} mL D5W${isWaterLimit ? "（限水配方 75 mL/支）" : "（標準 125 mL/支）"}`,
+    });
+  }
+
+  if (sc.note) rows.push({ label: "療程與備註", value: sc.note });
+
+  // 高劑量提醒
+  if (tmpPerKg.max >= 15) {
+    warnings.push("⚠️ 高劑量 TMP-SMX（≥15 mg/kg/day）：注意高血鉀、骨髓抑制、腎功能。建議監測 CBC、電解質、Scr");
+  }
+
+  return { rows, warnings };
+}
 
 export const bactrim: Drug = {
   name: "Bactrim",
-  subtitle: "Trimethoprim-sulfamethoxazole",
+  subtitle: "Trimethoprim / Sulfamethoxazole",
+  searchTerms: [
+    "bactrim", "baktar", "septra", "co-trimoxazole",
+    "trimethoprim", "sulfamethoxazole", "tmp-smx", "tmp/smx",
+    "sevatrim", "雪白淨", "morcasin", "孟克杏",
+    "PJP", "PCP", "nocardia", "stenotrophomonas",
+  ],
+
   needsRenal: true,
   needsWeight: true,
   needsHepatic: false,
-  searchTerms: [
-    "bactrim", "baktar", "septra", "co-trimoxazole",
-    "trimethoprim", "sulfamethoxazole", "tmp-smx", "tmp/smx", "smx-tmp",
-    "sevatrim", "雪白淨", "morcasin", "孟克杏",
-    "PJP", "PCP",
+
+  extraFields: [
+    { key: "waterLimit", type: "toggle", label: "限水病人（IV 稀釋 75 mL/支）", default: false },
   ],
 
   indications: [
-    // ─── 一般感染（General） ───
-    {
-      id: "general",
-      label: "一般劑量參考（General dosing）",
-      desc: "未指定適應症時的標準劑量",
-      scenarios: [
-        {
-          label: "標準口服 / 靜脈劑量",
-          note: "UpToDate Adult dosing 同時列 Oral 與 IV，兩種劑型皆可",
-          // 無 preferred：兩種劑型並列
-          po: {
-            fixedDose: "1–2 DS tab Q12–24H",
-            detail: "DS tab = TMP 160 mg + SMX 800 mg（= 2 錠 Morcasin）",
-          },
-          iv: {
-            dosePerKg: { min: 8, max: 20 },
-            divisions: 2,
-            freq: "Q6–12H",
-          },
-        },
-      ],
-    },
 
-    // ─── PJP 治療與預防 ───
+    // ═══ 1. PJP ═══
     {
       id: "pjp",
-      label: "Pneumocystis pneumonia（PJP / PCP）",
-      desc: "肺囊蟲肺炎",
+      label: "Pneumocystis pneumonia（PJP / PCP 肺囊蟲肺炎）",
+      desc: "治療 15-20 mg/kg/day · 預防 1 DS QD",
       scenarios: [
         {
-          label: "中重度感染：治療",
-          note: "PaO₂ <70 mm Hg 或 A-a gradient ≥35 → 加上類固醇。療程 21 天",
-          preferred: "IV",
-          iv: {
-            dosePerKg: { min: 15, max: 20 },
-            divisions: 4,
-            freq: "Q6H",
-          },
-          po: {
-            fixedDose: "2 DS tab TID（PO 三次）",
-            detail: "輕中度感染或 IV 改 PO；療程 21 天",
-          },
+          label: "PJP treatment, moderate-severe（PJP 治療，中重度）",
+          note: "PaO₂ <70 或 A-a gradient ≥35 → 加類固醇。療程 21 天。IV 首選，改善後可轉 PO",
+          tmpPerKg: { min: 15, max: 20 }, divisions: 4, freq: "Q6H", route: "BOTH",
         },
         {
-          label: "初級或次級預防",
-          note: "HIV：CD4 <200；移植後或免疫低下宿主皆適用",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab QD（首選）或 1 SS tab QD 或 1 DS tab 每週 3 次",
-            detail: "DS = TMP 160 mg；SS = TMP 80 mg（= 1 錠 Morcasin）",
-          },
+          label: "PJP treatment, mild（PJP 治療，輕度）",
+          note: "療程 21 天",
+          tmpPerKg: { min: 15, max: 20 }, divisions: 3, freq: "Q8H", route: "PO",
+        },
+        {
+          label: "PJP prophylaxis（PJP 預防）",
+          note: "HIV CD4 <200、移植後、免疫低下。定期重新評估",
+          fixedPO: "1 DS tab QD（首選）或 1 SS tab QD 或 1 DS tab 每週 3 次",
+          fixedPO_tabs: "2 錠 Morcasin QD 或 1 錠 QD 或 2 錠 每週 3 次",
+          noRenalAdj: true,
         },
       ],
     },
 
-    // ─── SSTI ───
+    // ═══ 2. SSTI ═══
     {
       id: "ssti",
-      label: "Skin & Soft Tissue Infection（SSTI 皮膚軟組織感染）",
-      desc: "膿瘍、蜂窩性組織炎等",
+      label: "Skin and soft tissue infection（皮膚軟組織感染）",
+      desc: "膿瘍 / 蜂窩性組織炎 / MRSA",
       scenarios: [
         {
-          label: "Abscess（膿瘍）",
-          note: "體重 >70 kg 建議採用較高劑量；療程 ≥5 天，依嚴重度可延長至 14 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1–2 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
-          iv: {
-            dosePerKg: { min: 8, max: 10 },
-            divisions: 2,
-            freq: "Q12H",
-          },
+          label: "Abscess / Cellulitis, purulent（膿瘍 / 化膿性蜂窩性組織炎）",
+          note: "體重 >70 kg 建議較高劑量。≥5 天（嚴重可延至 14 天）。蜂窩性組織炎需加 streptococci 覆蓋（如 amoxicillin）",
+          tmpPerKg: { min: 4, max: 8 }, divisions: 2, freq: "Q12H", route: "BOTH",
         },
         {
-          label: "Cellulitis（蜂窩性組織炎，化膿性 / MRSA 風險）",
-          note: "建議加上 beta-hemolytic streptococci 覆蓋（如 amoxicillin、cephalexin）",
-          preferred: "PO",
-          po: {
-            fixedDose: "1–2 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
-          iv: {
-            dosePerKg: { min: 8, max: 10 },
-            divisions: 2,
-            freq: "Q12H",
-          },
-        },
-        {
-          label: "Cellulitis 長期抑制（Long-term suppression）",
-          note: "復發性葡萄球菌 cellulitis 於完成治療後使用",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab QD–BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "QD–BID",
-          },
-        },
-        {
-          label: "Impetigo / Ecthyma（膿痂疹，懷疑或確認 MRSA）",
-          note: "膿痂疹病灶多或群聚感染才考慮全身治療；療程 7 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1–2 DS tab BID × 7 天",
-            tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
+          label: "Impetigo / Ecthyma, MRSA（膿痂疹）",
+          note: "病灶多或群聚才考慮全身治療。7 天",
+          fixedPO: "1-2 DS tab BID × 7 天",
+          fixedPO_tabs: "2-4 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── UTI ───
+    // ═══ 3. UTI ═══
     {
       id: "uti",
-      label: "Urinary Tract Infection（UTI 泌尿道感染）",
-      desc: "膀胱炎、腎盂腎炎等",
+      label: "Urinary tract infection（泌尿道感染）",
+      desc: "膀胱炎 / 腎盂腎炎",
       scenarios: [
         {
-          label: "Acute uncomplicated cystitis（急性單純性膀胱炎）",
-          note: "若當地抗藥性 >20% 或多重抗藥性風險高，避免使用。女性 3 天，男性 7 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "Acute uncomplicated cystitis（急性單純膀胱炎）",
+          note: "當地抗藥性 >20% 避免使用。女性 3 天，男性 7 天",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
         {
           label: "Complicated UTI / Pyelonephritis（複雜性 UTI / 腎盂腎炎）",
-          note: "症狀於 48 小時內改善者，總療程 5–7 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          note: "48hr 改善者 5-7 天",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
         {
-          label: "Cystitis 預防（復發性感染）",
-          note: "持續性預防或性交後預防",
-          preferred: "PO",
-          po: {
-            fixedDose: "½ SS tab QD 或每週 3 次",
-            detail: "SS tab = TMP 80 mg（= 1 錠 Morcasin）",
-            // 預防性用藥不產生 IV 換算
-          },
+          label: "Cystitis prophylaxis（膀胱炎預防）",
+          note: "持續性或性交後預防",
+          fixedPO: "½ SS tab QD 或每週 3 次",
+          fixedPO_tabs: "½ 錠 Morcasin",
+          noRenalAdj: true,
         },
       ],
     },
 
-    // ─── Stenotrophomonas maltophilia ───
+    // ═══ 4. Stenotrophomonas ═══
     {
       id: "stenotrophomonas",
-      label: "Stenotrophomonas maltophilia infection",
-      desc: "嗜麥芽窄食單胞菌感染",
+      label: "Stenotrophomonas maltophilia infection（嗜麥芽窄食單胞菌）",
+      desc: "膀胱炎 / HAP-VAP / 菌血症",
       scenarios: [
         {
-          label: "Cystitis（單純性膀胱炎）",
-          preferred: "PO",
-          po: {
-            fixedDose: "TMP 160 mg Q12H",
-            detail: "= 1 DS tab BID",
-          },
-          iv: {
-            dosePerKg: { min: 4, max: 4 },
-            divisions: 2,
-            freq: "Q12H",
-          },
+          label: "Cystitis（膀胱炎）",
+          note: "輕度感染",
+          tmpPerKg: { min: 4, max: 4 }, divisions: 2, freq: "Q12H", route: "BOTH",
         },
         {
-          label: "HAP / VAP / Bacteremia（醫院或呼吸器相關肺炎、菌血症）",
-          note: "建議合併使用其他適當藥物。專家建議 max 960 mg/day（TMP）",
-          preferred: "IV",
-          iv: {
-            dosePerKg: { min: 8, max: 15 },
-            divisions: 3,
-            freq: "Q8H",
-          },
-          po: {
-            fixedDose: "2 DS tab BID",
-            detail: "或 10–15 mg/kg/day 分 2–3 次",
-          },
+          label: "HAP / VAP / Bacteremia（肺炎 / 菌血症）",
+          note: "建議合併其他藥物。專家建議 TMP max 960 mg/day",
+          tmpPerKg: { min: 8, max: 15 }, divisions: 3, freq: "Q8H", route: "BOTH",
         },
       ],
     },
 
-    // ─── Nocardiosis ───
+    // ═══ 5. Nocardiosis ═══
     {
       id: "nocardiosis",
       label: "Nocardiosis（諾卡氏菌感染）",
-      desc: "建議做藥敏試驗",
+      desc: "皮膚 / 肺部 / CNS / 散播性",
       scenarios: [
         {
-          label: "皮膚或淋巴皮膚型感染",
+          label: "Skin or lymphocutaneous（皮膚 / 淋巴皮膚型）",
           note: "無其他器官侵犯",
-          preferred: "PO",
-          po: {
-            fixedDose: "5–10 mg/kg/day 分 2 次",
-            detail: "依 TMP 計算",
-          },
+          tmpPerKg: { min: 5, max: 10 }, divisions: 2, freq: "Q12H", route: "PO",
         },
         {
-          label: "肺部感染（輕中度，免疫正常）",
-          preferred: "PO",
-          po: {
-            fixedDose: "5–10 mg/kg/day 分 2 次",
-            detail: "依 TMP 計算",
-          },
+          label: "Pulmonary, mild-moderate, immunocompetent（輕中度肺部，免疫正常）",
+          tmpPerKg: { min: 5, max: 10 }, divisions: 2, freq: "Q12H", route: "PO",
         },
         {
-          label: "肺部感染（輕中度，免疫低下）",
-          preferred: "PO",
-          po: {
-            fixedDose: "15 mg/kg/day 分 3–4 次",
-            detail: "依 TMP 計算",
-          },
+          label: "Pulmonary, mild-moderate, immunocompromised（輕中度肺部，免疫低下）",
+          tmpPerKg: { min: 15, max: 15 }, divisions: 3, freq: "Q8H", route: "PO",
         },
         {
-          label: "嚴重肺部感染 / CNS / 散播性 / 菌血症",
-          note: "需合併用藥；療程通常 3 個月至 1 年以上",
-          preferred: "IV",
-          iv: {
-            dosePerKg: { min: 15, max: 15 },
-            divisions: 4,
-            freq: "Q6H",
-          },
+          label: "Severe pulmonary / CNS / Disseminated / Bacteremia（嚴重 / CNS / 散播性）",
+          note: "需合併用藥。療程 3 個月至 ≥1 年",
+          tmpPerKg: { min: 15, max: 15 }, divisions: 4, freq: "Q6H", route: "IV",
         },
       ],
     },
 
-    // ─── Toxoplasmosis ───
+    // ═══ 6. Toxoplasmosis ═══
     {
       id: "toxoplasmosis",
       label: "Toxoplasma gondii encephalitis（弓形蟲腦炎）",
-      desc: "治療與預防",
+      desc: "治療 10 mg/kg/day · 預防 1 DS BID",
       scenarios: [
         {
-          label: "治療",
-          note: "至少 6 週；不完全反應時需延長。UpToDate 原文 \"Oral, IV:\"，兩種劑型皆可",
-          // 無 preferred：兩種劑型皆可
-          po: {
-            fixedDose: "10 mg/kg/day 分 2 次",
-            detail: "依 TMP 計算",
-          },
-          iv: {
-            dosePerKg: { min: 10, max: 10 },
-            divisions: 2,
-            freq: "Q12H",
-          },
+          label: "Treatment（治療）",
+          note: "≥6 週；不完全反應可延長",
+          tmpPerKg: { min: 10, max: 10 }, divisions: 2, freq: "Q12H", route: "BOTH",
         },
         {
-          label: "次級預防（chronic maintenance）",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            detail: "DS tab = TMP 160 mg",
-          },
+          label: "Chronic maintenance / Secondary prophylaxis（次級預防）",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── Bacterial meningitis ───
+    // ═══ 7. Meningitis ═══
     {
       id: "meningitis",
       label: "Bacterial meningitis（細菌性腦膜炎）",
-      desc: "MRSA、Listeria、E. coli、其他腸桿菌科",
+      desc: "MRSA / Listeria",
       scenarios: [
         {
-          label: "MRSA / Listeria / 其他敏感菌",
-          preferred: "IV",
-          iv: {
-            dosePerKg: { min: 5, max: 5 },
-            divisions: 4,
-            freq: "Q6–8H",
-          },
+          label: "MRSA / Listeria / susceptible GNB（腦膜炎）",
+          tmpPerKg: { min: 5, max: 5 }, divisions: 4, freq: "Q6-8H", route: "IV",
         },
       ],
     },
 
-    // ─── Intracranial / spinal epidural abscess ───
+    // ═══ 8. CNS abscess ═══
     {
       id: "cnsAbscess",
-      label: "Intracranial / Spinal epidural abscess（顱內或脊髓硬膜外膿瘍）",
-      desc: "MRSA 替代藥物",
+      label: "Intracranial / Spinal epidural abscess（顱內 / 脊髓膿瘍）",
+      desc: "MRSA 替代",
       scenarios: [
         {
-          label: "MRSA 顱內或脊髓硬膜外膿瘍",
-          note: "療程 4–8 週（脊髓硬膜外）或 6–8 週（腦部）",
-          preferred: "IV",
-          iv: {
-            dosePerKg: { min: 5, max: 5 },
-            divisions: 3,
-            freq: "Q8–12H",
-          },
+          label: "MRSA CNS abscess（MRSA 顱內/脊髓膿瘍）",
+          note: "脊髓 4-8 週；腦部 6-8 週",
+          tmpPerKg: { min: 5, max: 5 }, divisions: 3, freq: "Q8-12H", route: "IV",
         },
       ],
     },
 
-    // ─── Endocarditis ───
+    // ═══ 9. Endocarditis ═══
     {
       id: "endocarditis",
       label: "Endocarditis（心內膜炎）",
-      desc: "S. aureus 口服降階治療",
+      desc: "S. aureus 口服降階",
       scenarios: [
         {
-          label: "S. aureus 心內膜炎（口服降階）",
-          note: "資料有限；非首選。MRSA 或對 penicillin 過敏的 MSSA。連同初期 IV 療程共 6 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "2 DS tab BID × 6 週",
-            tmpMgMin: 320, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
+          label: "S. aureus endocarditis, oral step-down（心內膜炎，口服降階）",
+          note: "資料有限。MRSA 或 penicillin 過敏 MSSA。連同初期 IV 共 6 週",
+          fixedPO: "2 DS tab BID × 6 週",
+          fixedPO_tabs: "4 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── Osteomyelitis ───
+    // ═══ 10. Osteomyelitis ═══
     {
       id: "osteomyelitis",
-      label: "Osteomyelitis / Discitis（骨髓炎 / 椎間盤炎）",
-      desc: "MRSA 或革蘭氏陰性菌",
+      label: "Osteomyelitis / Discitis（骨髓炎）",
+      desc: "MRSA / GNB · 通常 6 週",
       scenarios: [
         {
-          label: "Gram-negative 感染",
-          preferred: "PO",
-          po: {
-            fixedDose: "1–2 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
+          label: "Gram-negative（GNB 骨髓炎）",
+          fixedPO: "1-2 DS tab BID",
+          fixedPO_tabs: "2-4 錠 Morcasin BID",
         },
         {
-          label: "MRSA 感染",
-          note: "建議合併 rifampin。療程通常 6 週。PO 和 IV 劑量相同，UpToDate 未指定首選",
-          // 無 preferred：UpToDate 原文為 "Oral, IV:"，兩種劑型皆可
-          po: {
-            fixedDose: "5–10 mg/kg/day 分 2–3 次（依 TMP）",
-            detail: "或 7–12 mg/kg/day 分 2–3 次",
-          },
-          iv: {
-            dosePerKg: { min: 5, max: 10 },
-            divisions: 3,
-            freq: "Q8H",
-          },
+          label: "MRSA（MRSA 骨髓炎）",
+          note: "建議合併 rifampin。通常 6 週",
+          tmpPerKg: { min: 5, max: 10 }, divisions: 3, freq: "Q8H", route: "BOTH",
         },
       ],
     },
 
-    // ─── Septic arthritis ───
+    // ═══ 11. Septic arthritis ═══
     {
       id: "septicArthritis",
       label: "Septic arthritis（化膿性關節炎）",
-      desc: "MRSA 治療或 MSSA 替代藥物",
+      desc: "MRSA · 3-4 週",
       scenarios: [
         {
-          label: "MRSA / MSSA",
-          note: "口服降階療法。療程 3–4 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "2 DS tab BID 或 4 mg/kg BID（max 320 mg/dose）",
-            tmpMgMin: 320, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
+          label: "MRSA / MSSA septic arthritis（化膿性關節炎）",
+          note: "口服降階。3-4 週",
+          fixedPO: "2 DS tab BID 或 4 mg/kg BID（max TMP 320 mg/dose）",
+          fixedPO_tabs: "4 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── Prosthetic joint infection ───
+    // ═══ 12. PJI ═══
     {
       id: "pji",
       label: "Prosthetic joint infection（人工關節感染）",
-      desc: "MRSA / Enterobacteriaceae 口服續用",
+      desc: "MRSA / GNB 口服續用 · ≥3 個月",
       scenarios: [
         {
-          label: "口服延續治療",
-          note: "S. aureus 感染建議合併 rifampin。最少 3 個月",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "PJI oral continuation（人工關節，口服延續）",
+          note: "S. aureus 合併 rifampin。≥3 個月",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── Prostatitis ───
+    // ═══ 13. Prostatitis ═══
     {
       id: "prostatitis",
       label: "Prostatitis（前列腺炎）",
-      desc: "急性 / 慢性",
+      desc: "急性 2-4 週 / 慢性 4-6 週",
       scenarios: [
         {
-          label: "Acute bacterial prostatitis",
-          note: "療程 2–4 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "Acute bacterial prostatitis（急性）",
+          note: "2-4 週",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
         {
-          label: "Chronic bacterial prostatitis",
-          note: "療程 4–6 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "Chronic bacterial prostatitis（慢性）",
+          note: "4-6 週",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── Diabetic foot infection ───
+    // ═══ 14. Diabetic foot ═══
     {
       id: "diabeticFoot",
       label: "Diabetic foot infection（糖尿病足感染）",
-      desc: "輕中度感染、MRSA 風險",
+      desc: "輕中度 · MRSA 風險",
       scenarios: [
         {
-          label: "輕中度糖尿病足感染",
-          note: "可作為 empiric 或致病菌導向治療（含 MRSA）；常合併用藥。皮膚軟組織為主療程 1–2 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "1–2 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 320, tmpFreq: "Q12H",
-          },
+          label: "Mild-moderate diabetic foot（輕中度糖尿病足）",
+          note: "含 MRSA 覆蓋。常合併用藥。皮膚軟組織為主 1-2 週",
+          fixedPO: "1-2 DS tab BID",
+          fixedPO_tabs: "2-4 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── Intra-abdominal infection ───
+    // ═══ 15. IAI ═══
     {
       id: "iai",
-      label: "Intra-abdominal infection（腹腔內感染）",
-      desc: "急性憩室炎等",
+      label: "Intra-abdominal infection（腹腔感染）",
+      desc: "急性憩室炎 · 合併 metronidazole",
       scenarios: [
         {
-          label: "Acute diverticulitis（門診治療或降階）",
-          note: "需合併 metronidazole；療程 4–14 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID + Metronidazole",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "Acute diverticulitis（急性憩室炎）",
+          note: "合併 metronidazole。4-14 天",
+          fixedPO: "1 DS tab BID + metronidazole",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
       ],
     },
 
-    // ─── COPD acute exacerbation ───
+    // ═══ 16. Pneumonia ═══
+    {
+      id: "pneumonia",
+      label: "Pneumonia, community-acquired（CAP 社區型肺炎）",
+      desc: "MRSA 覆蓋替代",
+      scenarios: [
+        {
+          label: "CAP, MRSA coverage（CAP，MRSA 覆蓋）",
+          note: "替代藥物。合併 combination。MRSA 療程 ≥7 天",
+          fixedPO: "2 DS tab BID",
+          fixedPO_tabs: "4 錠 Morcasin BID",
+        },
+      ],
+    },
+
+    // ═══ 17. SBP prophylaxis ═══
+    {
+      id: "sbpProphylaxis",
+      label: "Spontaneous bacterial peritonitis, prophylaxis（SBP 預防）",
+      desc: "肝硬化 · 1 DS tab QD",
+      scenarios: [
+        {
+          label: "SBP prophylaxis（SBP 預防）",
+          note: "肝硬化 + GI 出血或 ascites protein <1 g/dL 等高風險者",
+          fixedPO: "1 DS tab QD",
+          fixedPO_tabs: "2 錠 Morcasin QD",
+          noRenalAdj: true,
+        },
+      ],
+    },
+
+    // ═══ 18. COPD ═══
     {
       id: "copd",
       label: "COPD acute exacerbation（COPD 急性惡化）",
-      desc: "替代藥物",
+      desc: "替代藥物 · 5-7 天",
       scenarios: [
         {
-          label: "COPD 急性惡化",
-          note: "Pseudomonas 風險或預後不良者避免使用。療程 5–7 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab Q12H × 5–7 天",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "COPD acute exacerbation（COPD 急性惡化）",
+          note: "Pseudomonas 風險避免使用。5-7 天",
+          fixedPO: "1 DS tab Q12H × 5-7 天",
+          fixedPO_tabs: "2 錠 Morcasin Q12H",
         },
       ],
     },
 
-    // ─── Mastitis ───
-    {
-      id: "mastitis",
-      label: "Mastitis, lactational（哺乳期乳腺炎）",
-      desc: "MRSA 風險",
-      scenarios: [
-        {
-          label: "哺乳期乳腺炎",
-          note: "用於無法使用首選藥物或 MRSA 風險者。療程 10–14 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID × 10–14 天",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-        },
-      ],
-    },
-
-    // ─── SBP prophylaxis ───
-    {
-      id: "sbpProphylaxis",
-      label: "SBP prophylaxis（自發性細菌性腹膜炎預防）",
-      desc: "次級或初級預防",
-      scenarios: [
-        {
-          label: "預防",
-          note: "肝硬化合併急性 GI 出血或 ascites protein <1 g/dL 等高風險者",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab QD",
-            detail: "DS tab = TMP 160 mg",
-            // 預防用藥不產生 IV 換算
-          },
-        },
-      ],
-    },
-
-    // ─── Cyclosporiasis / Cystoisosporiasis ───
-    {
-      id: "cyclosporiasis",
-      label: "Cyclosporiasis / Cystoisosporiasis（環孢子蟲症 / 等孢子蟲症）",
-      desc: "感染性腹瀉",
-      scenarios: [
-        {
-          label: "Cyclosporiasis 治療",
-          note: "療程 7–10 天；HIV 病人 14 天；移植病人 10 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-        },
-        {
-          label: "Cystoisosporiasis 治療",
-          note: "免疫正常 7–10 天；免疫低下需更長療程。IV 保留給無法吸收或無法耐受口服者",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID 或 TMP 160 mg QID",
-            detail: "嚴重時可增至 QID 或延長至 21–28 天",
-          },
-          iv: {
-            dosePerKg: { min: 8, max: 8 },
-            divisions: 4,
-            freq: "Q6H",
-          },
-        },
-      ],
-    },
-
-    // ─── Salmonella / Shigella ───
-    {
-      id: "salmonellaShigella",
-      label: "Salmonella / Shigella infection（沙門氏 / 志賀氏菌感染）",
-      desc: "胃腸炎、菌血症",
-      scenarios: [
-        {
-          label: "Nontyphoidal Salmonella（嚴重或高風險）",
-          note: "免疫正常 10–14 天；HIV 14 天以上。UpToDate 同時列 Oral 與 IV",
-          // 無 preferred：兩種劑型皆可
-          iv: {
-            dosePerKg: { min: 8, max: 10 },
-            divisions: 3,
-            freq: "Q8H",
-          },
-          po: {
-            fixedDose: "1 DS tab Q12H",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-        },
-        {
-          label: "Shigellosis",
-          note: "建議先確認藥敏；療程 5–7 天。UpToDate 同時列 Oral 與 IV",
-          // 無 preferred：兩種劑型皆可
-          po: {
-            fixedDose: "1 DS tab Q12H",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-          iv: {
-            dosePerKg: { min: 4, max: 4 },
-            divisions: 2,
-            freq: "Q12H",
-          },
-        },
-      ],
-    },
-
-    // ─── Q fever ───
-    {
-      id: "qFever",
-      label: "Q fever, acute（Q 熱急性症狀，孕婦替代）",
-      desc: "Coxiella burnetii",
-      scenarios: [
-        {
-          label: "急性 Q 熱",
-          note: "症狀 3 天內治療最有效。非孕婦療程 14 天；孕婦請諮詢感染科",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID × 14 天",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-        },
-      ],
-    },
-
-    // ─── Plague ───
-    {
-      id: "plague",
-      label: "Plague（鼠疫，Yersinia pestis）",
-      desc: "替代藥物",
-      scenarios: [
-        {
-          label: "暴露後預防",
-          note: "療程 7 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "5 mg/kg/dose Q12H × 7 天",
-            detail: "依 TMP 計算",
-          },
-        },
-        {
-          label: "治療",
-          note: "療程 7–14 天，臨床改善後再多幾天。UpToDate 原文 \"Oral, IV:\"，兩種劑型皆可",
-          // 無 preferred：兩種劑型皆可
-          iv: {
-            dosePerKg: { min: 5, max: 5 },
-            divisions: 3,
-            freq: "Q8H",
-          },
-          po: {
-            fixedDose: "5 mg/kg Q8H",
-            detail: "依 TMP 計算",
-          },
-        },
-      ],
-    },
-
-    // ─── Brucellosis ───
-    {
-      id: "brucellosis",
-      label: "Brucellosis（布氏桿菌病）",
-      desc: "替代藥物（孕婦首選）",
-      scenarios: [
-        {
-          label: "Neurobrucellosis / Endocarditis",
-          note: "≥12 週（可能需 6 個月）。需合併用藥",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-        },
-        {
-          label: "Uncomplicated brucellosis",
-          note: "需合併用藥。療程 6 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID × 6 週",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-        },
-      ],
-    },
-
-    // ─── Melioidosis ───
+    // ═══ 19. Melioidosis ═══
     {
       id: "melioidosis",
       label: "Melioidosis / Glanders（類鼻疽 / 鼻疽）",
-      desc: "Burkholderia pseudomallei / B. mallei",
+      desc: "合併 intensive → 口服根除",
       scenarios: [
         {
-          label: "Initial intensive therapy（依體重調整）",
-          note: "與 ceftazidime 或 meropenem 合併，14 天起跳。UpToDate 原文 \"Oral, IV:\"：IV 劑量與 PO 相同",
-          // 無 preferred：兩種劑型皆可
-          po: {
-            fixedDose: "<40 kg：160 mg Q12H｜40–60 kg：240 mg Q12H｜>60 kg：320 mg Q12H",
-            detail: "依 TMP 計算；IV 劑量同 PO",
-          },
+          label: "Initial intensive therapy（初始強化，合併用藥）",
+          note: "與 ceftazidime 或 meropenem 合併，≥14 天。依體重：<40 kg 160 mg Q12H / 40-60 kg 240 mg Q12H / >60 kg 320 mg Q12H",
+          fixedPO: "依體重：<40 kg TMP 160 mg Q12H / 40-60 kg 240 mg / >60 kg 320 mg Q12H",
+          fixedPO_tabs: "依體重：<40 kg 2 錠 / 40-60 kg 3 錠 / >60 kg 4 錠 Morcasin Q12H",
         },
         {
-          label: "Eradication therapy（完成 intensive 後）",
-          note: "口服維持治療。最少 3 個月（骨頭或 CNS 為 6 個月）",
-          preferred: "PO",
-          po: {
-            fixedDose: "<40 kg：160 mg Q12H｜40–60 kg：240 mg Q12H｜>60 kg：320 mg Q12H",
-            detail: "依 TMP 計算",
-          },
+          label: "Eradication therapy（口服根除）",
+          note: "≥3 個月（骨頭/CNS 6 個月）",
+          fixedPO: "依體重：同 intensive 劑量",
+          fixedPO_tabs: "同上",
         },
       ],
     },
 
-    // ─── Bartonella ───
+    // ═══ 20. Salmonella / Shigella ═══
+    {
+      id: "salmonellaShigella",
+      label: "Salmonella / Shigella infection（沙門氏 / 志賀氏菌）",
+      desc: "胃腸炎 / 菌血症",
+      scenarios: [
+        {
+          label: "Nontyphoidal Salmonella（嚴重/高風險）",
+          note: "免疫正常 10-14 天；HIV ≥14 天",
+          tmpPerKg: { min: 8, max: 10 }, divisions: 3, freq: "Q8H", route: "BOTH",
+        },
+        {
+          label: "Shigellosis（志賀菌感染）",
+          note: "先確認藥敏。5-7 天",
+          tmpPerKg: { min: 4, max: 4 }, divisions: 2, freq: "Q12H", route: "BOTH",
+        },
+      ],
+    },
+
+    // ═══ 21. Bartonella ═══
     {
       id: "bartonella",
-      label: "Bartonella spp. infection（巴東體菌感染）",
-      desc: "貓抓病等",
+      label: "Bartonella spp. infection（巴東體菌 / 貓抓病）",
+      desc: "淋巴炎 / 散播性",
       scenarios: [
         {
           label: "Cat scratch disease, lymphadenitis（貓抓病淋巴炎）",
-          note: "療程 7–10 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID × 7–10 天",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          note: "7-10 天",
+          fixedPO: "1 DS tab BID × 7-10 天",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
         {
-          label: "Cat scratch disease, disseminated（CNS、視網膜炎）",
-          note: "需合併 rifampin。CNS 10–14 天；視網膜炎 4–6 週",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
-          iv: {
-            dosePerKg: { min: 4, max: 4 },
-            divisions: 2,
-            freq: "Q12H",
-          },
+          label: "Cat scratch disease, disseminated（散播性，CNS / 視網膜炎）",
+          note: "合併 rifampin。CNS 10-14 天；視網膜炎 4-6 週",
+          tmpPerKg: { min: 4, max: 4 }, divisions: 2, freq: "Q12H", route: "BOTH",
         },
       ],
     },
 
-    // ─── Bite wound ───
+    // ═══ 22. Other infections ═══
     {
-      id: "biteWound",
-      label: "Bite wound infection（動物或人類咬傷）",
-      desc: "預防或治療（替代藥物）",
+      id: "other",
+      label: "Other infections（其他感染）",
+      desc: "Q fever / 鼠疫 / 布氏桿菌 / 咬傷 / 環孢子蟲 / 乳腺炎 / 手術預防",
       scenarios: [
         {
-          label: "咬傷預防或治療",
-          note: "需合併厭氧菌覆蓋。預防 3–5 天；感染 5–14 天",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab BID + 厭氧菌覆蓋",
-            tmpMgMin: 160, tmpMgMax: 160, tmpFreq: "Q12H",
-          },
+          label: "Q fever, acute（急性 Q 熱，孕婦替代）",
+          note: "14 天",
+          fixedPO: "1 DS tab BID × 14 天",
+          fixedPO_tabs: "2 錠 Morcasin BID",
         },
-      ],
-    },
-
-    // ─── Surgical prophylaxis ───
-    {
-      id: "surgicalProphylaxis",
-      label: "Surgical prophylaxis（外科預防）",
-      desc: "高風險泌尿外科操作",
-      scenarios: [
         {
-          label: "高風險膀胱鏡 / 經直腸前列腺切片",
-          note: "手術切口前 60–120 分鐘給藥",
-          preferred: "PO",
-          po: {
-            fixedDose: "1 DS tab × 1（術前 60–120 分鐘）",
-            detail: "DS tab = TMP 160 mg",
-          },
+          label: "Plague, prophylaxis（鼠疫暴露後預防）",
+          note: "7 天",
+          tmpPerKg: { min: 5, max: 5 }, divisions: 2, freq: "Q12H", route: "PO",
+        },
+        {
+          label: "Plague, treatment（鼠疫治療）",
+          note: "7-14 天",
+          tmpPerKg: { min: 5, max: 5 }, divisions: 3, freq: "Q8H", route: "BOTH",
+        },
+        {
+          label: "Brucellosis（布氏桿菌病）",
+          note: "合併用藥。非複雜 6 週；neurobrucellosis ≥12 週",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
+        },
+        {
+          label: "Bite wound infection（咬傷）",
+          note: "合併厭氧菌覆蓋。預防 3-5 天；感染 5-14 天",
+          fixedPO: "1 DS tab BID + 厭氧菌覆蓋",
+          fixedPO_tabs: "2 錠 Morcasin BID",
+        },
+        {
+          label: "Cyclosporiasis / Cystoisosporiasis（環孢子蟲 / 等孢子蟲症）",
+          note: "免疫正常 7-10 天；HIV 14 天",
+          fixedPO: "1 DS tab BID",
+          fixedPO_tabs: "2 錠 Morcasin BID",
+        },
+        {
+          label: "Mastitis, lactational（哺乳期乳腺炎，MRSA 風險）",
+          note: "10-14 天",
+          fixedPO: "1 DS tab BID × 10-14 天",
+          fixedPO_tabs: "2 錠 Morcasin BID",
+        },
+        {
+          label: "Surgical prophylaxis（高風險泌尿外科預防）",
+          note: "術前 60-120 分鐘",
+          fixedPO: "1 DS tab × 1（術前 60-120 分鐘）",
+          fixedPO_tabs: "2 錠 Morcasin × 1",
+          noRenalAdj: true,
         },
       ],
     },
-  ],
 
-  extraFields: [
-    { key: "waterLimit", type: "toggle", label: "限水病人", default: false },
-  ],
+  ], // ← end of indications
 
+  // ──────────────────────────────────────────────────────────────
+  // calculate()
+  // ──────────────────────────────────────────────────────────────
   calculate({ dosing_weight, crcl, rrt, indicationData, extras }) {
-    let hasIV = false;
-
-    // 依腎功能調整劑量的 helper（IV、PO 共用邏輯）
-    // 回傳 { factor, freq, warning }
-    const renalAdjust = (origFreq: any) => {
-      if (rrt === "hd") {
-        return { factor: 0.5, freq: "Q24H（透析後）", warning: "HD 病人建議劑量減半" };
-      } else if (rrt === "cvvh") {
-        return { factor: 0.5, freq: "Q12H", warning: "CVVH 建議維持 Q12H" };
-      } else if (rrt === "pd") {
-        return { factor: 0.5, freq: "Q24H", warning: "PD 病人比照 CrCl <15 處理（劑量減半）" };
-      } else if (crcl < 15) {
-        return { factor: 0.5, freq: "Q24H", warning: "CrCl < 15 建議減半並 Q24H" };
-      } else if (crcl <= 30) {
-        return { factor: 0.5, freq: origFreq, warning: "CrCl 15–30 建議劑量減半" };
-      }
-      return { factor: 1, freq: origFreq, warning: null };
-    };
+    const isWaterLimit = !!extras?.waterLimit;
 
     const scenarioResults = indicationData.scenarios.map((sc: any) => {
-      const result = {
-        title: sc.label,
-        note: sc.note,
-        preferred: sc.preferred,
-        subResults: [] as any[],
-      };
-
-      // ── PO ──
-      if (sc.po) {
-        const poRows: any[] = [];
-        const poWarnings: any[] = [];
-
-        // 若有提供 tmpMg，套用腎功能調整邏輯
-        if (sc.po.tmpMgMin != null) {
-          const adj = renalAdjust(sc.po.tmpFreq || "");
-          if (adj.warning) poWarnings.push(adj.warning);
-
-          // 原始（未調整）劑量作為參考
-          poRows.push({ label: "常規劑量", value: sc.po.fixedDose });
-
-          // 若腎功能需調整，顯示調整後的 mg 和頻率
-          if (adj.factor < 1) {
-            const adjMin = sc.po.tmpMgMin * adj.factor;
-            const adjMax = sc.po.tmpMgMax * adj.factor;
-            const doseStr = adjMin === adjMax
-              ? `TMP ${round1(adjMin)} mg`
-              : `TMP ${round1(adjMin)} – ${round1(adjMax)} mg`;
-            poRows.push({ label: "調整後單次劑量", value: doseStr, highlight: true });
-            poRows.push({ label: "給藥頻率", value: adj.freq, highlight: true });
-
-            // 顯示調整後的 Morcasin 錠數（1 錠 = 80 mg TMP）
-            const tabMin = adjMin / 80;
-            const tabMax = adjMax / 80;
-            const tabStr = tabMin === tabMax
-              ? `${round2(tabMin)} 錠`
-              : `${round2(tabMin)} – ${round2(tabMax)} 錠`;
-            poRows.push({ label: "院內品項（調整後）", value: `${tabStr} Morcasin（每錠 TMP 80 mg）` });
-          } else {
-            // 腎功能正常：顯示原始的 Morcasin 錠數
-            const tabMin = sc.po.tmpMgMin / 80;
-            const tabMax = sc.po.tmpMgMax / 80;
-            const tabStr = tabMin === tabMax
-              ? `${tabMin} 錠`
-              : `${tabMin} – ${tabMax} 錠`;
-            poRows.push({ label: "院內品項", value: `${tabStr} Morcasin（每錠 TMP 80 mg）` });
-          }
-        } else {
-          // 沒有 tmpMg（預防性用藥、固定劑量）→ 不做腎調整
-          poRows.push({ label: "建議劑量", value: sc.po.fixedDose, highlight: true });
-        }
-
-        if (sc.po.detail) {
-          poRows.push({ label: "品項說明", value: sc.po.detail });
-        }
-        result.subResults.push({
-          route: "PO",
-          isPreferred: sc.preferred === "PO",
-          rows: poRows,
-          warnings: poWarnings,
-        });
-      }
-
-      // ── IV ──
-      // 情況 1：有明確的 iv 區塊（dosePerKg 公式）
-      if (sc.iv) {
-        hasIV = true;
-        const adj = renalAdjust(sc.iv.freq);
-        const ivWarnings = adj.warning ? [adj.warning] : [];
-
-        let s_min = (dosing_weight * sc.iv.dosePerKg.min) / sc.iv.divisions * adj.factor;
-        let s_max = (dosing_weight * sc.iv.dosePerKg.max) / sc.iv.divisions * adj.factor;
-
-        const amp_min = round2(s_min / 80);
-        const amp_max = round2(s_max / 80);
-
-        result.subResults.push({
-          route: "IV",
-          isPreferred: sc.preferred === "IV",
-          rows: [
-            { label: "建議單次劑量", value: `TMP ${round1(s_min)} – ${round1(s_max)} mg`, highlight: true },
-            { label: "給藥頻率", value: adj.freq, highlight: true },
-            { label: "建議抽藥支數", value: `${amp_min} – ${amp_max} 支（Sevatrim）` },
-          ],
-          warnings: ivWarnings,
-        });
-      }
-      // 情況 2：PO 有 tmpMg 但沒有 iv 區塊 → 自動產生 IV 換算
-      //   依據：TMP/SMX 的 PO 生體可用率接近 100%，臨床常 PO ↔ IV 等量換算
-      else if (sc.po?.tmpMgMin != null && !sc.iv) {
-        hasIV = true;
-        const adj = renalAdjust(sc.po.tmpFreq || "（依 PO 頻率）");
-        const ivWarnings = ["此 IV 劑量為由 PO 等量換算（TMP/SMX 口服生體可用率接近 100%）"];
-        if (adj.warning) ivWarnings.push(adj.warning);
-
-        const s_min = sc.po.tmpMgMin * adj.factor;
-        const s_max = sc.po.tmpMgMax * adj.factor;
-        const amp_min = round2(s_min / 80);
-        const amp_max = round2(s_max / 80);
-
-        const doseStr = s_min === s_max
-          ? `TMP ${round1(s_min)} mg`
-          : `TMP ${round1(s_min)} – ${round1(s_max)} mg`;
-        const ampStr = amp_min === amp_max
-          ? `${amp_min} 支（Sevatrim）`
-          : `${amp_min} – ${amp_max} 支（Sevatrim）`;
-
-        result.subResults.push({
-          route: "IV",
-          isPreferred: false,   // UpToDate 原文首選 PO，IV 為等量換算
-          rows: [
-            { label: "建議單次劑量", value: doseStr, highlight: true },
-            { label: "給藥頻率", value: adj.freq, highlight: true },
-            { label: "建議抽藥支數", value: ampStr },
-          ],
-          warnings: ivWarnings,
-        });
-      }
-
-      return result;
+      const { rows, warnings } = buildDoseRows(dosing_weight, crcl, rrt, sc, isWaterLimit);
+      return { title: sc.label, rows, warnings };
     });
 
-    const pharmacistInput = hasIV ? {
-      label: "💉 藥師決定給予支數（IV 配藥用）",
-      placeholder: "例：2 或 2.5",
-      suffix: "支",
-      calcDilution(ampules: any) {
-        const a = parseFloat(ampules);
-        if (!a || a <= 0) return null;
-        const vol = extras.waterLimit ? a * 75 : a * 125;
-        return {
-          text: `請抽取 ${a} 支 Sevatrim，加入 ${Math.round(vol)} mL D5W`,
-          note: extras.waterLimit ? "（限水配方：75 mL/支）" : "（標準配方：125 mL/支）",
-        };
-      },
-    } : null;
+    return { scenarioResults };
+  },
 
-    return { scenarioResults, pharmacistInput };
+  // ═══════════════════════════════════════════════════════════════
+  // 臨床參考
+  // ═══════════════════════════════════════════════════════════════
+  clinicalPearls: {
+    title: "臨床參考",
+    sections: [
+      {
+        heading: "藥物特性",
+        body:
+          "• TMP-SMX（Trimethoprim + Sulfamethoxazole，固定 1:5 比例）\n" +
+          "• 劑量以 TMP 成分表示\n" +
+          "• PO 生體可用率接近 100% → PO ↔ IV 等量換算\n" +
+          "• 殺菌機制：同時抑制葉酸合成途徑的兩個步驟",
+      },
+      {
+        heading: "院內品項",
+        body:
+          "• PO：Morcasin 錠（孟克杏）= TMP 80 mg / SMX 400 mg（= SS tab）\n" +
+          "  DS tab（Double Strength）= 2 錠 Morcasin = TMP 160 mg\n\n" +
+          "• IV：Sevatrim 針（雪白淨）= TMP 80 mg / SMX 400 mg 每支（5 mL）\n" +
+          "  稀釋：標準 125 mL D5W/支；限水 75 mL D5W/支",
+      },
+      {
+        heading: "抗菌譜重點",
+        body:
+          "【涵蓋】\n" +
+          "• MRSA（PO 口服首選之一！）\n" +
+          "• Stenotrophomonas maltophilia（首選！）\n" +
+          "• Nocardia spp.\n" +
+          "• Pneumocystis jirovecii（PJP）\n" +
+          "• Toxoplasma gondii\n" +
+          "• Enterobacterales（部分）\n" +
+          "• Listeria monocytogenes（替代）\n\n" +
+          "【不涵蓋】\n" +
+          "• Pseudomonas aeruginosa\n" +
+          "• Anaerobes\n" +
+          "• Group A Streptococcus（治療無效）\n" +
+          "• Enterococcus",
+      },
+      {
+        heading: "劑量速查（依 TMP 計算）",
+        body:
+          "【一般感染】4-8 mg/kg/day ÷ BID\n" +
+          "【PJP 治療】15-20 mg/kg/day ÷ TID-QID × 21 天\n" +
+          "【PJP 預防】1 DS tab QD\n" +
+          "【Stenotrophomonas HAP/VAP】8-15 mg/kg/day ÷ TID\n" +
+          "【Nocardia 嚴重】15 mg/kg/day ÷ QID\n" +
+          "【Toxoplasmosis 治療】10 mg/kg/day ÷ BID\n" +
+          "【Meningitis】5 mg/kg/dose Q6-8H IV",
+      },
+      {
+        heading: "腎功能調整",
+        body:
+          "CrCl >30：不需調整\n" +
+          "CrCl 15-30：劑量減半\n" +
+          "CrCl <15：劑量減半 + Q24H\n" +
+          "HD：劑量減半，透析後給藥\n" +
+          "PD：比照 CrCl <15\n" +
+          "CRRT：劑量減半，維持 Q12H\n\n" +
+          "⚠️ PJP 預防和手術預防等低劑量不需腎調",
+      },
+      {
+        heading: "副作用與監測",
+        body:
+          "• 高血鉀（TMP 抑制 ENaC → 類似 amiloride 效應）\n" +
+          "• 骨髓抑制（嗜中性球低下、血小板低下、貧血）\n" +
+          "• Scr 假性升高（TMP 抑制 creatinine 分泌，非真正腎損傷）\n" +
+          "• 皮疹（含 Stevens-Johnson syndrome，罕見）\n" +
+          "• 肝毒性（罕見）\n\n" +
+          "高劑量（≥15 mg/kg/day）建議監測：CBC、電解質（K⁺）、Scr、LFT",
+      },
+      {
+        heading: "肥胖",
+        body: "UpToDate 建議用 Adjusted Body Weight（IBW + 0.4 × (TBW-IBW)）計算 mg/kg 劑量。",
+      },
+    ],
   },
 };

@@ -33,8 +33,8 @@ const MODELS: Record<string, PKModelDef> = {
     omegaCL2: 0.0793, omegaV2: 0.138, sigma2: 0.04,
   },
   roberts: {
-    name: "Roberts 2011（重症）", desc: "適用於 ICU 重症病人",
-    getCL: (crcl) => 0.0325 * crcl, getV: (tbw) => 1.53 * tbw,
+    name: "Roberts 2011（重症）", desc: "適用於 ICU 重症病人（CL 固定值）",
+    getCL: () => 4.58, getV: (tbw) => 1.53 * tbw,
     omegaCL2: 0.151, omegaV2: 0.138, sigma2: 0.04,
   },
 };
@@ -191,7 +191,14 @@ function generateOptions(CL: number, V: number, targetMin: number, targetMax: nu
     }
   }
   results.sort((a, b) => {
+    // 1. 在目標範圍內的優先
     if (a.inRange !== b.inRange) return a.inRange ? -1 : 1;
+    // 2. 偏好常用頻率（Q8H > Q12H > Q24H >> Q36H > Q48H）
+    const freqScore: Record<number, number> = { 8: 0, 12: 1, 24: 2, 36: 4, 48: 5 };
+    const fa = freqScore[a.interval] ?? 3;
+    const fb = freqScore[b.interval] ?? 3;
+    if (fa !== fb) return fa - fb;
+    // 3. AUC 最接近 500
     return Math.abs(a.auc24 - 500) - Math.abs(b.auc24 - 500);
   });
   return results;
@@ -288,28 +295,36 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
   level1Conc: number; level1Time: string; level2Conc: number; level2Time: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [tdmMethod, setTdmMethod] = useState<"auc" | "trough">("auc");
 
   if (!best) return null;
+
+  // Trough targets
+  const troughMin = 10;
+  const troughMax = 20;
 
   // ── Build note text ──
   const lines: string[] = [];
 
-  // Header
   lines.push("=== Vancomycin TDM Note ===");
   lines.push("");
-
-  // Patient info
   lines.push(`Patient: ${r(age)}y/${isFemale ? "F" : "M"}, ${r(tbw)} kg, Scr ${scr} mg/dL, CrCl ${r(crcl)} mL/min (CG)`);
   lines.push(`PK Model: ${modelName}`);
-  lines.push(`Target AUC24/MIC: ${targetMin}-${targetMax} (MIC = 1 mcg/mL)`);
+
+  if (tdmMethod === "auc") {
+    lines.push(`Monitoring method: AUC-guided dosing`);
+    lines.push(`Target AUC24/MIC: ${targetMin}-${targetMax} (MIC = 1 mcg/mL)`);
+  } else {
+    lines.push(`Monitoring method: Trough-guided dosing`);
+    lines.push(`Target trough: ${troughMin}-${troughMax} mcg/mL`);
+  }
   lines.push("");
 
   if (mode === "bayesian" && currentPK && currentDose > 0) {
-    // Bayesian mode：有給藥歷史 + level
+    // ── Bayesian mode ──
     lines.push("--- Current Regimen ---");
     lines.push(`Vancomycin ${currentDose} mg IV Q${currentInterval}H`);
 
-    // Measured levels
     if (level1Conc > 0) {
       lines.push("");
       lines.push("--- Measured Levels ---");
@@ -319,49 +334,74 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
       }
     }
 
-    // Bayesian PK
     lines.push("");
     lines.push("--- Bayesian PK Estimates ---");
     lines.push(`CL: ${activeCL.toFixed(2)} L/h | Vd: ${activeV.toFixed(1)} L (${(activeV / tbw).toFixed(2)} L/kg) | t1/2: ${halflife.toFixed(1)} h`);
     lines.push(`Estimated AUC24/MIC: ${r(currentPK.auc24)} mcg*h/mL`);
     lines.push(`Estimated Css,peak: ${currentPK.peak.toFixed(1)} mcg/mL | Css,trough: ${currentPK.trough.toFixed(1)} mcg/mL`);
 
-    // Assessment + Recommendation
     lines.push("");
     lines.push("--- Assessment & Recommendation ---");
 
-    const curAUC = currentPK.auc24;
-    const bestAUC = best.auc24;
-
-    if (curAUC >= targetMin && curAUC <= targetMax) {
-      // AUC in range → keep
-      lines.push(`AUC24/MIC ${r(curAUC)} is WITHIN target range (${targetMin}-${targetMax}).`);
-      lines.push("");
-      lines.push(`>> Keep current dose: Vancomycin ${currentDose} mg IV Q${currentInterval}H.`);
-      lines.push(`   Estimated steady-state AUC24/MIC: ${r(curAUC)}, trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
-    } else if (curAUC > targetMax) {
-      // AUC too high → reduce
-      lines.push(`AUC24/MIC ${r(curAUC)} is ABOVE target range (${targetMin}-${targetMax}).`);
-      lines.push(`Risk of nephrotoxicity. Dose reduction recommended.`);
-      lines.push("");
-      lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
-      lines.push(`   Expected AUC24/MIC: ${r(bestAUC)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
-      lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+    if (tdmMethod === "auc") {
+      // ── AUC-guided assessment ──
+      const curAUC = currentPK.auc24;
+      if (curAUC >= targetMin && curAUC <= targetMax) {
+        lines.push(`AUC24/MIC ${r(curAUC)} is WITHIN target range (${targetMin}-${targetMax}).`);
+        lines.push(`Estimated trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
+        lines.push("");
+        lines.push(`>> Keep current dose: Vancomycin ${currentDose} mg IV Q${currentInterval}H.`);
+        lines.push(`   Estimated steady-state AUC24/MIC: ${r(curAUC)}, trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
+      } else if (curAUC > targetMax) {
+        lines.push(`AUC24/MIC ${r(curAUC)} is ABOVE target range (${targetMin}-${targetMax}).`);
+        lines.push(`Estimated trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
+        lines.push(`Risk of nephrotoxicity. Dose reduction recommended.`);
+        lines.push("");
+        lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
+        lines.push(`   Expected AUC24/MIC: ${r(best.auc24)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
+        lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+      } else {
+        lines.push(`AUC24/MIC ${r(curAUC)} is BELOW target range (${targetMin}-${targetMax}).`);
+        lines.push(`Estimated trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
+        lines.push(`Subtherapeutic. Dose increase recommended.`);
+        lines.push("");
+        lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
+        lines.push(`   Expected AUC24/MIC: ${r(best.auc24)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
+        lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+      }
     } else {
-      // AUC too low → increase
-      lines.push(`AUC24/MIC ${r(curAUC)} is BELOW target range (${targetMin}-${targetMax}).`);
-      lines.push(`Subtherapeutic. Dose increase recommended.`);
-      lines.push("");
-      lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
-      lines.push(`   Expected AUC24/MIC: ${r(bestAUC)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
-      lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+      // ── Trough-guided assessment ──
+      const curTrough = currentPK.trough;
+      if (curTrough >= troughMin && curTrough <= troughMax) {
+        lines.push(`Estimated trough: ${curTrough.toFixed(1)} mcg/mL is WITHIN target range (${troughMin}-${troughMax} mcg/mL).`);
+        lines.push(`Estimated AUC24/MIC: ${r(currentPK.auc24)} (for reference).`);
+        lines.push("");
+        lines.push(`>> Keep current dose: Vancomycin ${currentDose} mg IV Q${currentInterval}H.`);
+        lines.push(`   Estimated steady-state trough: ${curTrough.toFixed(1)} mcg/mL, AUC24/MIC: ${r(currentPK.auc24)}.`);
+      } else if (curTrough > troughMax) {
+        lines.push(`Estimated trough: ${curTrough.toFixed(1)} mcg/mL is ABOVE target range (${troughMin}-${troughMax} mcg/mL).`);
+        lines.push(`Estimated AUC24/MIC: ${r(currentPK.auc24)} (for reference).`);
+        lines.push(`Risk of nephrotoxicity. Dose reduction recommended.`);
+        lines.push("");
+        lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
+        lines.push(`   Expected trough: ${best.trough.toFixed(1)} mcg/mL, AUC24/MIC: ${r(best.auc24)}.`);
+        lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+      } else {
+        lines.push(`Estimated trough: ${curTrough.toFixed(1)} mcg/mL is BELOW target range (${troughMin}-${troughMax} mcg/mL).`);
+        lines.push(`Estimated AUC24/MIC: ${r(currentPK.auc24)} (for reference).`);
+        lines.push(`Subtherapeutic. Dose increase recommended.`);
+        lines.push("");
+        lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
+        lines.push(`   Expected trough: ${best.trough.toFixed(1)} mcg/mL, AUC24/MIC: ${r(best.auc24)}.`);
+        lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+      }
     }
 
     lines.push("");
     lines.push("Recommend repeat vancomycin level in 24-48 hours after dose adjustment.");
 
   } else {
-    // Initial dose mode
+    // ── Initial dose mode ──
     lines.push("--- Initial Dose Recommendation ---");
     lines.push(`Loading dose: ${ldMg} mg IV (infuse over ${Math.max(1, ldMg / 1000)} hr)`);
     lines.push(`Maintenance dose: ${best.dose} mg IV Q${best.interval}H (infuse over ${best.infusion} hr)`);
@@ -371,14 +411,18 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
     lines.push(`AUC24/MIC: ${r(best.auc24)} mcg*h/mL ${best.inRange ? "(within target)" : "(outside target)"}`);
     lines.push(`Css,peak: ${best.peak.toFixed(1)} mcg/mL | Css,trough: ${best.trough.toFixed(1)} mcg/mL`);
     lines.push("");
-    lines.push("Recommend vancomycin trough level before 4th dose (or AUC monitoring within 24-48h).");
+    if (tdmMethod === "trough") {
+      lines.push(`Recommend vancomycin trough level before 4th dose (target: ${troughMin}-${troughMax} mcg/mL).`);
+    } else {
+      lines.push("Recommend vancomycin AUC monitoring within 24-48h (target AUC24/MIC: 400-600).");
+    }
   }
 
   lines.push("");
   lines.push(`PK parameters: CL ${activeCL.toFixed(2)} L/h, Vd ${activeV.toFixed(1)} L, t1/2 ${halflife.toFixed(1)} h`);
   lines.push(`Infusion rate should not exceed 10-15 mg/min to avoid Red Man Syndrome.`);
   lines.push("");
-  lines.push(`Calculated by Vancomycin TDM Calculator (Bayesian MAP, 1-compartment model).`);
+  lines.push(`Calculated by Vancomycin TDM Calculator (${mode === "bayesian" ? "Bayesian MAP" : "Population PK"}, 1-compartment model).`);
   lines.push(`References: Buelga et al. AAC 2005;49:4934 / Roberts et al. AAC 2011;55:3208`);
 
   const noteText = lines.join("\n");
@@ -392,6 +436,16 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
 
   return (
     <div>
+      {/* TDM Method Toggle */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {([["auc", "AUC-guided（AUC 400-600）"], ["trough", "Trough-guided（Trough 10-20）"]] as const).map(([m, label]) => (
+          <button key={m} onClick={() => setTdmMethod(m)}
+            style={{ ...S.toggleBtn, fontSize: 11, padding: "8px 4px", ...(tdmMethod === m ? S.toggleBtnActive : {}) }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       <pre style={{
         background: "#1E293B", color: "#E2E8F0", padding: 14, borderRadius: 8,
         fontSize: 11, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word",

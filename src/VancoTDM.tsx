@@ -275,6 +275,142 @@ function DateTimeInput({ label, value, onChange, placeholder }: {
   );
 }
 
+// ── TDM Note Component ──────────────────────────────────────
+function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL, activeV, halflife,
+  crcl, tbw, scr, age, isFemale, modelName, targetMin, targetMax, ldMg,
+  level1Conc, level1Time, level2Conc, level2Time,
+}: {
+  mode: string; currentDose: number; currentInterval: number;
+  currentPK: { peak: number; trough: number; auc24: number } | null;
+  best: DoseOption | null; activeCL: number; activeV: number; halflife: number;
+  crcl: number; tbw: number; scr: number; age: number; isFemale: boolean;
+  modelName: string; targetMin: number; targetMax: number; ldMg: number;
+  level1Conc: number; level1Time: string; level2Conc: number; level2Time: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  if (!best) return null;
+
+  // ── Build note text ──
+  const lines: string[] = [];
+
+  // Header
+  lines.push("=== Vancomycin TDM Note ===");
+  lines.push("");
+
+  // Patient info
+  lines.push(`Patient: ${r(age)}y/${isFemale ? "F" : "M"}, ${r(tbw)} kg, Scr ${scr} mg/dL, CrCl ${r(crcl)} mL/min (CG)`);
+  lines.push(`PK Model: ${modelName}`);
+  lines.push(`Target AUC24/MIC: ${targetMin}-${targetMax} (MIC = 1 mcg/mL)`);
+  lines.push("");
+
+  if (mode === "bayesian" && currentPK && currentDose > 0) {
+    // Bayesian mode：有給藥歷史 + level
+    lines.push("--- Current Regimen ---");
+    lines.push(`Vancomycin ${currentDose} mg IV Q${currentInterval}H`);
+
+    // Measured levels
+    if (level1Conc > 0) {
+      lines.push("");
+      lines.push("--- Measured Levels ---");
+      lines.push(`Level #1: ${level1Conc} mcg/mL (drawn ${level1Time})`);
+      if (level2Conc > 0) {
+        lines.push(`Level #2: ${level2Conc} mcg/mL (drawn ${level2Time})`);
+      }
+    }
+
+    // Bayesian PK
+    lines.push("");
+    lines.push("--- Bayesian PK Estimates ---");
+    lines.push(`CL: ${activeCL.toFixed(2)} L/h | Vd: ${activeV.toFixed(1)} L (${(activeV / tbw).toFixed(2)} L/kg) | t1/2: ${halflife.toFixed(1)} h`);
+    lines.push(`Estimated AUC24/MIC: ${r(currentPK.auc24)} mcg*h/mL`);
+    lines.push(`Estimated Css,peak: ${currentPK.peak.toFixed(1)} mcg/mL | Css,trough: ${currentPK.trough.toFixed(1)} mcg/mL`);
+
+    // Assessment + Recommendation
+    lines.push("");
+    lines.push("--- Assessment & Recommendation ---");
+
+    const curAUC = currentPK.auc24;
+    const bestAUC = best.auc24;
+
+    if (curAUC >= targetMin && curAUC <= targetMax) {
+      // AUC in range → keep
+      lines.push(`AUC24/MIC ${r(curAUC)} is WITHIN target range (${targetMin}-${targetMax}).`);
+      lines.push("");
+      lines.push(`>> Keep current dose: Vancomycin ${currentDose} mg IV Q${currentInterval}H.`);
+      lines.push(`   Estimated steady-state AUC24/MIC: ${r(curAUC)}, trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
+    } else if (curAUC > targetMax) {
+      // AUC too high → reduce
+      lines.push(`AUC24/MIC ${r(curAUC)} is ABOVE target range (${targetMin}-${targetMax}).`);
+      lines.push(`Risk of nephrotoxicity. Dose reduction recommended.`);
+      lines.push("");
+      lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
+      lines.push(`   Expected AUC24/MIC: ${r(bestAUC)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
+      lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+    } else {
+      // AUC too low → increase
+      lines.push(`AUC24/MIC ${r(curAUC)} is BELOW target range (${targetMin}-${targetMax}).`);
+      lines.push(`Subtherapeutic. Dose increase recommended.`);
+      lines.push("");
+      lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
+      lines.push(`   Expected AUC24/MIC: ${r(bestAUC)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
+      lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
+    }
+
+    lines.push("");
+    lines.push("Recommend repeat vancomycin level in 24-48 hours after dose adjustment.");
+
+  } else {
+    // Initial dose mode
+    lines.push("--- Initial Dose Recommendation ---");
+    lines.push(`Loading dose: ${ldMg} mg IV (infuse over ${Math.max(1, ldMg / 1000)} hr)`);
+    lines.push(`Maintenance dose: ${best.dose} mg IV Q${best.interval}H (infuse over ${best.infusion} hr)`);
+    lines.push(`Daily dose: ${best.dailyDose} mg/day`);
+    lines.push("");
+    lines.push("--- Expected Steady-State PK ---");
+    lines.push(`AUC24/MIC: ${r(best.auc24)} mcg*h/mL ${best.inRange ? "(within target)" : "(outside target)"}`);
+    lines.push(`Css,peak: ${best.peak.toFixed(1)} mcg/mL | Css,trough: ${best.trough.toFixed(1)} mcg/mL`);
+    lines.push("");
+    lines.push("Recommend vancomycin trough level before 4th dose (or AUC monitoring within 24-48h).");
+  }
+
+  lines.push("");
+  lines.push(`PK parameters: CL ${activeCL.toFixed(2)} L/h, Vd ${activeV.toFixed(1)} L, t1/2 ${halflife.toFixed(1)} h`);
+  lines.push(`Infusion rate should not exceed 10-15 mg/min to avoid Red Man Syndrome.`);
+  lines.push("");
+  lines.push(`Calculated by Vancomycin TDM Calculator (Bayesian MAP, 1-compartment model).`);
+  lines.push(`References: Buelga et al. AAC 2005;49:4934 / Roberts et al. AAC 2011;55:3208`);
+
+  const noteText = lines.join("\n");
+
+  function handleCopy() {
+    navigator.clipboard.writeText(noteText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div>
+      <pre style={{
+        background: "#1E293B", color: "#E2E8F0", padding: 14, borderRadius: 8,
+        fontSize: 11, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word",
+        maxHeight: 400, overflowY: "auto",
+      }}>
+        {noteText}
+      </pre>
+      <button onClick={handleCopy} style={{
+        width: "100%", marginTop: 8, padding: "12px 0", borderRadius: 8,
+        border: "none", background: copied ? "#059669" : "#0D9488",
+        color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
+        transition: "background 0.2s",
+      }}>
+        {copied ? "✅ 已複製到剪貼簿" : "📋 複製 TDM Note"}
+      </button>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════════════════════
@@ -602,10 +738,11 @@ export default function VancoTDM() {
             <div style={S.sectionTitle}>劑量比較（前 10 選項）</div>
             <div style={{ overflowX: "auto" }}>
               <table style={S.table}>
-                <thead><tr><th style={S.th}>劑量</th><th style={S.th}>頻率</th><th style={S.th}>AUC24</th><th style={S.th}>Peak</th><th style={S.th}>Trough</th></tr></thead>
+                <thead><tr><th style={S.th}></th><th style={S.th}>劑量</th><th style={S.th}>頻率</th><th style={S.th}>AUC24</th><th style={S.th}>Peak</th><th style={S.th}>Trough</th></tr></thead>
                 <tbody>
                   {options.slice(0, 10).map((opt, i) => (
                     <tr key={i} style={opt.inRange ? { background: "#F0FDF4" } : {}}>
+                      <td style={{ ...S.td, width: 30, textAlign: "center" as const }}>{i === 0 && opt.inRange ? "⭐" : ""}</td>
                       <td style={S.td}>{opt.dose} mg</td><td style={S.td}>Q{opt.interval}H</td>
                       <td style={{ ...S.td, fontWeight: 600, color: opt.inRange ? "#059669" : "#94A3B8" }}>{r(opt.auc24)}</td>
                       <td style={S.td}>{opt.peak.toFixed(1)}</td><td style={S.td}>{opt.trough.toFixed(1)}</td>
@@ -614,7 +751,35 @@ export default function VancoTDM() {
                 </tbody>
               </table>
             </div>
-            <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 6 }}>綠底 = AUC24 在目標範圍 | MIC = 1 | 每日 ≤4.5 g</div>
+            <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 6 }}>⭐ = 推薦 | 綠底 = AUC24 在目標範圍 | MIC = 1 | 每日 ≤4.5 g</div>
+          </div>
+
+          {/* ── TDM Note（英文，可複製）── */}
+          <div style={S.section}>
+            <div style={S.sectionTitle}>📋 TDM Note</div>
+            <TDMNote
+              mode={mode}
+              currentDose={parseFloat(doseHist.mdDose) || 0}
+              currentInterval={parseFloat(doseHist.mdInterval) || 0}
+              currentPK={bayesResult?.currentPK ?? null}
+              best={best}
+              activeCL={activeCL}
+              activeV={activeV}
+              halflife={activeCL > 0 && activeV > 0 ? 0.693 / (activeCL / activeV) : 0}
+              crcl={crcl}
+              tbw={w}
+              scr={sc}
+              age={ag}
+              isFemale={isFemale}
+              modelName={model.name}
+              targetMin={tMin}
+              targetMax={tMax}
+              ldMg={ldMg}
+              level1Conc={parseFloat(level1.conc) || 0}
+              level1Time={level1.datetime ? formatDT(level1.datetime) : ""}
+              level2Conc={hasLevel2 ? (parseFloat(level2.conc) || 0) : 0}
+              level2Time={hasLevel2 && level2.datetime ? formatDT(level2.datetime) : ""}
+            />
           </div>
 
           <div style={S.section}>

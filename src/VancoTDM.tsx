@@ -28,14 +28,14 @@ type DoseOption = {
 // ── PK Models ────────────────────────────────────────────────
 const MODELS: Record<string, PKModelDef> = {
   buelga: {
-    name: "Buelga 2005（一般）", desc: "適用於一般成人",
-    getCL: (crcl) => 0.018 * crcl, getV: (tbw) => 0.98 * tbw,
+    name: "Buelga 2005（一般）", desc: "適用於一般成人（血液腫瘤）",
+    getCL: (crcl) => 1.08 * (crcl * 60 / 1000), getV: (tbw) => 0.98 * tbw,
     omegaCL2: 0.0793, omegaV2: 0.138, sigma2: 0.04,
   },
   roberts: {
-    name: "Roberts 2011（重症）", desc: "適用於 ICU 重症病人（CL 固定值）",
-    getCL: () => 4.58, getV: (tbw) => 1.53 * tbw,
-    omegaCL2: 0.151, omegaV2: 0.138, sigma2: 0.04,
+    name: "Roberts 2011（重症）", desc: "適用於 ICU 重症病人（CI model）",
+    getCL: (crcl) => 4.58 * (crcl / 100), getV: (tbw) => 1.53 * tbw,
+    omegaCL2: 0.151, omegaV2: 0.140, sigma2: 0.04,
   },
 };
 

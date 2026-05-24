@@ -93,10 +93,15 @@ function calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy 
     }
   }
 
-  // CrCl 一律用 dosing weight 算（與舊版相容）
+  // CrCl（CG 公式）：
+  // BMI <30 用 TBW；BMI ≥30 用 AdjBW（避免 TBW 高估肥胖者 CrCl）
+  // ⚠️ CrCl 的體重選擇跟「藥物劑量計算」的體重策略無關！
   let crcl: number | null = null;
-  if (dosing_weight > 0 && a > 0 && s > 0 && gender && rrt === "none") {
-    crcl = ((140 - a) * dosing_weight) / (72 * s);
+  if (w > 0 && a > 0 && s > 0 && gender && rrt === "none") {
+    const crclWeight = (bmi && bmi >= 30 && adjBw) ? adjBw
+                     : (bmi && bmi >= 30 && ibw) ? round1(ibw + 0.4 * (w - ibw))
+                     : w;
+    crcl = ((140 - a) * crclWeight) / (72 * s);
     if (gender === "F") crcl *= 0.85;
     crcl = round1(crcl);
   }

@@ -9,7 +9,7 @@ import { useState, useMemo } from "react";
 // ── Types ────────────────────────────────────────────────────
 type PKModelDef = {
   name: string; desc: string;
-  getCL: (crcl: number) => number;
+  getCL: (crcl: number, tbw: number, ht: number) => number;
   getV: (tbw: number) => number;
   omegaCL2: number; omegaV2: number; sigma2: number;
 };
@@ -25,6 +25,11 @@ type DoseOption = {
   dailyDose: number; inRange: boolean;
 };
 
+// ── BSA (DuBois) ────────────────────────────────────────────
+function calcBSA(tbw: number, ht: number): number {
+  return 0.007184 * Math.pow(ht, 0.725) * Math.pow(tbw, 0.425);
+}
+
 // ── PK Models ────────────────────────────────────────────────
 const MODELS: Record<string, PKModelDef> = {
   buelga: {
@@ -33,8 +38,13 @@ const MODELS: Record<string, PKModelDef> = {
     omegaCL2: 0.0793, omegaV2: 0.138, sigma2: 0.04,
   },
   roberts: {
-    name: "Roberts 2011（重症）", desc: "適用於 ICU 重症病人（CI model）",
-    getCL: (crcl) => 4.58 * (crcl / 100), getV: (tbw) => 1.53 * tbw,
+    name: "Roberts 2011（重症）", desc: "適用於 ICU 重症（CrCl BSA-normalized）",
+    getCL: (crcl, tbw, ht) => {
+      const bsa = calcBSA(tbw, ht);
+      const crclNorm = crcl / bsa * 1.73; // mL/min/1.73m²
+      return 4.58 * (crclNorm / 100);
+    },
+    getV: (tbw) => 1.53 * tbw,
     omegaCL2: 0.151, omegaV2: 0.140, sigma2: 0.04,
   },
 };
@@ -147,9 +157,14 @@ function bayesianMAP(
   let bestLnCL = lnCLpop, bestLnV = lnVpop, bestObj = objective(bestLnCL, bestLnV);
   const sdCL = Math.sqrt(omegaCL2), sdV = Math.sqrt(omegaV2);
 
-  for (let pass = 0; pass < 3; pass++) {
-    const range = pass === 0 ? 2.5 : (pass === 1 ? 0.5 : 0.1);
-    const steps = 20;
+  // 3 passes: coarse → medium → fine (21×21 grid each)
+  const passes = [
+    { range: 3.0, steps: 20 },   // coarse: ±3 SD
+    { range: 0.6, steps: 20 },   // medium: ±0.6 SD around best
+    { range: 0.12, steps: 20 },  // fine: ±0.12 SD around best
+  ];
+
+  for (const { range, steps } of passes) {
     const startLnCL = bestLnCL - range * sdCL;
     const startLnV = bestLnV - range * sdV;
     const stepCL = (2 * range * sdCL) / steps;
@@ -493,11 +508,19 @@ export default function VancoTDM() {
   const ag = parseFloat(age) || 0;
   const sc = parseFloat(scr) || 0;
   const isFemale = gender === "female";
-  const crcl = (w > 0 && ag > 0 && sc > 0) ? calcCrCl(ag, w, sc, isFemale) : 0;
   const bmi = (w > 0 && ht > 0) ? w / ((ht / 100) ** 2) : 0;
 
+  // IBW
+  const ibw = (w > 0 && ht > 0) ? (isFemale ? 45.5 + 0.91 * (ht - 152.4) : 50 + 0.91 * (ht - 152.4)) : 0;
+  // AdjBW
+  const adjBw = ibw > 0 ? ibw + 0.4 * (w - ibw) : w;
+
+  // CrCl：BMI <30 用 TBW；BMI ≥30 用 AdjBW
+  const crclWeight = (bmi >= 30 && adjBw > 0) ? adjBw : w;
+  const crcl = (crclWeight > 0 && ag > 0 && sc > 0) ? calcCrCl(ag, crclWeight, sc, isFemale) : 0;
+
   const model = MODELS[modelKey];
-  const CLpop = crcl > 0 ? model.getCL(crcl) : 0;
+  const CLpop = crcl > 0 ? model.getCL(crcl, w, ht) : 0;
   const Vpop = w > 0 ? model.getV(w) : 0;
   const canCalcBasic = w > 0 && ag > 0 && sc > 0 && ht > 0;
 
@@ -623,8 +646,11 @@ export default function VancoTDM() {
         </div>
         {canCalcBasic && (
           <div style={{ marginTop: 12, padding: 10, background: "#F0FDFA", borderRadius: 8, fontSize: 12, color: "#475569" }}>
-            <div>CrCl：<strong>{Math.round(crcl)} mL/min</strong>（CG）</div>
-            <div>BMI：<strong>{bmi.toFixed(1)}</strong></div>
+            <div>CrCl：<strong>{Math.round(crcl)} mL/min</strong>（CG，{bmi >= 30 ? `用 AdjBW ${Math.round(adjBw)} kg` : `用 TBW ${Math.round(w)} kg`}）</div>
+            {modelKey === "roberts" && ht > 0 && w > 0 && (
+              <div>CrCl（BSA-normalized）：<strong>{Math.round(crcl / calcBSA(w, ht) * 1.73)} mL/min/1.73m²</strong></div>
+            )}
+            <div>BMI：<strong>{bmi.toFixed(1)}</strong>{bmi >= 30 ? " ⚖️ 肥胖" : ""}</div>
             {crcl >= 130 && <div style={{ color: "#D97706", fontWeight: 600 }}>⚡ ARC（CrCl ≥130）</div>}
           </div>
         )}

@@ -363,6 +363,36 @@ function Warning({ text }: { text: string }) {
   );
 }
 
+// ── 藥師 IV 配藥計算器（互動 row）──────────────────────────
+function IVCalcRow({ dilPerAmp, drugLabel }: { dilPerAmp: number; drugLabel: string }) {
+  const [amps, setAmps] = useState("");
+  const a = parseFloat(amps) || 0;
+  const vol = a > 0 ? Math.round(a * dilPerAmp) : 0;
+
+  return (
+    <div style={{ marginTop: 10, padding: 12, background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>💉 藥師決定給予支數（IV 配藥用）</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input type="number" value={amps} onChange={e => setAmps(e.target.value)}
+          placeholder="例：2.5" step="0.5" min="0"
+          style={{ width: 80, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 14, textAlign: "center" as const, outline: "none" }} />
+        <span style={{ fontSize: 13, color: "#64748B" }}>支 {drugLabel}</span>
+      </div>
+      {a > 0 && (
+        <div style={{ marginTop: 8, padding: 10, background: "#ECFDF5", borderRadius: 8, border: "1px solid #6EE7B7" }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#065F46" }}>護理配藥指示</div>
+          <div style={{ fontSize: 13, color: "#065F46", marginTop: 2 }}>
+            請抽取 {amps} 支 {drugLabel}，加入 {vol} mL D5W
+          </div>
+          <div style={{ fontSize: 11, color: "#047857", marginTop: 2 }}>
+            （{dilPerAmp} mL/支）
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 臨床參考（可展開）─────────────────────────────────────
 function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
   const [open, setOpen] = useState(false);
@@ -656,7 +686,13 @@ export default function App() {
                   )}
 
                   {/* 簡單情境：直接用 rows */}
-                  {sc.rows?.map((r: any, i: number) => <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />)}
+                  {sc.rows?.map((r: any, i: number) => {
+                    // 特殊 row type: ivCalc → 渲染藥師輸入框
+                    if (r.type === "ivCalc") {
+                      return <IVCalcRow key={i} dilPerAmp={r.dilPerAmp} drugLabel={r.drugLabel} />;
+                    }
+                    return <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />;
+                  })}
                   {sc.warnings?.map((w: any, i: number) => <Warning key={i} text={w} />)}
 
                   {/* 複雜情境：有多個路徑 subResults */}

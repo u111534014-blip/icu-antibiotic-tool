@@ -122,11 +122,15 @@ function buildDoseRows(
 
     // 稀釋
     const ampMax = singleMax / TMP_PER_AMP;
-    const dilVol = isWaterLimit ? r(ampMax * 75) : r(ampMax * 125);
+    const dilPerAmp = isWaterLimit ? 75 : 125;
+    const dilVol = r(ampMax * dilPerAmp);
     rows.push({
       label: "IV 稀釋",
       value: `加入 ${dilVol} mL D5W${isWaterLimit ? "（限水配方 75 mL/支）" : "（標準 125 mL/支）"}`,
     });
+
+    // 藥師互動輸入框
+    rows.push({ type: "ivCalc", dilPerAmp, drugLabel: "Sevatrim" });
   }
 
   if (sc.note) rows.push({ label: "療程與備註", value: sc.note });

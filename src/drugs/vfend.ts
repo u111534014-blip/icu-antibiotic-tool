@@ -22,7 +22,7 @@ export const vfend: Drug = {
   weightStrategy: "AdjBW_if_obese",
   searchTerms: [
     "vfend", "voriconazole", "triazole",
-    "黴飛", "威剋黴", "antifungal",
+    "黴飛", "威剋黴",
   ],
 
   indications: [
@@ -700,5 +700,82 @@ export const vfend: Drug = {
         bg: "#EFF6FF", border: "#93C5FD", color: "#1E40AF",
       },
     };
+  },
+
+  clinicalPearls: {
+    title: "臨床參考",
+    sections: [
+      {
+        heading: "藥物特性",
+        body:
+          "• Triazole 類抗真菌藥（廣譜）\n" +
+          "• 院內品項：Vfend 針 200 mg/Vial、Vfend 錠 200 mg、威剋黴錠 200 mg（臨採）\n" +
+          "• PO 生體可用率 >90% → IV↔PO 可互換\n" +
+          "• 非線性藥動學（劑量增加 → 不成比例濃度上升）\n" +
+          "• CYP2C19 基因多型性影響代謝（poor metabolizer 濃度高 4 倍）\n" +
+          "• ⚠️ 不具 mucormycosis 活性",
+      },
+      {
+        heading: "TDM（治療藥物監測）",
+        body:
+          "• 目標 trough：1-5.5 μg/mL\n" +
+          "• <1：療效不足（尤其 invasive aspergillosis）\n" +
+          "• >5.5：毒性風險增加（肝毒性、視覺副作用、神經毒性）\n" +
+          "• 建議在第 4-7 天開始測（穩態後）\n" +
+          "• 每次調整劑量後 4-7 天追蹤",
+      },
+      {
+        heading: "抗菌譜重點",
+        body:
+          "【涵蓋】\n" +
+          "• Aspergillus spp.（首選！）\n" +
+          "• Candida spp.（含 C. krusei — azole 中唯一有效）\n" +
+          "• Scedosporium apiospermum\n" +
+          "• Fusarium spp.（部分）\n" +
+          "• Dimorphic fungi\n" +
+          "• Cryptococcus\n\n" +
+          "【不涵蓋】\n" +
+          "• Mucorales（毛黴菌目）— 禁忌！\n" +
+          "• Candida glabrata（需較高劑量、TDM 確認）",
+      },
+      {
+        heading: "劑量速查",
+        body:
+          "【Loading IV】6 mg/kg Q12H × 2 doses\n" +
+          "【Maintenance IV】4 mg/kg Q12H\n" +
+          "【PO】200-300 mg BID（= 1-1.5 錠）\n" +
+          "【Candidemia loading】400 mg Q12H × 2 或 6 mg/kg Q12H × 2\n" +
+          "取整到最近半支（100 mg 倍數）",
+      },
+      {
+        heading: "肝功能調整",
+        body:
+          "【UpToDate】CTP A/B：LD 標準，MD 50%。CTP C：無建議\n" +
+          "【熱病 PK 研究】CTP A/B：LD 標準，MD 50%。CTP C：LD 50%，MD 25%",
+      },
+      {
+        heading: "腎功能與 IV vehicle",
+        body:
+          "• PO：不需腎功能調整\n" +
+          "• IV vehicle（SBECD）在 CrCl <50 有蓄積風險\n" +
+          "• 熱病建議：CrCl <50 避免 IV，改用 PO\n" +
+          "• HD/CRRT：不需調整（SBECD 可被透析移除）",
+      },
+      {
+        heading: "肥胖",
+        body:
+          "• UpToDate：用 AdjBW（IBW + 0.4 × (TBW-IBW)）\n" +
+          "• 熱病：用 IBW\n" +
+          "• 本工具預設用 AdjBW（UpToDate 建議），但提醒使用者可參考熱病 IBW",
+      },
+      {
+        heading: "重要交互作用",
+        body:
+          "• CYP2C19 / CYP3A4 / CYP2C9 抑制劑 + 受質\n" +
+          "• 禁忌合併：rifampin、carbamazepine、St. John's wort、ritonavir（高劑量）\n" +
+          "• 需調整：tacrolimus（減半）、cyclosporine（減半）、warfarin（INR ↑）\n" +
+          "• 注意：sirolimus（禁忌合併）",
+      },
+    ],
   },
 };

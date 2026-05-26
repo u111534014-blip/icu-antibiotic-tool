@@ -375,4 +375,76 @@ export const tazocin: Drug = {
       },
     };
   },
+
+  clinicalPearls: {
+    title: "臨床參考",
+    sections: [
+      {
+        heading: "藥物特性",
+        body:
+          "• Piperacillin（antipseudomonal penicillin）+ Tazobactam（β-lactamase inhibitor）\n" +
+          "• 院內品項：帝斯坦乾粉注射劑 2.25 g/Vial（pip 2 g + tazo 0.25 g）\n" +
+          "• 1 支 = 2.25 g；1.5 支 = 3.375 g；2 支 = 4.5 g\n" +
+          "• 腎功能排除為主\n" +
+          "• 肝功能 CTP A-C 不需調整",
+      },
+      {
+        heading: "抗菌譜重點",
+        body:
+          "【涵蓋】\n" +
+          "• Pseudomonas aeruginosa（首選 anti-pseudomonal β-lactam 之一）\n" +
+          "• ESBL-producing Enterobacterales（部分，但 carbapenem 仍為首選）\n" +
+          "• Anaerobes（含 B. fragilis）\n" +
+          "• Streptococci / MSSA\n" +
+          "• Enterococcus faecalis（非 VRE）\n\n" +
+          "【不涵蓋】\n" +
+          "• MRSA\n" +
+          "• Stenotrophomonas maltophilia\n" +
+          "• CRE / CRAB\n" +
+          "• Atypical pathogens",
+      },
+      {
+        heading: "劑量速查",
+        body:
+          "【3.375 g Q6H】輕中度感染（IAI 社區型、UTI、SSTI 標準、咬傷）\n" +
+          "【4.5 g Q6H】重症（HAP/VAP、敗血症、neutropenic fever、Pseudomonas 感染）\n" +
+          "【4.5 g Q6H over 3hr】延長滴注（重症首選）\n" +
+          "【4.5 g loading + 22.5 g/day CI】ARC ≥170（連續滴注）",
+      },
+      {
+        heading: "腎功能調整（UpToDate）",
+        body:
+          "3.375 g 基準：\n" +
+          "  CrCl ≥40：3.375 g Q6H\n" +
+          "  CrCl 20-39：2.25 g Q6H\n" +
+          "  CrCl <20：2.25 g Q8H\n\n" +
+          "4.5 g 基準：\n" +
+          "  CrCl ≥40：4.5 g Q6H\n" +
+          "  CrCl 20-39：3.375 g Q6H\n" +
+          "  CrCl <20：2.25 g Q6H\n\n" +
+          "HD：4.5 g Q12H 或 2.25 g Q8H（透析後）\n" +
+          "PD：同 HD\n" +
+          "CRRT：4.5 g Q8H\n" +
+          "ARC 130-170：4.5 g Q6H over 3hr\n" +
+          "ARC ≥170：Loading 4.5 g + 22.5 g/day CI",
+      },
+      {
+        heading: "熱病建議（通則）",
+        body:
+          "CrCl ≥20：4.5 g Q8H over 4hr\n" +
+          "CrCl <20：4.5 g Q12H over 4hr\n" +
+          "HD：4.5 g Q12H over 4hr（透析後）\n" +
+          "CAPD：無資料\n" +
+          "CRRT：3.375-4.5 g Q8H over 4hr\n\n" +
+          "熱病不分適應症一律採延長滴注",
+      },
+      {
+        heading: "給藥方法",
+        body:
+          "【Traditional】30 min\n" +
+          "【Extended infusion】3-4 hr（重症首選！%T>MIC 更高）\n" +
+          "【Continuous infusion】24hr（ARC ≥170 首選）",
+      },
+    ],
+  },
 };

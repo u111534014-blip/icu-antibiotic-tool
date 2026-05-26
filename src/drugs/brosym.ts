@@ -122,4 +122,48 @@ export const brosym: Drug = {
       },
     };
   },
+
+  clinicalPearls: {
+    title: "臨床參考",
+    sections: [
+      {
+        heading: "藥物特性",
+        body:
+          "• Cefoperazone（第三代 cephalosporin）+ Sulbactam（1:1 比例）\n" +
+          "• 院內品項：博益欣注射劑 2 g/Vial（cefo 1 g + sulb 1 g）\n" +
+          "• ⚠️ 美國已下市，UpToDate 無資料，劑量依廠商建議\n" +
+          "• Cefoperazone 經膽道排泄（~70%）→ 膽道阻塞或嚴重肝病需注意\n" +
+          "• 腎功能不論高低標準劑量不變",
+      },
+      {
+        heading: "抗菌譜重點",
+        body:
+          "【涵蓋】\n" +
+          "• Enterobacterales（含部分 ESBL，靠 sulbactam）\n" +
+          "• Pseudomonas aeruginosa（cefoperazone 有活性）\n" +
+          "• Acinetobacter baumannii（sulbactam 活性）\n" +
+          "• Anaerobes（部分）\n\n" +
+          "【不涵蓋】\n" +
+          "• MRSA\n" +
+          "• CRE\n" +
+          "• Stenotrophomonas maltophilia",
+      },
+      {
+        heading: "劑量速查",
+        body:
+          "【標準】4 g Q12H（= 2 支，含 sulbactam 2 g）\n" +
+          "【CRAB 高劑量】4 g Q8H（⚠️ 非首選，MDR Acinetobacter 首選為 Unasyn 高劑量）\n" +
+          "【HD】4 g Q12H（不需減量）\n" +
+          "【CRRT】2 g Q6H",
+      },
+      {
+        heading: "副作用",
+        body:
+          "• Disulfiram-like reaction（避免飲酒！cefoperazone 含 MTT 基團）\n" +
+          "• 維生素 K 缺乏 → 凝血異常（長期使用監測 PT/INR）\n" +
+          "• 膽汁淤積（膽道排泄為主）\n" +
+          "• 腹瀉",
+      },
+    ],
+  },
 };

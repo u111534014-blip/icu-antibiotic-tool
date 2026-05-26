@@ -309,4 +309,62 @@ export const unasyn: Drug = {
       },
     };
   },
+
+  clinicalPearls: {
+    title: "臨床參考",
+    sections: [
+      {
+        heading: "藥物特性",
+        body:
+          "• Ampicillin + Sulbactam（2:1 比例）\n" +
+          "• 院內品項：Sulampi 舒安比 1.5 g/Vial（amp 1 g + sulb 0.5 g）\n" +
+          "• 1 支 = 1.5 g；2 支 = 3 g\n" +
+          "• Sulbactam 本身對 Acinetobacter 有抗菌活性！\n" +
+          "• 肝功能 CTP A-C 不需調整",
+      },
+      {
+        heading: "抗菌譜重點",
+        body:
+          "【涵蓋】\n" +
+          "• MSSA\n" +
+          "• Enterococcus faecalis（非 VRE）\n" +
+          "• Anaerobes（含 B. fragilis）\n" +
+          "• Acinetobacter baumannii（sulbactam 活性！高劑量方案）\n" +
+          "• H. influenzae（含 β-lactamase 產生株）\n" +
+          "• Pasteurella / Eikenella（咬傷病原）\n\n" +
+          "【不涵蓋】\n" +
+          "• MRSA\n" +
+          "• Pseudomonas aeruginosa\n" +
+          "• ESBL-producing Enterobacterales\n" +
+          "• Enterococcus faecium",
+      },
+      {
+        heading: "劑量速查",
+        body:
+          "【3 g Q6H】大部分適應症（BSI、CAP、HAP/VAP、IAI、SSTI、endocarditis）\n" +
+          "【1.5-3 g Q6H】吸入性肺炎、咬傷\n" +
+          "【MDR Acinetobacter 高劑量】9 g Q8H over 4hr 或 27 g/day CI\n" +
+          "  → 目標 sulbactam 3 g Q8H 或 9 g/day",
+      },
+      {
+        heading: "腎功能調整（3 g Q6H 基準）",
+        body:
+          "CrCl ≥30：3 g Q6H\n" +
+          "CrCl 15-29：3 g Q12H\n" +
+          "CrCl 5-14：3 g Q24H\n" +
+          "HD：3 g Q12-24H（透析後）\n" +
+          "PD：3 g Q24H\n" +
+          "CRRT：3 g Q8-12H",
+      },
+      {
+        heading: "MDR Acinetobacter 高劑量方案",
+        body:
+          "目標：sulbactam 每日 ≥9 g\n" +
+          "方案 A：9 g（= 6 支）Q8H over 4hr\n" +
+          "方案 B：27 g/day 連續滴注\n" +
+          "方案 C：3 g Q4H（不耐受高劑量時）\n\n" +
+          "需合併用藥。首選 Unasyn 而非 Brosym",
+      },
+    ],
+  },
 };

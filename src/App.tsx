@@ -498,16 +498,13 @@ export default function App() {
     "AdjBW_if_obese";
 
   const patientParams: PatientParamsResult = (() => {
-    if (!drugConfig?.needsRenal) {
+    // 不需腎調也不需體重（如 Cresemba）→ 全部歸零
+    if (!drugConfig?.needsRenal && !drugConfig?.needsWeight) {
       return { dosing_weight: 0, crcl: null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
     }
-    // 不需要體重的藥（如 Cresemba）→ 直接用 directCrcl
-    if (drugConfig.needsWeight === false) {
-      return { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
-    }
-    // 需要體重的藥
-    if (crclMode === "direct") {
-      // 直接輸入 CrCl：只需體重（算劑量用）+ CrCl
+
+    // 只需體重不需腎調（如 Micafungin、Anidulafungin）→ 算體重相關參數
+    if (!drugConfig?.needsRenal && drugConfig?.needsWeight) {
       const w = parseFloat(tbw) || 0;
       const h = parseFloat(height);
       let ibw: number | null = null;
@@ -515,52 +512,63 @@ export default function App() {
       let bmi: number | null = null;
       let dosing_weight = w;
       let weight_note = "使用實際體重（TBW）";
-
       if (w > 0 && h > 0) {
         bmi = round1(w / Math.pow(h / 100, 2));
         ibw = round1(gender === "F" ? 45.5 + 0.91 * (h - 152.4) : 50 + 0.91 * (h - 152.4));
       }
-
-      // 即使直接輸入 CrCl，仍依體重策略決定 dosing weight
       const strategy = activeWeightStrategy;
-      if (strategy === "TBW") {
-        dosing_weight = w;
-        weight_note = "策略：永遠使用 TBW";
-      } else if (strategy === "IBW" && ibw) {
-        dosing_weight = ibw;
-        weight_note = `策略：使用 IBW（${ibw} kg）`;
-      } else if (strategy === "IBW_if_obese" && ibw && bmi && bmi >= 30) {
-        dosing_weight = ibw;
-        weight_note = `肥胖（BMI ${bmi}）→ 使用 IBW（${ibw} kg）`;
-      } else if (strategy === "AdjBW_if_obese" && ibw && bmi && bmi >= 30) {
+      if (strategy === "AdjBW_if_obese" && ibw && bmi && bmi >= 30) {
         adjBw = round1(ibw + 0.4 * (w - ibw));
         dosing_weight = adjBw;
         weight_note = `肥胖（BMI ${bmi}）→ AdjBW ${adjBw} kg`;
       }
-
-      const directCrclVal = parseFloat(directCrcl) || null;
-      return { dosing_weight, crcl: directCrclVal, egfr: null, ibw, adjBw, bmi, weight_note };
+      return { dosing_weight, crcl: null, egfr: null, ibw, adjBw, bmi, weight_note };
     }
-    // 自動計算模式
+
+    // 需腎調但不需體重（needsRenal:true, needsWeight:false）→ 只要 CrCl
+    if (drugConfig?.needsWeight === false) {
+      return { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+    }
+
+    // 需腎調 + 需體重
+    if (crclMode === "direct") {
+      const w = parseFloat(tbw) || 0;
+      const h = parseFloat(height);
+      let ibw: number | null = null;
+      let adjBw: number | null = null;
+      let bmi: number | null = null;
+      let dosing_weight = w;
+      let weight_note = "使用實際體重（TBW）";
+      if (w > 0 && h > 0) {
+        bmi = round1(w / Math.pow(h / 100, 2));
+        ibw = round1(gender === "F" ? 45.5 + 0.91 * (h - 152.4) : 50 + 0.91 * (h - 152.4));
+      }
+      const strategy = activeWeightStrategy;
+      if (strategy === "TBW") { weight_note = "策略：永遠使用 TBW"; }
+      else if (strategy === "IBW" && ibw) { dosing_weight = ibw; weight_note = `策略：使用 IBW（${ibw} kg）`; }
+      else if (strategy === "IBW_if_obese" && ibw && bmi && bmi >= 30) { dosing_weight = ibw; weight_note = `肥胖（BMI ${bmi}）→ 使用 IBW（${ibw} kg）`; }
+      else if (strategy === "AdjBW_if_obese" && ibw && bmi && bmi >= 30) { adjBw = round1(ibw + 0.4 * (w - ibw)); dosing_weight = adjBw; weight_note = `肥胖（BMI ${bmi}）→ AdjBW ${adjBw} kg`; }
+      return { dosing_weight, crcl: parseFloat(directCrcl) || null, egfr: null, ibw, adjBw, bmi, weight_note };
+    }
     return calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy: activeWeightStrategy });
   })();
 
   const canCalc = (() => {
     if (!drugConfig || !indicationData) return false;
+    // 只需體重不需腎調（Micafungin 等）→ 有體重就能算
+    if (!drugConfig.needsRenal && drugConfig.needsWeight) {
+      if (!tbw) return false;
+    }
+    // 需要腎調的藥
     if (drugConfig.needsRenal) {
       if (!rrt) return false;
-      if (drugConfig.needsWeight !== false) {
-        if (crclMode === "direct") {
-          // 直接輸入模式：需要體重 + CrCl（rrt!=none 時不需 CrCl）
-          if (!tbw) return false;
-          if (rrt === "none" && !directCrcl) return false;
-        } else {
-          // 自動計算模式：需要全部欄位
-          if (!tbw || !age || !scr || !gender) return false;
-          if (rrt === "none" && patientParams.crcl === null) return false;
-        }
+      if (crclMode === "direct") {
+        if (drugConfig.needsWeight && !tbw) return false;
+        if (rrt === "none" && !directCrcl) return false;
       } else {
-        // 不需要體重的藥：rrt=none 時要求 CrCl
+        // 自動計算
+        if (drugConfig.needsWeight && !tbw) return false;
+        if (!age || !scr || !gender) return false;
         if (rrt === "none" && patientParams.crcl === null) return false;
       }
     }
@@ -637,13 +645,15 @@ export default function App() {
 
         <DrugSearchSelect drugList={drugList} selectedId={drugId} onSelect={selectDrug} />
 
-        {/* 病患資料 */}
+        {/* 病患資料：needsRenal（要腎調）或 needsWeight（要體重算劑量）的藥才顯示 */}
         {(drugConfig?.needsRenal || drugConfig?.needsWeight) && (
           <div style={S.section}>
             <div style={S.sectionTitle}>病患資料</div>
 
-            {/* CrCl 模式切換（只有 needsWeight 的藥才顯示） */}
-            {drugConfig.needsWeight !== false && (
+            {/* ────────────────────────────────────────────── */}
+            {/* CrCl 模式切換：只有需要腎功能調整的藥才顯示     */}
+            {/* ────────────────────────────────────────────── */}
+            {drugConfig.needsRenal && (
               <div style={{ marginBottom: 14 }}>
                 <label style={S.label}>CrCl 來源</label>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -663,7 +673,10 @@ export default function App() {
               </div>
             )}
 
-            {drugConfig.needsWeight !== false && crclMode === "auto" && (
+            {/* ────────────────────────────────────────────── */}
+            {/* 自動計算模式：體重/身高/年齡/性別/Scr 全部顯示   */}
+            {/* ────────────────────────────────────────────── */}
+            {drugConfig.needsRenal && crclMode === "auto" && (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" }}>
                   <Input label="體重 TBW" value={tbw} onChange={setTbw} placeholder="kg" suffix="kg" />
@@ -690,13 +703,18 @@ export default function App() {
               </>
             )}
 
-            {drugConfig.needsWeight !== false && crclMode === "direct" && (
+            {/* ────────────────────────────────────────────── */}
+            {/* 直接輸入 CrCl 模式：體重（如需）+ CrCl          */}
+            {/* ────────────────────────────────────────────── */}
+            {drugConfig.needsRenal && crclMode === "direct" && (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" }}>
-                  <Input label="體重 TBW" value={tbw} onChange={setTbw} placeholder="kg" suffix="kg" />
-                  <Input label="身高（選填，算 BMI/IBW）" value={height} onChange={setHeight} placeholder="cm" suffix="cm" />
-                </div>
-                {height && (
+                {drugConfig.needsWeight && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" }}>
+                    <Input label="體重 TBW" value={tbw} onChange={setTbw} placeholder="kg" suffix="kg" />
+                    <Input label="身高（選填，算 BMI/IBW）" value={height} onChange={setHeight} placeholder="cm" suffix="cm" />
+                  </div>
+                )}
+                {drugConfig.needsWeight && height && (
                   <div style={{ marginBottom: 12, minWidth: 0 }}>
                     <label style={S.label}>性別（選填，算 IBW 用）</label>
                     <div style={{ display: "flex", gap: 6 }}>
@@ -721,27 +739,54 @@ export default function App() {
               </>
             )}
 
-            {drugConfig.needsRenal && (
+            {/* ────────────────────────────────────────────── */}
+            {/* 只需體重的藥（如 Micafungin）：只顯示體重+身高   */}
+            {/* ────────────────────────────────────────────── */}
+            {!drugConfig.needsRenal && drugConfig.needsWeight && (
               <>
-                <Select label="透析狀態" value={rrt} onChange={setRrt} options={RRT_OPTIONS} />
-
-                {drugConfig.needsWeight === false && rrt === "none" && (
-                  <div style={{ marginTop: 8 }}>
-                    <Input label="CrCl" value={directCrcl} onChange={setDirectCrcl} placeholder="mL/min" suffix="mL/min" />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" }}>
+                  <Input label="體重 TBW" value={tbw} onChange={setTbw} placeholder="kg" suffix="kg" />
+                  <Input label="身高（選填）" value={height} onChange={setHeight} placeholder="cm" suffix="cm" />
+                </div>
+                {height && (
+                  <div style={{ marginBottom: 12, minWidth: 0 }}>
+                    <label style={S.label}>性別（選填，算 IBW/BMI 用）</label>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {["M", "F"].map(g => (
+                        <button key={g} onClick={() => setGender(g)} style={{
+                          flex: 1, padding: "8px 0", borderRadius: 8, minWidth: 0,
+                          border: gender === g ? `2px solid ${ACCENT}` : "2px solid #E2E8F0",
+                          background: gender === g ? `${ACCENT}10` : "#fff",
+                          fontWeight: 600, fontSize: 13, cursor: "pointer",
+                          color: gender === g ? ACCENT : "#64748B",
+                        }}>
+                          {g === "M" ? "男 M" : "女 F"}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </>
             )}
 
-            {/* 參數摘要 */}
-            {drugConfig.needsWeight !== false && patientParams.dosing_weight > 0 && rrt && (
-              <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#475569", display: "flex", flexDirection: "column", gap: 4 }}>
+            {/* ────────────────────────────────────────────── */}
+            {/* 透析狀態 + CrCl：只有需要腎調的藥才顯示         */}
+            {/* ────────────────────────────────────────────── */}
+            {drugConfig.needsRenal && (
+              <Select label="透析狀態" value={rrt} onChange={setRrt} options={RRT_OPTIONS} />
+            )}
+
+            {/* ────────────────────────────────────────────── */}
+            {/* 參數摘要：顯示計算結果                          */}
+            {/* ────────────────────────────────────────────── */}
+            {patientParams.dosing_weight > 0 && (
+              <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
                 <span>📐 {patientParams.weight_note}{!patientParams.adjBw ? ` — ${round1(patientParams.dosing_weight)} kg` : ""}</span>
                 {patientParams.ibw && <span>📏 IBW: {patientParams.ibw} kg{patientParams.bmi ? `　|　BMI: ${patientParams.bmi}` : ""}</span>}
-                {rrt === "none" && patientParams.crcl !== null && (
+                {drugConfig.needsRenal && rrt === "none" && patientParams.crcl !== null && (
                   <span>🧪 CrCl: {patientParams.crcl} mL/min{crclMode === "direct" ? "（直接輸入）" : "（CG 公式）"}</span>
                 )}
-                {rrt !== "none" && <span>🔄 {RRT_OPTIONS.find(o => o.id === rrt)?.label}</span>}
+                {drugConfig.needsRenal && rrt && rrt !== "none" && <span>🔄 {RRT_OPTIONS.find(o => o.id === rrt)?.label}</span>}
               </div>
             )}
           </div>

@@ -132,7 +132,7 @@ export const levofloxacin: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false, // CTP A–C 不需調整
 
   // ──────────────────────────────────────────────────────────────

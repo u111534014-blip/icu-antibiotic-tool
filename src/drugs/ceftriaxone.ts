@@ -33,7 +33,7 @@ export const ceftriaxone: Drug = {
   ],
 
   needsRenal: true,   // 因為 ARC 判斷需要 CrCl
-  needsWeight: true,  // needsRenal=true 則需 weight
+  needsWeight: false,  
   needsHepatic: false, // CTP A–C 不需調整
 
   // ──────────────────────────────────────────────────────────────

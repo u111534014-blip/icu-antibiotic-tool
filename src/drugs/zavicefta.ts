@@ -105,7 +105,7 @@ export const zavicefta: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,  // needsRenal=true 則需 weight（CrCl 計算）
+  needsWeight: false,  
   needsHepatic: false, // 肝功能不需調整
 
   // ──────────────────────────────────────────────────────────────

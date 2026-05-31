@@ -106,7 +106,7 @@ export const ceftazidime: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false,
 
   // ──────────────────────────────────────────────────────────────

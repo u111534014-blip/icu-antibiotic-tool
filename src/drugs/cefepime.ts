@@ -151,7 +151,7 @@ export const cefepime: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false,
 
   indications: [

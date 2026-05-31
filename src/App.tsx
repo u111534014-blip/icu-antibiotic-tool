@@ -638,7 +638,7 @@ export default function App() {
         <DrugSearchSelect drugList={drugList} selectedId={drugId} onSelect={selectDrug} />
 
         {/* 病患資料 */}
-        {drugConfig?.needsRenal && (
+        {(drugConfig?.needsRenal || drugConfig?.needsWeight) && (
           <div style={S.section}>
             <div style={S.sectionTitle}>病患資料</div>
 
@@ -721,13 +721,16 @@ export default function App() {
               </>
             )}
 
-            <Select label="透析狀態" value={rrt} onChange={setRrt} options={RRT_OPTIONS} />
+            {drugConfig.needsRenal && (
+              <>
+                <Select label="透析狀態" value={rrt} onChange={setRrt} options={RRT_OPTIONS} />
 
-            {/* needsWeight===false 的藥：只需 CrCl + RRT */}
-            {drugConfig.needsWeight === false && rrt === "none" && (
-              <div style={{ marginTop: 8 }}>
-                <Input label="CrCl" value={directCrcl} onChange={setDirectCrcl} placeholder="mL/min" suffix="mL/min" />
-              </div>
+                {drugConfig.needsWeight === false && rrt === "none" && (
+                  <div style={{ marginTop: 8 }}>
+                    <Input label="CrCl" value={directCrcl} onChange={setDirectCrcl} placeholder="mL/min" suffix="mL/min" />
+                  </div>
+                )}
+              </>
             )}
 
             {/* 參數摘要 */}

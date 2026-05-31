@@ -42,7 +42,7 @@ export const flomoxef: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,    // 保留所有病患資料欄位（體重、身高、年齡、性別、Scr）
+  needsWeight: false,    // 保留所有病患資料欄位（體重、身高、年齡、性別、Scr）
                         // 程式會用 CG 公式算 CrCl，BMI ≥30 自動用 AdjBW
   needsHepatic: false,
 

@@ -20,11 +20,11 @@ export const tazocin: Drug = {
   name: "Tazocin",
   subtitle: "Piperacillin / Tazobactam",
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,    // 規則：needsRenal true 則 needsWeight 必須 true --- IGNORE ---
   needsHepatic: false,
   searchTerms: [
     "tazocin", "piperacillin", "tazobactam", "pip-tazo", "pip/tazo", "piptazo",
-    "帝斯坦", "pipe tazo",
+    "帝斯坦", "pipe tazo", "Tapimycin", "達比黴素",
   ],
 
   indications: [

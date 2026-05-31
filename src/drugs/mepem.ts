@@ -47,7 +47,7 @@ export const mepem: Drug = {
   name: "Mepem",
   subtitle: "Meropenem",
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false,
   searchTerms: [
     "mepem", "meropenem", "carbapenem",

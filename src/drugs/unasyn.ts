@@ -18,7 +18,7 @@ export const unasyn: Drug = {
   name: "Unasyn",
   subtitle: "Ampicillin / Sulbactam",
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false,
   searchTerms: [
     "unasyn", "ampicillin", "sulbactam", "ampicillin/sulbactam",

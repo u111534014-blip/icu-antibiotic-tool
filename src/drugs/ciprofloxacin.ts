@@ -116,7 +116,7 @@ export const ciprofloxacin: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false,
 
   // ──────────────────────────────────────────────────────────────

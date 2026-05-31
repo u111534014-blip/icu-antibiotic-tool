@@ -68,7 +68,7 @@ export const ertapenem: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,    // 規則：needsRenal true 則 needsWeight 必須 true
+  needsWeight: false,    // 規則：needsRenal true 則 needsWeight 必須 true
   needsHepatic: false,  // Child-Pugh A–C 皆不需調整
 
   indications: [

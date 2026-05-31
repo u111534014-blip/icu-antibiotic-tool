@@ -117,7 +117,7 @@ export const cefoxitin: Drug = {
   ],
 
   needsRenal: true,
-  needsWeight: true,
+  needsWeight: false,
   needsHepatic: false,
 
   // ──────────────────────────────────────────────────────────────

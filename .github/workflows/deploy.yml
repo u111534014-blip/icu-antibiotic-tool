@@ -20,7 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --legacy-peer-deps
+      - run: |
+          rm -rf node_modules package-lock.json
+          npm install
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

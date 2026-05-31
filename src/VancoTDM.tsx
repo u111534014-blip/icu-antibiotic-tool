@@ -489,6 +489,8 @@ export default function VancoTDM() {
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("male");
   const [scr, setScr] = useState("");
+  const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
+  const [directCrcl, setDirectCrcl] = useState("");
   const [modelKey, setModelKey] = useState("buelga");
   const [targetMin, setTargetMin] = useState("400");
   const [targetMax, setTargetMax] = useState("600");
@@ -515,14 +517,18 @@ export default function VancoTDM() {
   // AdjBW
   const adjBw = ibw > 0 ? ibw + 0.4 * (w - ibw) : w;
 
-  // CrCl：BMI <30 用 TBW；BMI ≥30 用 AdjBW
+  // CrCl：自動或直接輸入
   const crclWeight = (bmi >= 30 && adjBw > 0) ? adjBw : w;
-  const crcl = (crclWeight > 0 && ag > 0 && sc > 0) ? calcCrCl(ag, crclWeight, sc, isFemale) : 0;
+  const crcl = crclMode === "direct"
+    ? (parseFloat(directCrcl) || 0)
+    : ((crclWeight > 0 && ag > 0 && sc > 0) ? calcCrCl(ag, crclWeight, sc, isFemale) : 0);
 
   const model = MODELS[modelKey];
   const CLpop = crcl > 0 ? model.getCL(crcl, w, ht) : 0;
   const Vpop = w > 0 ? model.getV(w) : 0;
-  const canCalcBasic = w > 0 && ag > 0 && sc > 0 && ht > 0;
+  const canCalcBasic = crclMode === "direct"
+    ? (w > 0 && ht > 0 && parseFloat(directCrcl) > 0)
+    : (w > 0 && ag > 0 && sc > 0 && ht > 0);
 
   // ── Bayesian ──
   const t0 = useMemo(() => findT0(doseHist, level1, level2, hasLevel2), [doseHist, level1, level2, hasLevel2]);
@@ -569,6 +575,7 @@ export default function VancoTDM() {
   function handleReset() {
     setShowResults(false);
     setTbw(""); setHeight(""); setAge(""); setScr(""); setGender("male");
+    setCrclMode("auto"); setDirectCrcl("");
     setModelKey("buelga"); setTargetMin("400"); setTargetMax("600"); setMode("initial");
     setDoseHist({ hasLD: false, ldDose: "", ldDatetime: "", mdDose: "1000", mdInterval: "12", mdInfusion: "1", mdStartDatetime: "", mdCount: "3" });
     setLevel1({ conc: "", datetime: "" }); setLevel2({ conc: "", datetime: "" }); setHasLevel2(false);
@@ -629,24 +636,58 @@ export default function VancoTDM() {
       {/* ── 病人資料 ── */}
       <div style={S.section}>
         <div style={S.sectionTitle}>病人資料</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div><label style={S.label}>體重 (kg)</label><input type="number" value={tbw} onChange={e => { setTbw(e.target.value); setShowResults(false); }} style={S.input} placeholder="70" /></div>
-          <div><label style={S.label}>身高 (cm)</label><input type="number" value={height} onChange={e => { setHeight(e.target.value); setShowResults(false); }} style={S.input} placeholder="170" /></div>
-          <div><label style={S.label}>年齡</label><input type="number" value={age} onChange={e => { setAge(e.target.value); setShowResults(false); }} style={S.input} placeholder="55" /></div>
-          <div><label style={S.label}>Scr (mg/dL)</label><input type="number" value={scr} onChange={e => { setScr(e.target.value); setShowResults(false); }} style={S.input} placeholder="1.0" /></div>
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <label style={S.label}>性別</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {[{ id: "male", label: "男" }, { id: "female", label: "女" }].map(opt => (
-              <button key={opt.id} onClick={() => { setGender(opt.id); setShowResults(false); }}
-                style={{ ...S.toggleBtn, ...(gender === opt.id ? S.toggleBtnActive : {}) }}>{opt.label}</button>
+
+        {/* CrCl 模式切換 */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={S.label}>CrCl 來源</label>
+          <div style={{ display: "flex", gap: 6 }}>
+            {([["auto", "自動計算"], ["direct", "直接輸入 CrCl"]] as const).map(([m, label]) => (
+              <button key={m} onClick={() => { setCrclMode(m); setShowResults(false); }}
+                style={{ ...S.toggleBtn, fontSize: 12, padding: "8px 0", ...(crclMode === m ? S.toggleBtnActive : {}) }}>
+                {label}
+              </button>
             ))}
           </div>
         </div>
+
+        {crclMode === "auto" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div><label style={S.label}>體重 (kg)</label><input type="number" value={tbw} onChange={e => { setTbw(e.target.value); setShowResults(false); }} style={S.input} placeholder="70" /></div>
+              <div><label style={S.label}>身高 (cm)</label><input type="number" value={height} onChange={e => { setHeight(e.target.value); setShowResults(false); }} style={S.input} placeholder="170" /></div>
+              <div><label style={S.label}>年齡</label><input type="number" value={age} onChange={e => { setAge(e.target.value); setShowResults(false); }} style={S.input} placeholder="55" /></div>
+              <div><label style={S.label}>Scr (mg/dL)</label><input type="number" value={scr} onChange={e => { setScr(e.target.value); setShowResults(false); }} style={S.input} placeholder="1.0" /></div>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <label style={S.label}>性別</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[{ id: "male", label: "男" }, { id: "female", label: "女" }].map(opt => (
+                  <button key={opt.id} onClick={() => { setGender(opt.id); setShowResults(false); }}
+                    style={{ ...S.toggleBtn, ...(gender === opt.id ? S.toggleBtnActive : {}) }}>{opt.label}</button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {crclMode === "direct" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div><label style={S.label}>體重 (kg)</label><input type="number" value={tbw} onChange={e => { setTbw(e.target.value); setShowResults(false); }} style={S.input} placeholder="70" /></div>
+              <div><label style={S.label}>身高 (cm)</label><input type="number" value={height} onChange={e => { setHeight(e.target.value); setShowResults(false); }} style={S.input} placeholder="170" /></div>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <label style={S.label}>CrCl（醫院系統或實測值）</label>
+              <input type="number" value={directCrcl} onChange={e => { setDirectCrcl(e.target.value); setShowResults(false); }}
+                style={S.input} placeholder="mL/min" />
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>直接輸入 CrCl，不需填年齡、性別、Scr</div>
+            </div>
+          </>
+        )}
+
         {canCalcBasic && (
           <div style={{ marginTop: 12, padding: 10, background: "#F0FDFA", borderRadius: 8, fontSize: 12, color: "#475569" }}>
-            <div>CrCl：<strong>{Math.round(crcl)} mL/min</strong>（CG，{bmi >= 30 ? `用 AdjBW ${Math.round(adjBw)} kg` : `用 TBW ${Math.round(w)} kg`}）</div>
+            <div>CrCl：<strong>{Math.round(crcl)} mL/min</strong>（{crclMode === "direct" ? "直接輸入" : `CG，${bmi >= 30 ? `用 AdjBW ${Math.round(adjBw)} kg` : `用 TBW ${Math.round(w)} kg`}`}）</div>
             {modelKey === "roberts" && ht > 0 && w > 0 && (
               <div>CrCl（BSA-normalized）：<strong>{Math.round(crcl / calcBSA(w, ht) * 1.73)} mL/min/1.73m²</strong></div>
             )}
@@ -709,6 +750,7 @@ export default function VancoTDM() {
               <div><label style={S.label}>已給 MD 幾劑</label><input type="number" value={doseHist.mdCount} onChange={e => updateHist("mdCount", e.target.value)} style={S.input} placeholder="3" /></div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <DateTimeInput label="首劑 MD 開始輸注時間" value={doseHist.mdStartDatetime} onChange={v => updateHist("mdStartDatetime", v)} />
+                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>⚠️ 請輸入實際給藥時間（非醫囑開立時間）。後續劑量以等距推算（首劑 + interval × n）</div>
               </div>
             </div>
           </div>

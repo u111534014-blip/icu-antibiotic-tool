@@ -471,6 +471,7 @@ export default function App() {
   const [page, setPage] = useState<"dose" | "vancoTDM">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
+  const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
   const [tbw, setTbw] = useState("");
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
@@ -496,22 +497,70 @@ export default function App() {
     drugConfig?.weightStrategy ||
     "AdjBW_if_obese";
 
-  const patientParams: PatientParamsResult = drugConfig?.needsRenal
-    ? (drugConfig.needsWeight === false
-        ? { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" }
-        : calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy: activeWeightStrategy }))
-    : { dosing_weight: 0, crcl: null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+  const patientParams: PatientParamsResult = (() => {
+    if (!drugConfig?.needsRenal) {
+      return { dosing_weight: 0, crcl: null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+    }
+    // 不需要體重的藥（如 Cresemba）→ 直接用 directCrcl
+    if (drugConfig.needsWeight === false) {
+      return { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+    }
+    // 需要體重的藥
+    if (crclMode === "direct") {
+      // 直接輸入 CrCl：只需體重（算劑量用）+ CrCl
+      const w = parseFloat(tbw) || 0;
+      const h = parseFloat(height);
+      let ibw: number | null = null;
+      let adjBw: number | null = null;
+      let bmi: number | null = null;
+      let dosing_weight = w;
+      let weight_note = "使用實際體重（TBW）";
+
+      if (w > 0 && h > 0) {
+        bmi = round1(w / Math.pow(h / 100, 2));
+        ibw = round1(gender === "F" ? 45.5 + 0.91 * (h - 152.4) : 50 + 0.91 * (h - 152.4));
+      }
+
+      // 即使直接輸入 CrCl，仍依體重策略決定 dosing weight
+      const strategy = activeWeightStrategy;
+      if (strategy === "TBW") {
+        dosing_weight = w;
+        weight_note = "策略：永遠使用 TBW";
+      } else if (strategy === "IBW" && ibw) {
+        dosing_weight = ibw;
+        weight_note = `策略：使用 IBW（${ibw} kg）`;
+      } else if (strategy === "IBW_if_obese" && ibw && bmi && bmi >= 30) {
+        dosing_weight = ibw;
+        weight_note = `肥胖（BMI ${bmi}）→ 使用 IBW（${ibw} kg）`;
+      } else if (strategy === "AdjBW_if_obese" && ibw && bmi && bmi >= 30) {
+        adjBw = round1(ibw + 0.4 * (w - ibw));
+        dosing_weight = adjBw;
+        weight_note = `肥胖（BMI ${bmi}）→ AdjBW ${adjBw} kg`;
+      }
+
+      const directCrclVal = parseFloat(directCrcl) || null;
+      return { dosing_weight, crcl: directCrclVal, egfr: null, ibw, adjBw, bmi, weight_note };
+    }
+    // 自動計算模式
+    return calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy: activeWeightStrategy });
+  })();
 
   const canCalc = (() => {
     if (!drugConfig || !indicationData) return false;
     if (drugConfig.needsRenal) {
       if (!rrt) return false;
       if (drugConfig.needsWeight !== false) {
-        // 需要體重的藥：檢查所有人口學欄位
-        if (!tbw || !age || !scr || !gender) return false;
-        if (rrt === "none" && patientParams.crcl === null) return false;
+        if (crclMode === "direct") {
+          // 直接輸入模式：需要體重 + CrCl（rrt!=none 時不需 CrCl）
+          if (!tbw) return false;
+          if (rrt === "none" && !directCrcl) return false;
+        } else {
+          // 自動計算模式：需要全部欄位
+          if (!tbw || !age || !scr || !gender) return false;
+          if (rrt === "none" && patientParams.crcl === null) return false;
+        }
       } else {
-        // 不需要體重的藥：若 rrt=none 則要求 CrCl 直接輸入
+        // 不需要體重的藥：rrt=none 時要求 CrCl
         if (rrt === "none" && patientParams.crcl === null) return false;
       }
     }
@@ -533,7 +582,7 @@ export default function App() {
   }, [!!result]);
 
   const resetAll = () => {
-    setDrugId(""); setTbw(""); setHeight(""); setAge(""); setGender("");
+    setDrugId(""); setCrclMode("auto"); setTbw(""); setHeight(""); setAge(""); setGender("");
     setScr(""); setDirectCrcl(""); setRrt(""); setHepatic(""); setIndication(""); setAmpules(""); setExtras({});
   };
 
@@ -592,7 +641,29 @@ export default function App() {
         {drugConfig?.needsRenal && (
           <div style={S.section}>
             <div style={S.sectionTitle}>病患資料</div>
+
+            {/* CrCl 模式切換（只有 needsWeight 的藥才顯示） */}
             {drugConfig.needsWeight !== false && (
+              <div style={{ marginBottom: 14 }}>
+                <label style={S.label}>CrCl 來源</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {([["auto", "自動計算"], ["direct", "直接輸入 CrCl"]] as const).map(([m, label]) => (
+                    <button key={m} onClick={() => setCrclMode(m)}
+                      style={{
+                        flex: 1, padding: "9px 0", borderRadius: 8, minWidth: 0,
+                        border: crclMode === m ? `2px solid ${ACCENT}` : "2px solid #E2E8F0",
+                        background: crclMode === m ? `${ACCENT}10` : "#fff",
+                        fontWeight: 600, fontSize: 13, cursor: "pointer",
+                        color: crclMode === m ? ACCENT : "#64748B",
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {drugConfig.needsWeight !== false && crclMode === "auto" && (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" }}>
                   <Input label="體重 TBW" value={tbw} onChange={setTbw} placeholder="kg" suffix="kg" />
@@ -618,12 +689,48 @@ export default function App() {
                 <Input label="血清肌酸酐 Scr" value={scr} onChange={setScr} placeholder="mg/dL" suffix="mg/dL" />
               </>
             )}
+
+            {drugConfig.needsWeight !== false && crclMode === "direct" && (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" }}>
+                  <Input label="體重 TBW" value={tbw} onChange={setTbw} placeholder="kg" suffix="kg" />
+                  <Input label="身高（選填，算 BMI/IBW）" value={height} onChange={setHeight} placeholder="cm" suffix="cm" />
+                </div>
+                {height && (
+                  <div style={{ marginBottom: 12, minWidth: 0 }}>
+                    <label style={S.label}>性別（選填，算 IBW 用）</label>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {["M", "F"].map(g => (
+                        <button key={g} onClick={() => setGender(g)} style={{
+                          flex: 1, padding: "8px 0", borderRadius: 8, minWidth: 0,
+                          border: gender === g ? `2px solid ${ACCENT}` : "2px solid #E2E8F0",
+                          background: gender === g ? `${ACCENT}10` : "#fff",
+                          fontWeight: 600, fontSize: 13, cursor: "pointer",
+                          color: gender === g ? ACCENT : "#64748B",
+                        }}>
+                          {g === "M" ? "男 M" : "女 F"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Input label="CrCl（醫院系統或實測值）" value={directCrcl} onChange={setDirectCrcl} placeholder="mL/min" suffix="mL/min" />
+                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: -8, marginBottom: 12 }}>
+                  直接輸入 CrCl 值，不需填年齡、Scr
+                </div>
+              </>
+            )}
+
             <Select label="透析狀態" value={rrt} onChange={setRrt} options={RRT_OPTIONS} />
+
+            {/* 參數摘要 */}
             {drugConfig.needsWeight !== false && patientParams.dosing_weight > 0 && rrt && (
               <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#475569", display: "flex", flexDirection: "column", gap: 4 }}>
                 <span>📐 {patientParams.weight_note}{!patientParams.adjBw ? ` — ${round1(patientParams.dosing_weight)} kg` : ""}</span>
                 {patientParams.ibw && <span>📏 IBW: {patientParams.ibw} kg{patientParams.bmi ? `　|　BMI: ${patientParams.bmi}` : ""}</span>}
-                {rrt === "none" && patientParams.crcl !== null && <span>🧪 CrCl: {patientParams.crcl} mL/min</span>}
+                {rrt === "none" && patientParams.crcl !== null && (
+                  <span>🧪 CrCl: {patientParams.crcl} mL/min{crclMode === "direct" ? "（直接輸入）" : "（CG 公式）"}</span>
+                )}
                 {rrt !== "none" && <span>🔄 {RRT_OPTIONS.find(o => o.id === rrt)?.label}</span>}
               </div>
             )}

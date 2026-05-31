@@ -723,6 +723,13 @@ export default function App() {
 
             <Select label="透析狀態" value={rrt} onChange={setRrt} options={RRT_OPTIONS} />
 
+            {/* needsWeight===false 的藥：只需 CrCl + RRT */}
+            {drugConfig.needsWeight === false && rrt === "none" && (
+              <div style={{ marginTop: 8 }}>
+                <Input label="CrCl" value={directCrcl} onChange={setDirectCrcl} placeholder="mL/min" suffix="mL/min" />
+              </div>
+            )}
+
             {/* 參數摘要 */}
             {drugConfig.needsWeight !== false && patientParams.dosing_weight > 0 && rrt && (
               <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#475569", display: "flex", flexDirection: "column", gap: 4 }}>

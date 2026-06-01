@@ -785,14 +785,25 @@ export default function App() {
             {/* ────────────────────────────────────────────── */}
             {/* 參數摘要：顯示計算結果                          */}
             {/* ────────────────────────────────────────────── */}
-            {patientParams.dosing_weight > 0 && (
+            {(patientParams.dosing_weight > 0 || patientParams.crcl !== null) && rrt && (
               <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                <span>📐 {patientParams.weight_note}{!patientParams.adjBw ? ` — ${round1(patientParams.dosing_weight)} kg` : ""}</span>
+                {patientParams.dosing_weight > 0 && (
+                  <span>📐 {patientParams.weight_note}{!patientParams.adjBw ? ` — ${round1(patientParams.dosing_weight)} kg` : ""}</span>
+                )}
                 {patientParams.ibw && <span>📏 IBW: {patientParams.ibw} kg{patientParams.bmi ? `　|　BMI: ${patientParams.bmi}` : ""}</span>}
+                {patientParams.adjBw && <span>⚖️ AdjBW: {patientParams.adjBw} kg（用於 CrCl 計算）</span>}
                 {drugConfig.needsRenal && rrt === "none" && patientParams.crcl !== null && (
                   <span>🧪 CrCl: {patientParams.crcl} mL/min{crclMode === "direct" ? "（直接輸入）" : "（CG 公式）"}</span>
                 )}
-                {drugConfig.needsRenal && rrt && rrt !== "none" && <span>🔄 {RRT_OPTIONS.find(o => o.id === rrt)?.label}</span>}
+                {drugConfig.needsRenal && rrt !== "none" && <span>🔄 {RRT_OPTIONS.find(o => o.id === rrt)?.label}</span>}
+              </div>
+            )}
+            {/* needsWeight:true 但不需腎調的藥（Micafungin 等），沒有 rrt 也要顯示 */}
+            {!drugConfig.needsRenal && drugConfig.needsWeight && patientParams.dosing_weight > 0 && (
+              <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                <span>📐 {patientParams.weight_note}{!patientParams.adjBw ? ` — ${round1(patientParams.dosing_weight)} kg` : ""}</span>
+                {patientParams.ibw && <span>📏 IBW: {patientParams.ibw} kg{patientParams.bmi ? `　|　BMI: ${patientParams.bmi}` : ""}</span>}
+                {patientParams.adjBw && <span>⚖️ AdjBW: {patientParams.adjBw} kg</span>}
               </div>
             )}
           </div>

@@ -525,9 +525,15 @@ export default function App() {
       return { dosing_weight, crcl: null, egfr: null, ibw, adjBw, bmi, weight_note };
     }
 
-    // 需腎調但不需體重（needsRenal:true, needsWeight:false）→ 只要 CrCl
+    // 需腎調但不需體重（needsRenal:true, needsWeight:false，如 Meropenem）
     if (drugConfig?.needsWeight === false) {
-      return { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+      if (crclMode === "direct") {
+        // 直接輸入 CrCl
+        return { dosing_weight: 0, crcl: parseFloat(directCrcl) || null, egfr: null, ibw: null, adjBw: null, bmi: null, weight_note: "" };
+      }
+      // 自動計算：用輸入的體重/年齡/Scr/性別算 CrCl（但 dosing_weight 不用）
+      const result = calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy: "AdjBW_if_obese" });
+      return { ...result, dosing_weight: 0, weight_note: "" };
     }
 
     // 需腎調 + 需體重

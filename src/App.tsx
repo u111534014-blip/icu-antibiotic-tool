@@ -364,10 +364,11 @@ function Warning({ text }: { text: string }) {
 }
 
 // ── 藥師 IV 配藥計算器（互動 row）──────────────────────────
-function IVCalcRow({ dilPerAmp, drugLabel }: { dilPerAmp: number; drugLabel: string }) {
+function IVCalcRow({ dilPerAmp, drugLabel, mgPerAmp }: { dilPerAmp: number; drugLabel: string; mgPerAmp?: number }) {
   const [amps, setAmps] = useState("");
   const a = parseFloat(amps) || 0;
   const vol = a > 0 ? Math.round(a * dilPerAmp) : 0;
+  const totalMg = a > 0 && mgPerAmp ? Math.round(a * mgPerAmp) : 0;
 
   return (
     <div style={{ marginTop: 10, padding: 12, background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
@@ -376,16 +377,21 @@ function IVCalcRow({ dilPerAmp, drugLabel }: { dilPerAmp: number; drugLabel: str
         <input type="number" value={amps} onChange={e => setAmps(e.target.value)}
           placeholder="例：2.5" step="0.5" min="0"
           style={{ width: 80, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 14, textAlign: "center" as const, outline: "none" }} />
-        <span style={{ fontSize: 13, color: "#64748B" }}>支 {drugLabel}</span>
+        <span style={{ fontSize: 13, color: "#64748B" }}>支 {drugLabel}{totalMg > 0 ? ` = ${totalMg} mg` : ""}</span>
       </div>
       {a > 0 && (
         <div style={{ marginTop: 8, padding: 10, background: "#ECFDF5", borderRadius: 8, border: "1px solid #6EE7B7" }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "#065F46" }}>護理配藥指示</div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#065F46" }}>護理配藥指示 / 醫囑處方</div>
           <div style={{ fontSize: 13, color: "#065F46", marginTop: 2 }}>
             請抽取 {amps} 支 {drugLabel}，加入 {vol} mL D5W
           </div>
+          {totalMg > 0 && (
+            <div style={{ fontSize: 13, color: "#065F46", marginTop: 2 }}>
+              處方劑量：{totalMg} mg（{mgPerAmp} mg/支 × {amps} 支）
+            </div>
+          )}
           <div style={{ fontSize: 11, color: "#047857", marginTop: 2 }}>
-            （{dilPerAmp} mL/支）
+            （稀釋 {dilPerAmp} mL/支）
           </div>
         </div>
       )}
@@ -868,7 +874,7 @@ export default function App() {
                   {sc.rows?.map((r: any, i: number) => {
                     // 特殊 row type: ivCalc → 渲染藥師輸入框
                     if (r.type === "ivCalc") {
-                      return <IVCalcRow key={i} dilPerAmp={r.dilPerAmp} drugLabel={r.drugLabel} />;
+                      return <IVCalcRow key={i} dilPerAmp={r.dilPerAmp} drugLabel={r.drugLabel} mgPerAmp={r.mgPerAmp} />;
                     }
                     return <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />;
                   })}

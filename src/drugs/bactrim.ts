@@ -130,7 +130,7 @@ function buildDoseRows(
     });
 
     // 藥師互動輸入框
-    rows.push({ type: "ivCalc", dilPerAmp, drugLabel: "Sevatrim" });
+    rows.push({ type: "ivCalc", dilPerAmp, drugLabel: "Sevatrim", mgPerAmp: 480 });
   }
 
   if (sc.note) rows.push({ label: "療程與備註", value: sc.note });

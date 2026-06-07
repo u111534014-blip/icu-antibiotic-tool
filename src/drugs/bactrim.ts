@@ -256,7 +256,21 @@ export const bactrim: Drug = {
       ],
     },
 
-    // ═══ 5. Nocardiosis ═══
+    // ═══ 5. Elizabethkingia ═══
+    {
+      id: "elizabethkingia",
+      label: "Elizabethkingia infection（伊麗莎白菌感染）",
+      desc: "熱病建議 · 8-10 mg/kg/day IV",
+      scenarios: [
+        {
+          label: "Elizabethkingia infection（伊麗莎白菌感染）",
+          note: "熱病建議。天然對多數 β-lactams 及 aminoglycosides 抗藥。TMP-SMX 為少數有效藥物之一。建議依藥敏結果調整",
+          tmpPerKg: { min: 8, max: 10 }, divisions: 3, freq: "Q6-8H", route: "IV",
+        },
+      ],
+    },
+
+    // ═══ 6. Nocardiosis ═══
     {
       id: "nocardiosis",
       label: "Nocardiosis（諾卡氏菌感染）",
@@ -650,6 +664,7 @@ export const bactrim: Drug = {
           "【涵蓋】\n" +
           "• MRSA（PO 口服首選之一！）\n" +
           "• Stenotrophomonas maltophilia（首選！）\n" +
+          "• Elizabethkingia spp.（少數有效藥物之一）\n" +
           "• Nocardia spp.\n" +
           "• Pneumocystis jirovecii（PJP）\n" +
           "• Toxoplasma gondii\n" +
@@ -668,6 +683,7 @@ export const bactrim: Drug = {
           "【PJP 治療】15-20 mg/kg/day ÷ TID-QID × 21 天\n" +
           "【PJP 預防】1 DS tab QD\n" +
           "【Stenotrophomonas HAP/VAP】8-15 mg/kg/day ÷ TID\n" +
+          "【Elizabethkingia】8-10 mg/kg/day ÷ TID-QID IV（熱病）\n" +
           "【Nocardia 嚴重】15 mg/kg/day ÷ QID\n" +
           "【Toxoplasmosis 治療】10 mg/kg/day ÷ BID\n" +
           "【Meningitis】5 mg/kg/dose Q6-8H IV",

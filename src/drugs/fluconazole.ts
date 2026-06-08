@@ -165,6 +165,7 @@ function getCRRTDose(usualMaint_mg: number): {
 export const fluconazole: Drug = {
   name: "Diflucan",
   subtitle: "Fluconazole",
+  infusionTime: "≥1 to 2 hours; ≤200 mg/hr",
   searchTerms: [
     "fluconazole", "diflucan", "泰復肯",
     "fluene", "膚黴克", "fluconazole 針", "fluconazole 膠囊",

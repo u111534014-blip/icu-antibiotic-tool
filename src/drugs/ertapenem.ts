@@ -62,6 +62,7 @@ function getErtapenemDose(crcl: number, rrt: string) {
 export const ertapenem: Drug = {
   name: "Invanz",
   subtitle: "Ertapenem",
+  infusionTime: "30 min",
   searchTerms: [
     "ertapenem", "invanz", "厄他培南",
     "carbapenem", "ESBL",

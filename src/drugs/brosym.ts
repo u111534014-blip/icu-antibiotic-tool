@@ -18,6 +18,7 @@ import type { Drug } from './types';
 export const brosym: Drug = {
   name: "Brosym",
   subtitle: "Cefoperazone / Sulbactam",
+  infusionTime: "靜脈注射應不少於 3 分鐘。靜脈輸注時間應超過 15-60 分鐘 / 4 hr（延長滴注）",
   needsRenal: true,
   needsWeight: false,    // 廠商劑量為固定 4 g，不需依體重計算
   needsHepatic: false,

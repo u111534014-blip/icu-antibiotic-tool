@@ -138,5 +138,7 @@ export type Drug = {
 
   clinicalPearls?: ClinicalPearls; // 選填：臨床參考（可展開的補充知識）
 
+  infusionTime?: string;           // 選填：輸注時間（如 "30 min / 3 hr 延長"）
+
   calculate: (params: CalculateParams) => CalculateResult;
 };

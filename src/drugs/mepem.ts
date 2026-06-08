@@ -46,6 +46,7 @@ function lookupEscalation(crcl: number, rrt: string): { dose_mg: number; freq: s
 export const mepem: Drug = {
   name: "Mepem",
   subtitle: "Meropenem",
+  infusionTime: "30 min（傳統）/ 3 hr（延長滴注）",
   needsRenal: true,
   needsWeight: false,
   needsHepatic: false,

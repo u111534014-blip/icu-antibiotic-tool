@@ -119,6 +119,7 @@ function getGanciclovirDose(crcl: number, rrt: string, baseKey: string): {
 export const ganciclovir: Drug = {
   name: "Cymevene",
   subtitle: "Ganciclovir",
+  infusionTime: "≥1 hr",
   searchTerms: [
     "ganciclovir", "cymevene", "甘西韋",
     "CMV", "cmv", "cytomegalovirus",

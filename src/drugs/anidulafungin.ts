@@ -55,6 +55,7 @@ function getAnidulafunginDose(bmi: number, tbw: number): {
 export const anidulafungin: Drug = {
   name: "Eraxis",
   subtitle: "Anidulafungin",
+  infusionTime: "≥1.5 hr（LD）/ ≥1 hr（MD）",
   searchTerms: [
     "anidulafungin", "eraxis", "助黴飛",
     "echinocandin", "candida",

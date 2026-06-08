@@ -99,6 +99,7 @@ function getZaviceftaDose(crcl: number, rrt: string): {
 export const zavicefta: Drug = {
   name: "Zavicefta",
   subtitle: "Ceftazidime / Avibactam",
+  infusionTime: "2 hr; CRE / DTR-PsA / S. maltophilia 感染時可考慮延長至 3 hr",
   searchTerms: [
     "zavicefta", "ceftazidime", "avibactam",
     "贊飛得",

@@ -229,6 +229,7 @@ function buildRows(
 export const teicoplanin: Drug = {
   name: "Teicod",
   subtitle: "Teicoplanin",
+  infusionTime: "IV push over 3 to 5 minutes 或 30 min",
   searchTerms: [
     "teicoplanin", "teicod", "得那林", "Targocid", "得時高",
     "glycopeptide",

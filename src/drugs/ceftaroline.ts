@@ -103,6 +103,7 @@ function getCeftarolineDose(crcl: number, rrt: string, baseKey: string): {
 export const ceftaroline: Drug = {
   name: "Zinforo",
   subtitle: "Ceftaroline fosamil",
+  infusionTime: "60 min",
   searchTerms: [
     "ceftaroline", "zinforo", "捷復寧",
   ],

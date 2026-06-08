@@ -126,6 +126,7 @@ function getZerbaxaDose(crcl: number, rrt: string, baseKey: string): {
 export const zerbaxa: Drug = {
   name: "Zerbaxa",
   subtitle: "Ceftolozane / Tazobactam",
+  infusionTime: "1 hr; MDR 感染（非單純膀胱炎）建議延長至 3 hr",
   searchTerms: [
     "ceftolozane", "tazobactam", "zerbaxa", "諾倍適",
   ],

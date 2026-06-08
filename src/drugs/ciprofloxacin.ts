@@ -109,6 +109,7 @@ function getCiproDose(crcl: number, rrt: string, baseKey: string): {
 export const ciprofloxacin: Drug = {
   name: "Ciproxin",
   subtitle: "Ciprofloxacin",
+  infusionTime: "60 min",
   searchTerms: [
     "ciprofloxacin", "ciproxin", "cinolone", "seforce",
     "信諾隆", "賜保欣", "cipro", "CPFX",

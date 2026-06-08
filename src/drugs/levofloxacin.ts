@@ -126,6 +126,7 @@ function getLevoDose(crcl: number, rrt: string, baseKey: string): {
 export const levofloxacin: Drug = {
   name: "Cravit",
   subtitle: "Levofloxacin",
+  infusionTime: "60-90 min",
   searchTerms: [
     "levofloxacin", "cravit", "可樂必妥", "平福樂欣",
     "fluoroquinolone", "FQ", "LVFX",

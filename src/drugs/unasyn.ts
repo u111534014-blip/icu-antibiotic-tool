@@ -17,6 +17,7 @@ import type { Drug } from './types';
 export const unasyn: Drug = {
   name: "Unasyn",
   subtitle: "Ampicillin / Sulbactam",
+  infusionTime: "15-30 min（標準）/ 4 hr（CRAB 高劑量）",
   needsRenal: true,
   needsWeight: false,
   needsHepatic: false,

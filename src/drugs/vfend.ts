@@ -16,6 +16,7 @@ import type { Drug } from './types';
 export const vfend: Drug = {
   name: "Vfend",
   subtitle: "Voriconazole",
+  infusionTime: "≥1 hr（需 inline filter 0.2-1.2 μm）",
   needsRenal: true,
   needsWeight: true,
   needsHepatic: true,

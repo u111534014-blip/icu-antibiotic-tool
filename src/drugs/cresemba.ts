@@ -16,6 +16,7 @@ import type { Drug } from './types';
 export const cresemba: Drug = {
   name: "Cresemba",
   subtitle: "Isavuconazole",
+  infusionTime: "≥1 hr（需 inline filter 0.2-1.2 μm）",
   needsRenal: false,
   needsWeight: false,
   needsHepatic: false,

@@ -474,7 +474,7 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "infusionRef">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
@@ -637,6 +637,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "vancoTDM" ? S.menuItemActive : {}) }}>
                 📊 Vancomycin TDM
               </button>
+              <button onClick={() => { setPage("infusionRef"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "infusionRef" ? S.menuItemActive : {}) }}>
+                ⏱️ 輸注時間速查
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -648,6 +652,37 @@ export default function App() {
         {/* ── 頁面路由 ── */}
         {page === "vancoTDM" ? (
           <VancoTDM />
+        ) : page === "infusionRef" ? (
+          <div>
+            <div style={{ textAlign: "center", padding: "16px 0 24px" }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#0F172A" }}>⏱️ 輸注時間速查</div>
+              <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>IV Infusion Time Quick Reference</div>
+            </div>
+            <div style={{ background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "10px 8px", textAlign: "left", borderBottom: "2px solid #E2E8F0", color: "#475569", fontWeight: 700 }}>藥物</th>
+                    <th style={{ padding: "10px 8px", textAlign: "left", borderBottom: "2px solid #E2E8F0", color: "#475569", fontWeight: 700 }}>輸注時間</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(DRUG_REGISTRY)
+                    .filter((d: any) => d.infusionTime)
+                    .sort((a: any, b: any) => a.name.localeCompare(b.name))
+                    .map((d: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                      <td style={{ padding: "10px 8px", fontWeight: 600, color: "#0F172A" }}>
+                        {d.name}<br /><span style={{ fontWeight: 400, fontSize: 11, color: "#94A3B8" }}>{d.subtitle}</span>
+                      </td>
+                      <td style={{ padding: "10px 8px", color: "#334155" }}>{d.infusionTime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ textAlign: "center", padding: "24px 0 8px", fontSize: 11, color: "#94A3B8" }}>僅供臨床參考，請依實際情境調整</div>
+          </div>
         ) : (
         <>
         <div style={S.header}>
@@ -847,6 +882,14 @@ export default function App() {
               <div style={{ fontSize: 14, color: "#64748B", marginBottom: 16 }}>
                 {indicationData?.label}
               </div>
+
+              {/* 輸注時間提示 */}
+              {drugConfig.infusionTime && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#EFF6FF", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#1E40AF" }}>
+                  <span>⏱️</span>
+                  <span><strong>輸注時間：</strong>{drugConfig.infusionTime}</span>
+                </div>
+              )}
 
               {result.scenarioResults?.map((sc: any, idx: number) => (
                 <div key={idx} style={{

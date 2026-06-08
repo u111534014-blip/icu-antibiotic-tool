@@ -194,6 +194,7 @@ function getPODose(crcl: number, rrt: string, baseKey: string): {
 export const acyclovir: Drug = {
   name: "Zovirax",
   subtitle: "Acyclovir",
+  infusionTime: "≥1 hr（避免腎毒性）",
   searchTerms: [
     "acyclovir", "zovirax", "acylete", "熱威樂素", "敵庖治",
     "HSV", "VZV", "herpes", "zoster", "varicella",

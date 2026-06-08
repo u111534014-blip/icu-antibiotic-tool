@@ -145,6 +145,7 @@ function getRenalDose(crcl: number, rrt: string, baseKey: string): {
 export const cefepime: Drug = {
   name: "Maxipime",
   subtitle: "Cefepime",
+  infusionTime: "30 min（傳統）/ 3 hr（延長滴注）",
   searchTerms: [
     "cefepime", "antifect", "革菌素", "Maxipime", "邁菌平",
     "四代", "4th gen cephalosporin",

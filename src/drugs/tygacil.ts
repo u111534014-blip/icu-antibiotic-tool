@@ -21,6 +21,7 @@ function toVials(mg: number): string {
 export const tygacil: Drug = {
   name: "Tygacil",
   subtitle: "Tigecycline",
+  infusionTime: "30-60 min",
   needsRenal: false,
   needsWeight: false,
   needsHepatic: true,

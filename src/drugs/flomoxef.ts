@@ -35,10 +35,11 @@ const SENIOR_TABLE = [
 export const flomoxef: Drug = {
   name: "Flumarin",
   subtitle: "Flomoxef",
+  infusionTime: "15-30 min",
   searchTerms: [
     "flumarin", "flomoxef", "氟黴寧",
     "flumarin 針", "3 代頭孢", "3rd gen cephalosporin",
-    "ESBL", "日本藥"
+    "ESBL",
   ],
 
   needsRenal: true,

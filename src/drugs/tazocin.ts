@@ -19,6 +19,7 @@ import type { Drug } from './types';
 export const tazocin: Drug = {
   name: "Tazocin",
   subtitle: "Piperacillin / Tazobactam",
+  infusionTime: "30 min（傳統）/ 3-4 hr（延長）/ 24hr CI",
   needsRenal: true,
   needsWeight: false,    // 規則：needsRenal true 則 needsWeight 必須 true --- IGNORE ---
   needsHepatic: false,

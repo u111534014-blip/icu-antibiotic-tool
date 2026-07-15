@@ -196,6 +196,64 @@ export const activeTbNewPatientRegimens: TbActiveRegimen[] = [
   },
 ];
 
+export const activeTbRetreatmentRegimens: TbActiveRegimen[] = [
+  {
+    id: "retreatment-hrze",
+    phase: "再治處方",
+    duration: "6-9 個月",
+    regimen: "H + R + Z + E 全程",
+    preferredFdc: "依臨床狀況選用四合一/三合一或單方",
+    tabletStrength: "DST 未知前，需考慮 INH/RMP 抗藥風險；有藥敏後再依結果調整。",
+    doseRows: [
+      { weight: "DST 未知", tablets: "HRZE 6-9 個月", note: "盡早送 INH/RMP 抗藥基因檢測" },
+      { weight: "INH/RMP 均敏感", tablets: "可依新病人處方治療", note: "回到 2HRZE / 4HRE 或依臨床調整" },
+      { weight: "INH 或 RMP 抗藥", tablets: "依抗藥性 TB 章節處理", note: "建議專家討論或轉 TMTC" },
+    ],
+    alternatives: [
+      "若肺部廣泛或開洞，或預期治療中產生 RMP acquired resistance 風險較高，可在加強期評估加入 streptomycin。",
+      "WHO 已不再建議在 DST 未明時常規使用舊 8 個月再治處方 2HRZES/HRZE/5HRE。",
+    ],
+    notes: [
+      "再治病人的 INH/RMP 抗藥比例高於新病人，處方設計需更重視抗藥風險。",
+      "中斷治療少於 2 個月且 RMP 基因檢測敏感者，可考慮繼續原處方，待 DST 結果後再調整。",
+      "處理失落再治者，重點是找出中斷吃藥原因並解決。",
+    ],
+    source: "第 4 章 4.3",
+  },
+];
+
+export const tbTermCards: TbKeyPoint[] = [
+  {
+    title: "AFB smear 是什麼？",
+    body: "AFB smear 是耐酸性桿菌抹片檢查。把痰檢體染色後用顯微鏡看有沒有 acid-fast bacilli，速度快，可粗略反映傳染性與菌量。",
+    bullets: [
+      "優點：快，常用於初步判斷是否有排菌與傳染性。",
+      "限制：看到 AFB 不等於一定是結核菌，NTM 也可能 AFB 陽性。",
+      "Smear 陰性也不能排除 TB，因為菌量低時可能看不到。",
+    ],
+    source: "第 3 章 3.4、表 3-1",
+  },
+  {
+    title: "NAAT 是什麼？",
+    body: "NAAT 是核酸增幅檢驗，常見概念像 PCR。它直接偵測檢體中是否有結核分枝桿菌的核酸，有些檢測也能同時看 rifampin 抗藥相關基因。",
+    bullets: [
+      "優點：比培養快很多，能幫助分辨 MTB 與 NTM。",
+      "AFB 陽性時，NAAT 可協助確認是不是 MTB。",
+      "NAAT 陰性仍需搭配臨床、影像與培養判斷。",
+    ],
+    source: "第 3 章 3.3、3.4、表 3-1",
+  },
+  {
+    title: "Culture 又扮演什麼角色？",
+    body: "培養速度慢，但仍是取得菌株、確認診斷與做藥物感受性試驗的重要依據。",
+    bullets: [
+      "第一次培養陽性的 MTB 菌株應做第一線藥敏。",
+      "治療 2 個月後培養仍陽性，或陰轉後再陽性，需重新評估藥敏與治療反應。",
+    ],
+    source: "第 3 章 3.4.2、第 5 章 5.1.2",
+  },
+];
+
 export const monitoringTimeline: TbMonitoringItem[] = [
   {
     title: "服藥順從性",

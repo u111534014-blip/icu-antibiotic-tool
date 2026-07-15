@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   activeTbCards,
   activeTbNewPatientRegimens,
+  activeTbRetreatmentRegimens,
   adverseReactionRules,
   diagnosisCards,
   ltbiPrinciples,
@@ -13,6 +14,7 @@ import {
   tbDrugCards,
   tbGuidelineMeta,
   tbSections,
+  tbTermCards,
   type TbKeyPoint,
   type TbActiveRegimen,
   type TbLtbiRegimen,
@@ -60,6 +62,9 @@ function DiagnosisView() {
   return (
     <div>
       <SectionHeader title="疑似 TB 診斷流程" subtitle="從症狀與影像出發，盡量取得細菌學證據。" />
+      <div style={S.subhead}>常用檢驗名詞</div>
+      {tbTermCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>診斷判讀</div>
       {diagnosisCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
     </div>
   );
@@ -105,9 +110,11 @@ function ActiveRegimenCard({ regimen }: { regimen: TbActiveRegimen }) {
 function ActiveTbView() {
   return (
     <div>
-      <SectionHeader title="活動性 TB 治療"/>
+      <SectionHeader title="活動性 TB 治療" subtitle="新病人與再治處方直接列在這裡，不用再跳到藥物速查。" />
       <div style={S.subhead}>新病人標準處方</div>
       {activeTbNewPatientRegimens.map((regimen) => <ActiveRegimenCard key={regimen.id} regimen={regimen} />)}
+      <div style={S.subhead}>曾接受治療病人（再治）</div>
+      {activeTbRetreatmentRegimens.map((regimen) => <ActiveRegimenCard key={regimen.id} regimen={regimen} />)}
       <div style={S.subhead}>治療原則與延長療程</div>
       {activeTbCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
     </div>

@@ -3,6 +3,7 @@ import { DRUG_REGISTRY } from './drugs';
 import { round1 } from './drugs/shared/helpers';
 import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types';
 import VancoTDM from './VancoTDM';
+import TbGuideline from './TbGuideline';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -480,7 +481,7 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "infusionRef">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "infusionRef" | "tbGuideline">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
@@ -653,6 +654,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "infusionRef" ? S.menuItemActive : {}) }}>
                 ⏱️ 輸注時間速查
               </button>
+              <button onClick={() => { setPage("tbGuideline"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "tbGuideline" ? S.menuItemActive : {}) }}>
+                🫁 結核病診治指引
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -664,6 +669,8 @@ export default function App() {
         {/* ── 頁面路由 ── */}
         {page === "vancoTDM" ? (
           <VancoTDM />
+        ) : page === "tbGuideline" ? (
+          <TbGuideline />
         ) : page === "infusionRef" ? (
           <div>
             <div style={{ textAlign: "center", padding: "16px 0 24px" }}>

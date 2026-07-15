@@ -5,6 +5,7 @@ import {
   activeTbRetreatmentRegimens,
   adverseReactionRules,
   diagnosisCards,
+  drugResistantTbTables,
   ltbiPrinciples,
   ltbiRegimens,
   monitoringTimeline,
@@ -19,6 +20,7 @@ import {
   type TbActiveRegimen,
   type TbLtbiRegimen,
   type TbSectionId,
+  type TbSimpleTable,
 } from "./tbGuidelineData";
 
 const ACCENT = "#0D9488";
@@ -290,11 +292,45 @@ function LtbiView() {
   );
 }
 
+function SimpleTableCard({ table }: { table: TbSimpleTable }) {
+  return (
+    <section style={S.card}>
+      <div style={S.cardTitle}>{table.title}</div>
+      <div style={S.tableWrap}>
+        <table style={S.table}>
+          <thead>
+            <tr>
+              {table.columns.map((column) => (
+                <th key={column} style={S.th}>{column}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row, rowIndex) => (
+              <tr key={`${table.title}-${rowIndex}`}>
+                {row.map((cell, cellIndex) => (
+                  <td key={`${table.title}-${rowIndex}-${cellIndex}`} style={cellIndex === 0 ? S.tdStrong : S.td}>
+                    {cell || "-"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Bullets items={table.notes} />
+      <Source text={table.source} />
+    </section>
+  );
+}
+
 function SpecialView() {
   return (
     <div>
-      <SectionHeader title="特殊族群與抗藥性 TB" subtitle="第一版先建立入口，之後可逐步展開各章節。" />
+      <SectionHeader title="特殊族群與抗藥性 TB" subtitle="包含第 12 章 MDR/RR-TB 表格與特殊族群入口。" />
       {specialPopulationCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>第 12 章抗藥性 TB 表格</div>
+      {drugResistantTbTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
     </div>
   );
 }

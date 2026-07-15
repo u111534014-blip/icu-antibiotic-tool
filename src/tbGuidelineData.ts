@@ -55,6 +55,14 @@ export type TbMonitoringItem = {
   source: string;
 };
 
+export type TbSimpleTable = {
+  title: string;
+  source: string;
+  columns: string[];
+  rows: string[][];
+  notes?: string[];
+};
+
 export const tbGuidelineMeta = {
   title: "結核病診治指引",
   subtitle: "Taiwan TB Diagnosis & Treatment",
@@ -622,5 +630,62 @@ export const specialPopulationCards: TbKeyPoint[] = [
     body: "建議與專家諮詢會診；處方涉及 FQ、bedaquiline、linezolid 等核心藥物，應由抗藥性 TB 團隊管理。",
     bullets: ["RMP 抗藥通常依 MDR-TB 治療處方思考。", "MDR-TB 接觸者 LTBI 治療需轉 TMTC 或約定院所評估。"],
     source: "第 12 章、第 10 章表 10-3",
+  },
+];
+
+export const drugResistantTbTables: TbSimpleTable[] = [
+  {
+    title: "表 12-1 個人化長程 MDR-TB 處方藥物",
+    source: "第 12 章，表 12-1",
+    columns: ["類別", "藥物", "建議劑量"],
+    rows: [
+      ["Group A：3 種全部使用", "Levofloxacin (LFX) 或 Moxifloxacin (MFX)", "LFX 750-1000 mg/day，max 1500 mg/day；MFX 400 mg/day，high dose 600-800 mg/day"],
+      ["Group A：3 種全部使用", "Bedaquiline (BDQ)", "400 mg/day x 2 weeks，then 200 mg TIW"],
+      ["Group A：3 種全部使用", "Linezolid (LZD)", "600 mg/day，max 1200 mg/day"],
+      ["Group B：使用 1-2 種", "Clofazimine (CFZ)", "100 mg/day"],
+      ["Group B：使用 1-2 種", "Cycloserine (CS) 或 Terizidone (TRD)", "10-15 mg/kg/day，max 1000 mg/day"],
+      ["Group C：強化處方完整性", "Ethambutol (EMB)", "15-25 mg/kg/day，max 1200 mg/day"],
+      ["Group C：強化處方完整性", "Delamanid (DLM)", "200 mg daily"],
+      ["Group C：強化處方完整性", "Pyrazinamide (PZA)", "20-30 mg/kg/day，max 2000 mg/day"],
+      ["Group C：強化處方完整性", "Imipenem-cilastatin (IPM-CLN) 或 Meropenem (MPM)", "IPM-CLN 1000 mg q12h；MPM 1000 mg q8h 或 2000 mg q12h；每 dose 前給 clavulanate 125 mg"],
+      ["Group C：強化處方完整性", "Amikacin (AM) 或 Streptomycin (SM)", "15 mg/kg/day，max 1 g/day"],
+      ["Group C：強化處方完整性", "Ethionamide (ETO) 或 Prothionamide (PTO)", "15-20 mg/kg/day，max 1 g/day"],
+      ["Group C：強化處方完整性", "p-aminosalicylic acid (PAS)", "8-12 g/day in 2-3 doses，max 12 g/day"],
+    ],
+    notes: [
+      "腎功能不全需調整：LFX 750-1000 mg TIW；CS/TRD 250 mg/day 或 500 mg TIW；EMB 15-25 mg TIW；PZA 25 mg/kg TIW；IPM-CLN/MPM 500-750 mg q12h；AM/SM 避免使用。",
+      "MPM 需合併 clavulanate；臨床可用 Augmentin 1 g 錠劑中的 clavulanate 125 mg。",
+      "AM 可考慮高劑量間歇給藥 25 mg/kg/day TIW 並搭配血中濃度監測。",
+    ],
+  },
+  {
+    title: "表 12-2 BPaL/BPaLM 處方劑量",
+    source: "第 12 章，表 12-2",
+    columns: ["藥物", "劑量", "備註"],
+    rows: [
+      ["Bedaquiline", "400 mg once daily x 2 weeks，then 200 mg three times per week；或 200 mg daily x 8 weeks，then 100 mg daily", "每日 BDQ 設計來自 ZeNix trial，臨床仍需更多證據檢驗效果。"],
+      ["Pretomanid", "200 mg once daily", ""],
+      ["Linezolid", "600 mg once daily", "BPaL/BPaLM 中主要產生副作用的藥物；建議搭配 TDM 調整。"],
+      ["Moxifloxacin", "400 mg once daily", "只用於 BPaLM 處方。"],
+    ],
+  },
+  {
+    title: "表 12-3 各種 MDR/RR-TB 處方的比較",
+    source: "第 12 章，表 12-3",
+    columns: ["處方", "療程", "LZD", "針劑", "<14 歲兒童", "嚴重肺結核", "嚴重肺外結核", "懷孕/哺乳"],
+    rows: [
+      ["Long regimen", "18-20 個月，或培養陰轉後 15-17 個月", "可用", "可用", "可用", "可用", "可用", "可用"],
+      ["BPaLM / BPaL", "6 / 6-9 個月", "使用", "不用", "不適用", "可用", "不適用", "不適用"],
+      ["BDQ(+) all-oral regimen", "9-11 個月", "不用", "不用", "可用", "不適用", "不適用", "可用；孕婦以 2 個月 LZD 取代 ETO"],
+      ["STREAM control regimen", "9-11 個月", "不用", "使用 4 個月", "不適用", "可用", "不適用", "不適用"],
+      ["STREAM oral regimen", "9-11 個月", "不用", "不用", "不適用", "可用", "不適用", "不適用"],
+      ["STREAM 6m regimen", "6-8 個月", "不用", "使用 2 個月", "不適用", "可用", "不適用", "不適用"],
+      ["NeXT TB 6m all-oral regimen", "6 個月", "使用", "不用", "不適用", "可用", "不適用", "不適用"],
+    ],
+    notes: [
+      "原表以 o/x 比較各處方在特殊族群的適用性；此處轉成中文速查。",
+      "新型短程處方臨床試驗條件較嚴格，常排除肝腎功能受損等慢性病族群；臨床使用需審慎評估療效與副作用。",
+      "本 PDF 內文搜尋未找到表 12-4；第 12 章修訂版內文目前列出表 12-1 至表 12-3。",
+    ],
   },
 ];

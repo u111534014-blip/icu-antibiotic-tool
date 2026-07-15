@@ -238,6 +238,9 @@ export default function DepakineTDM() {
             </div>
           </div>
 
+          <div style={S.notePreviewTitle}>TDM Note Preview</div>
+          <pre style={S.notePreview}>{noteText}</pre>
+
           <button onClick={copyNote} style={{ ...S.copyBtn, background: copied ? "#059669" : ACCENT }}>
             {copied ? "已複製 TDM note" : "複製 TDM note"}
           </button>
@@ -285,6 +288,8 @@ const S: Record<string, CSSProperties> = {
   formulaBox: { marginTop: 14, padding: 12, borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0" },
   formulaTitle: { fontSize: 12, fontWeight: 800, color: "#475569", marginBottom: 6 },
   formulaText: { fontSize: 12, color: "#334155", lineHeight: 1.6 },
+  notePreviewTitle: { marginTop: 14, marginBottom: 6, fontSize: 12, fontWeight: 800, color: "#475569" },
+  notePreview: { background: "#1E293B", color: "#E2E8F0", padding: 14, borderRadius: 8, fontSize: 11, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 360, overflowY: "auto", margin: 0 },
   copyBtn: { width: "100%", marginTop: 14, padding: "12px 0", borderRadius: 8, border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", transition: "background 0.2s" },
   referenceBox: { background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 14, fontSize: 13, color: "#475569", lineHeight: 1.65 },
   referenceTitle: { fontSize: 13, fontWeight: 800, color: "#0F172A", marginBottom: 4 },

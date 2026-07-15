@@ -188,12 +188,12 @@ export const polymyxinB: Drug = {
 
       // 單次 >200 mg 提醒
       if (ldMax > 200) {
-        warnings.push("⚠️ 單次 >2,000,000 units（200 mg）安全性資料有限，可能增加 infusion-related adverse effects（胸痛、感覺異常、頭暈、呼吸困難）");
+        warnings.push("單次 >2,000,000 units（200 mg）安全性資料有限，可能增加 infusion-related adverse effects（胸痛、感覺異常、頭暈、呼吸困難）");
       }
 
       // 通用警告
-      warnings.push("⚠️ 不適合用於 UTI（尿中濃度不足），UTI 優先使用 colistimethate");
-      warnings.push("⚠️ 禁忌：重症肌無力（可誘發或惡化）");
+      warnings.push("不適合用於 UTI（尿中濃度不足），UTI 優先使用 colistimethate");
+      warnings.push("禁忌：重症肌無力（可誘發或惡化）");
 
       if (sc.note) rows.push({ label: "療程與備註", value: sc.note });
 

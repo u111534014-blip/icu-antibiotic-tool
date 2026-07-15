@@ -4,6 +4,7 @@ import { round1 } from './drugs/shared/helpers';
 import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types';
 import VancoTDM from './VancoTDM';
 import TbGuideline from './TbGuideline';
+import DepakineTDM from './DepakineTDM';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -481,7 +482,7 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "infusionRef" | "tbGuideline">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "infusionRef" | "tbGuideline">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
@@ -650,6 +651,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "vancoTDM" ? S.menuItemActive : {}) }}>
                 📊 Vancomycin TDM
               </button>
+              <button onClick={() => { setPage("depakineTDM"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "depakineTDM" ? S.menuItemActive : {}) }}>
+                🧪 Depakine TDM
+              </button>
               <button onClick={() => { setPage("infusionRef"); setMenuOpen(false); }}
                 style={{ ...S.menuItem, ...(page === "infusionRef" ? S.menuItemActive : {}) }}>
                 ⏱️ 輸注時間速查
@@ -669,6 +674,8 @@ export default function App() {
         {/* ── 頁面路由 ── */}
         {page === "vancoTDM" ? (
           <VancoTDM />
+        ) : page === "depakineTDM" ? (
+          <DepakineTDM />
         ) : page === "tbGuideline" ? (
           <TbGuideline />
         ) : page === "infusionRef" ? (

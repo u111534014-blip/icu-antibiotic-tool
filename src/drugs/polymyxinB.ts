@@ -44,6 +44,7 @@ export const polymyxinB: Drug = {
   ],
 
   needsRenal: false,   // 腎功能不需調整
+  weightStrategy: "AdjBW_if_bmi40",
   needsWeight: true,   // mg/kg 計算
   needsHepatic: false,
 

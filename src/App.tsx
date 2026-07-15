@@ -31,7 +31,7 @@ type PatientParamsInput = {
   gender: string;
   scr: string;
   rrt: string;
-  weightStrategy?: "AdjBW_if_obese" | "TBW" | "IBW" | "IBW_if_obese";
+  weightStrategy?: "AdjBW_if_obese" | "AdjBW_if_bmi40" | "TBW" | "IBW" | "IBW_if_obese";
 };
 
 type PatientParamsResult = {
@@ -83,6 +83,12 @@ function calcPatientParams({ tbw, height, age, gender, scr, rrt, weightStrategy 
     } else {
       dosing_weight = w;
       weight_note = `使用 TBW（${round1(w)} kg）`;
+    }
+  } else if (strategy === "AdjBW_if_bmi40") {
+    if (ibw && bmi && bmi >= 40) {
+      adjBw = round1(ibw + 0.4 * (w - ibw));
+      dosing_weight = adjBw;
+      weight_note = `Morbid obesity（BMI ${round1(bmi)}）→ AdjBW ${adjBw} kg`;
     }
   } else {
     // AdjBW_if_obese（預設）：依 UpToDate，BMI ≥ 30 判定肥胖
@@ -528,6 +534,11 @@ export default function App() {
         dosing_weight = adjBw;
         weight_note = `肥胖（BMI ${bmi}）→ AdjBW ${adjBw} kg`;
       }
+      else if (strategy === "AdjBW_if_bmi40" && ibw && bmi && bmi >= 40) {
+        adjBw = round1(ibw + 0.4 * (w - ibw));
+        dosing_weight = adjBw;
+        weight_note = `Morbid obesity（BMI ${bmi}）→ AdjBW ${adjBw} kg`;
+      }
       return { dosing_weight, crcl: null, egfr: null, ibw, adjBw, bmi, weight_note };
     }
 
@@ -559,6 +570,7 @@ export default function App() {
       if (strategy === "TBW") { weight_note = "策略：永遠使用 TBW"; }
       else if (strategy === "IBW" && ibw) { dosing_weight = ibw; weight_note = `策略：使用 IBW（${ibw} kg）`; }
       else if (strategy === "IBW_if_obese" && ibw && bmi && bmi >= 30) { dosing_weight = ibw; weight_note = `肥胖（BMI ${bmi}）→ 使用 IBW（${ibw} kg）`; }
+      else if (strategy === "AdjBW_if_bmi40" && ibw && bmi && bmi >= 40) { adjBw = round1(ibw + 0.4 * (w - ibw)); dosing_weight = adjBw; weight_note = `Morbid obesity（BMI ${bmi}）→ AdjBW ${adjBw} kg`; }
       else if (strategy === "AdjBW_if_obese" && ibw && bmi && bmi >= 30) { adjBw = round1(ibw + 0.4 * (w - ibw)); dosing_weight = adjBw; weight_note = `肥胖（BMI ${bmi}）→ AdjBW ${adjBw} kg`; }
       return { dosing_weight, crcl: parseFloat(directCrcl) || null, egfr: null, ibw, adjBw, bmi, weight_note };
     }

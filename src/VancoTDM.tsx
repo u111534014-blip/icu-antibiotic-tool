@@ -372,6 +372,20 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
         lines.push(`Estimated trough: ${currentPK.trough.toFixed(1)} mcg/mL.`);
         lines.push(`Risk of nephrotoxicity. Dose reduction recommended.`);
         lines.push("");
+
+        // Hold dose calculation if trough is significantly elevated
+        const curTr = currentPK.trough;
+        const targetTr = 15; // target trough to resume
+        if (curTr > 25 && halflife > 0) {
+          const holdHours = halflife * Math.log(curTr / targetTr) / Math.log(2);
+          const holdDoses = Math.ceil(holdHours / currentInterval);
+          lines.push(`>> HOLD vancomycin for approximately ${r(holdHours)} hours (~${holdDoses} dose(s)).`);
+          lines.push(`   Rationale: Estimated trough ${curTr.toFixed(1)} mcg/mL, half-life ${halflife.toFixed(1)} hr.`);
+          lines.push(`   Expected trough after holding ~${r(holdHours)} hr: ~${targetTr} mcg/mL.`);
+          lines.push(`   Recheck vancomycin level before resuming.`);
+          lines.push("");
+        }
+
         lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
         lines.push(`   Expected AUC24/MIC: ${r(best.auc24)}, peak: ${best.peak.toFixed(1)}, trough: ${best.trough.toFixed(1)} mcg/mL.`);
         lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);
@@ -398,6 +412,19 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
         lines.push(`Estimated AUC24/MIC: ${r(currentPK.auc24)} (for reference).`);
         lines.push(`Risk of nephrotoxicity. Dose reduction recommended.`);
         lines.push("");
+
+        // Hold dose calculation if trough is significantly elevated
+        const targetTr = 15; // midpoint of 10-20 range
+        if (curTrough > 25 && halflife > 0) {
+          const holdHours = halflife * Math.log(curTrough / targetTr) / Math.log(2);
+          const holdDoses = Math.ceil(holdHours / currentInterval);
+          lines.push(`>> HOLD vancomycin for approximately ${r(holdHours)} hours (~${holdDoses} dose(s)).`);
+          lines.push(`   Rationale: Estimated trough ${curTrough.toFixed(1)} mcg/mL, half-life ${halflife.toFixed(1)} hr.`);
+          lines.push(`   Expected trough after holding ~${r(holdHours)} hr: ~${targetTr} mcg/mL.`);
+          lines.push(`   Recheck vancomycin level before resuming.`);
+          lines.push("");
+        }
+
         lines.push(`>> Suggest adjusting Vancomycin to ${best.dose} mg IV Q${best.interval}H.`);
         lines.push(`   Expected trough: ${best.trough.toFixed(1)} mcg/mL, AUC24/MIC: ${r(best.auc24)}.`);
         lines.push(`   Daily dose: ${best.dailyDose} mg/day.`);

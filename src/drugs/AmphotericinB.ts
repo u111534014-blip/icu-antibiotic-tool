@@ -161,7 +161,7 @@ export const amphotericinB: Drug = {
               doseMin: 0.5,
               doseMax: 1,
               maxDailyMg: 150,
-              note: "Usual 0.5-1 mg/kg/day；範圍 0.3-1.5 mg/kg/day。可考慮 test dose 1 mg in 20 mL D5W over 20-30 min。",
+              note: "Usual 0.5-1 mg/kg QD；範圍 0.3-1.5 mg/kg QD。可考慮 test dose 1 mg in 20 mL D5W over 20-30 min。",
             },
             {
               formulation: "liposomal",
@@ -185,7 +185,7 @@ export const amphotericinB: Drug = {
         note: "Voriconazole / isavuconazole 通常優先；當 triazole 禁忌、不耐受、azole-resistant Aspergillus 疑慮，或 mucor 仍在鑑別診斷時升階/改用 amphotericin。",
         subResults: [
           { formulation: "deoxy", label: "Fungizone（resource-limited alternative）", product: "Fungizone（防治黴）", doseMin: 1, doseMax: 1.5, maxDailyMg: 150, duration: "至少 6-12 週，依感染部位、病灶範圍、免疫抑制程度調整", note: "最佳劑量未定；僅在沒有其他選擇或資源限制時使用。" },
-          { formulation: "liposomal", label: "AmBisome / Ampholipad（alternative）", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 3, doseMax: 5, capWeightAt100: true, duration: "至少 6-12 週；CNS 感染部分專家可用到 7.5 mg/kg/day", note: "IDSA：liposomal AmB 為 invasive aspergillosis alternative。A. terreus 對 amphotericin B 通常無效。" },
+          { formulation: "liposomal", label: "AmBisome / Ampholipad（alternative）", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 3, doseMax: 5, capWeightAt100: true, duration: "至少 6-12 週；CNS 感染部分專家可用到 7.5 mg/kg QD", note: "IDSA：liposomal AmB 為 invasive aspergillosis alternative。A. terreus 對 amphotericin B 通常無效。" },
         ],
       }],
     },
@@ -197,7 +197,8 @@ export const amphotericinB: Drug = {
         label: "Mucormycosis",
         note: "疑似 mucor 時需早期升階，不要等 culture；需合併 surgical debridement、反轉免疫抑制/控制 DKA 或高血糖。",
         subResults: [
-          { formulation: "liposomal", label: "AmBisome / Ampholipad（preferred）", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 5, doseMax: 10, duration: "療程通常很長，依病灶控制、免疫狀態與 step-down azole 決定", combo: "合併 surgical debridement；嚴重免疫抑制/播散性感染部分專家會合併另一抗黴菌藥，但證據有限。", note: "CNS disease 或 solid organ transplant 部分專家偏向 10 mg/kg/day。" },
+          { formulation: "liposomal", label: "AmBisome / Ampholipad（preferred）", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 5, doseMax: 10, duration: "療程通常很長，依病灶控制、免疫狀態與 step-down azole 決定", combo: "合併 surgical debridement；嚴重免疫抑制/播散性感染部分專家會合併另一抗黴菌藥，但證據有限。", note: "CNS disease 或 solid organ transplant 部分專家偏向 10 mg/kg QD。" },
+          { formulation: "deoxy", label: "Fungizone（not preferred；僅限無 lipid/liposomal 可用）", product: "Fungizone（防治黴）", doseMin: 1, doseMax: 1.5, maxDailyMg: 150, duration: "僅作為無 lipid/liposomal formulation 可取得時的替代；療程依病灶控制、毒性與 step-down azole 決定", combo: "仍需合併 surgical debridement、反轉免疫抑制與控制 DKA/高血糖。", note: "Mucormycosis guideline 建議避免 deoxycholate，主要因 nephrotoxicity / electrolyte wasting / infusion reaction 風險高；若不得不用，建議 ID consult 並嚴密監測 SCr、K、Mg。" },
         ],
       }],
     },
@@ -222,7 +223,7 @@ export const amphotericinB: Drug = {
         label: "Candidemia / disseminated candidiasis",
         note: "Echinocandin 通常為初始首選；AmB 保留給不耐受、抗藥、或 azole+echinocandin-resistant Candida 疑慮。",
         subResults: [
-          { formulation: "deoxy", label: "Fungizone（alternative）", product: "Fungizone（防治黴）", doseMin: 0.5, doseMax: 0.7, maxDailyMg: 150, duration: "至少首次陰性血培後 14 天且症狀/中性球低下緩解；遠端轉移需更久", note: "C. glabrata / C. krusei 可增加至 1 mg/kg/day。" },
+          { formulation: "deoxy", label: "Fungizone（alternative）", product: "Fungizone（防治黴）", doseMin: 0.5, doseMax: 0.7, maxDailyMg: 150, duration: "至少首次陰性血培後 14 天且症狀/中性球低下緩解；遠端轉移需更久", note: "C. glabrata / C. krusei 可增加至 1 mg/kg QD。" },
           { formulation: "liposomal", label: "AmBisome / Ampholipad（alternative）", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 3, doseMax: 5, capWeightAt100: true, duration: "至少首次陰性血培後 14 天且症狀/中性球低下緩解", combo: "穩定、血培轉陰且 isolate susceptible 時可 step-down to fluconazole。" },
         ],
       }],
@@ -276,7 +277,7 @@ export const amphotericinB: Drug = {
         note: "多數為 amphotericin induction 後 step-down oral azole（常為 itraconazole；coccidioidomycosis 依部位用 azole）。",
         subResults: [
           { formulation: "deoxy", label: "Fungizone（alternative）", product: "Fungizone（防治黴）", doseMin: 0.7, doseMax: 1, maxDailyMg: 150, duration: "非 CNS 常 1-2 週至改善；CNS histoplasmosis 4-6 週", combo: "改善後 step-down to oral azole；severe coccidioidomycosis 有些專家同時開始 oral azole。" },
-          { formulation: "liposomal", label: "AmBisome / Ampholipad", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 3, doseMax: 5, capWeightAt100: true, duration: "Histoplasmosis disseminated/pulmonary severe：3 mg/kg/day 1-2 週；CNS/Blastomycosis CNS：5 mg/kg/day 4-6 週", combo: "Histoplasmosis acute severe pulmonary 可合併 corticosteroids；之後 oral azole consolidation。" },
+          { formulation: "liposomal", label: "AmBisome / Ampholipad", product: "AmBisome（脂黴素）或 Ampholipad（安畢黴）", doseMin: 3, doseMax: 5, capWeightAt100: true, duration: "Histoplasmosis disseminated/pulmonary severe：3 mg/kg QD 1-2 週；CNS/Blastomycosis CNS：5 mg/kg QD 4-6 週", combo: "Histoplasmosis acute severe pulmonary 可合併 corticosteroids；之後 oral azole consolidation。" },
         ],
       }],
     },
@@ -388,7 +389,7 @@ export const amphotericinB: Drug = {
       {
         heading: "資料來源",
         body:
-          "• IDSA Candidiasis guideline：lipid AmB 3-5 mg/kg/day 可作 resistance/intolerance alternative；Candida endocarditis/device infection 可 ± flucytosine 並需 source control\n" +
+          "• IDSA Candidiasis guideline：lipid AmB 3-5 mg/kg QD 可作 resistance/intolerance alternative；Candida endocarditis/device infection 可 ± flucytosine 並需 source control\n" +
           "• IDSA Aspergillosis guideline：voriconazole first-line；liposomal AmB/isavuconazole alternative；select documented IPA 可考慮 voriconazole + echinocandin\n" +
           "• NIH HIV OI Cryptococcosis guideline：CNS/disseminated disease induction 使用 IV amphotericin B formulation + flucytosine\n" +
           "• ESCMID/ECMM mucormycosis guidance：liposomal/lipid-complex AmB + surgical debridement，deoxycholate 不建議優先",

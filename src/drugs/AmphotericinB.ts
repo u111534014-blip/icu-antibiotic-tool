@@ -27,6 +27,7 @@ type DoseSpec = {
   fixedDose?: number;
   fixedDoseMax?: number;
   routeText?: string;
+  frequency?: string;
   duration?: string;
   note?: string;
   combo?: string;
@@ -89,6 +90,7 @@ function buildSubResult(spec: DoseSpec, tbw: number, ibw: number | null, bmi: nu
   const weightInfo = getDoseWeight(spec, tbw, ibw, bmi);
   const warnings = [...weightInfo.warnings];
   const routeText = spec.routeText || "IV";
+  const frequency = spec.frequency || "QD";
 
   let minDose = spec.fixedDose ?? (spec.doseMin * weightInfo.weight);
   let maxDose = spec.fixedDoseMax ?? spec.fixedDose ?? ((spec.doseMax ?? spec.doseMin) * weightInfo.weight);
@@ -100,7 +102,7 @@ function buildSubResult(spec: DoseSpec, tbw: number, ibw: number | null, bmi: nu
   }
 
   const rows: any[] = [
-    { label: "建議劑量", value: spec.fixedDose ? `${rangeText(minDose, maxDose)} ${routeText}` : `${spec.doseMin}${spec.doseMax ? `-${spec.doseMax}` : ""} mg/kg/day ${routeText} = ${rangeText(minDose, maxDose)}`, highlight: true },
+    { label: "建議劑量", value: spec.fixedDose ? `${rangeText(minDose, maxDose)} ${routeText}` : `${spec.doseMin}${spec.doseMax ? `-${spec.doseMax}` : ""} mg/kg ${frequency} ${routeText} = ${rangeText(minDose, maxDose)}`, highlight: true },
     { label: "院內品項", value: `${spec.product}，50 mg/Vial` },
   ];
 

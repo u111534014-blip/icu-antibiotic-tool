@@ -507,6 +507,149 @@ function TDMNote({ mode, currentDose, currentInterval, currentPK, best, activeCL
   );
 }
 
+// ── TDM Clinical Reference ──────────────────────────────────
+function TDMClinicalRef() {
+  const [open, setOpen] = useState(false);
+
+  const sections = [
+    {
+      heading: "治療濃度範圍",
+      body:
+        "【AUC-guided（嚴重 MRSA 感染首選）】\n" +
+        "  目標 AUC24/MIC: 400-600 mcg·h/mL（預設 MIC = 1）\n" +
+        "  適用：BSI、心內膜炎、骨髓炎、肺炎、腦膜炎、敗血症\n\n" +
+        "【Trough-guided】\n" +
+        "  目標 trough: 10-20 mcg/mL（非嚴重感染 10-15 即可）\n" +
+        "  適用：院內仍廣泛使用，尤其腦膜炎/CNS 感染、腎功能不穩定\n\n" +
+        "【連續輸注】\n" +
+        "  目標 Css: 20-25 mcg/mL（≈ AUC24 480-600）\n\n" +
+        "⚠️ 高 trough（>20）不代表 AUC 一定超標，反之亦然\n" +
+        "⚠️ 非 MRSA 菌株（MSSA、CoNS、Streptococci、Enterococci）目前無 AUC 監測證據",
+    },
+    {
+      heading: "Vancomycin 半衰期",
+      body:
+        "【公式】t½ = 0.693 / Kel = 0.693 / (CL / Vd)\n\n" +
+        "【正常腎功能】\n" +
+        "  一般成人：~6-12 hr\n" +
+        "  重症 ICU：~12-30 hr（V 增大、CL 變異大）\n" +
+        "  腎功能不全：可延長至 >40 hr\n\n" +
+        "【影響因素】\n" +
+        "  CL↑（ARC、年輕、燒傷）→ t½↓ → 可能需 Q8H 或 Q6H\n" +
+        "  CL↓（AKI、老年、肝硬化 Scr 偏低）→ t½↑ → 需延長間隔或 hold\n" +
+        "  Vd↑（敗血症、體液過多、ECMO）→ t½↑ → LD 可能需較高",
+    },
+    {
+      heading: "Hold 劑量計算公式",
+      body:
+        "當 trough 顯著超標（>25 mcg/mL）時，需 hold 等濃度降下來：\n\n" +
+        "  停藥時間 = t½ × ln(目前濃度 / 目標濃度) / ln(2)\n\n" +
+        "推導：\n" +
+        "  C(t) = C₀ × e^(-Kel × t)  ← 一級消除\n" +
+        "  解 t：t = ln(C₀/C_target) / Kel\n" +
+        "  代入 Kel = ln(2)/t½\n" +
+        "  → t = t½ × ln(C₀/C_target) / ln(2)\n\n" +
+        "範例：trough 40, 目標 15, t½ 30hr\n" +
+        "  t = 30 × ln(40/15) / ln(2) = 30 × 0.981 / 0.693 = 42hr\n" +
+        "  → 停約 42hr（Q12H 停 ~4 劑）→ recheck level 再 resume",
+    },
+    {
+      heading: "PK Model 參數",
+      body:
+        "【Buelga 2005（一般成人）】\n" +
+        "  CL = 1.08 × CrCl (L/h)    ← CrCl 用 CG，單位 L/h\n" +
+        "  V = 0.98 × TBW (L)\n" +
+        "  ωCL = 28.2%, ωV = 37.2%, σ = 20%\n" +
+        "  來源：血液腫瘤科病人，1-compartment\n\n" +
+        "【Roberts 2011（ICU 重症）】\n" +
+        "  CL = 4.58 × (CrCl_norm / 100)  ← CrCl 用 BSA-normalized (mL/min/1.73m²)\n" +
+        "  V = 1.53 × TBW (L)\n" +
+        "  ωCL = 38.9%, ωV = 37.4%, σ = 19.9%\n" +
+        "  來源：敗血症 ICU 病人，連續輸注資料，1-compartment",
+    },
+    {
+      heading: "Bayesian MAP 原理",
+      body:
+        "結合 population prior（群體平均 PK）和病人實測 level，找出最可能的個人化 CL 和 Vd。\n\n" +
+        "最小化：\n" +
+        "  Σ[(ln(Cobs) - ln(Cpred))² / σ²]     ← 觀測值 vs 預測值\n" +
+        "  + (ln(CL) - ln(CLpop))² / ωCL²       ← CL 的 prior\n" +
+        "  + (ln(V) - ln(Vpop))² / ωV²          ← V 的 prior\n\n" +
+        "本工具用 grid search（3 passes × 21×21 grid）求解。\n\n" +
+        "⚠️ 只有 1 個 level 時 system underdetermined，CL 和 V 有無限組合可 fit。\n" +
+        "   2 個 level（peak + trough）可大幅提高準確度。",
+    },
+    {
+      heading: "CrCl 計算（CG 公式）",
+      body:
+        "CrCl (mL/min) = [(140 - age) × weight] / (72 × Scr)\n" +
+        "女性 × 0.85\n\n" +
+        "【體重選擇】\n" +
+        "  BMI < 30：用 TBW\n" +
+        "  BMI ≥ 30：用 AdjBW = IBW + 0.4 × (TBW - IBW)\n" +
+        "  → 避免 TBW 高估肥胖者 CrCl\n\n" +
+        "【Roberts model 額外步驟】\n" +
+        "  CrCl 需 BSA-normalize：CrCl_norm = CrCl / BSA × 1.73\n" +
+        "  BSA = 0.007184 × H^0.725 × W^0.425（DuBois）\n\n" +
+        "⚠️ Vancomycin 的 LD/MD 用 TBW 計算（跟 CrCl 的體重選擇無關）",
+    },
+    {
+      heading: "負荷劑量與維持劑量",
+      body:
+        "【LD 建議】\n" +
+        "  一般：20-25 mg/kg（TBW）\n" +
+        "  重症/ARC：25-35 mg/kg（TBW）\n" +
+        "  最大 3 g\n\n" +
+        "【LD → MD 銜接】\n" +
+        "  第一劑 MD 在 LD 開始後的下一個常規間隔給\n" +
+        "  例：Q12H → LD 後 12hr 給 MD\n\n" +
+        "【每日總劑量上限】\n" +
+        "  經驗性 MD 很少需要 >4.5 g/day\n" +
+        "  超過 4 g/day 時建議儘早且頻繁 TDM\n\n" +
+        "【輸注速率】≤10-15 mg/min（避免 Red Man Syndrome）",
+    },
+    {
+      heading: "AUC 計算方法比較",
+      body:
+        "【方法 1：梯形/對數線性法（Trapezoidal）】\n" +
+        "  需穩定狀態下測 Peak + Trough 兩個濃度\n" +
+        "  較簡單但需等穩態（通常第 4 劑後）\n\n" +
+        "【方法 2：Bayesian 法】\n" +
+        "  可在非穩態下用 1-2 個濃度估算\n" +
+        "  可適應動態生理變化\n" +
+        "  需軟體（如本工具、VancoPK、PrecisePK）\n" +
+        "  不同工具間結果可能有 10-20% 差異（正常）",
+    },
+  ];
+
+  return (
+    <div style={{ ...S.section, padding: 0, overflow: "hidden" }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", padding: "14px 16px", border: "none", background: "none",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#0F766E",
+      }}>
+        <span>📚 Vancomycin TDM 臨床參考</span>
+        <span style={{ fontSize: 18, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 16px 16px" }}>
+          {sections.map((sec, i) => (
+            <div key={i} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0D9488", marginBottom: 6, borderBottom: "1px solid #E2E8F0", paddingBottom: 4 }}>
+                {sec.heading}
+              </div>
+              <pre style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: "#334155", whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "inherit" }}>
+                {sec.body}
+              </pre>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════════════════════
@@ -947,6 +1090,9 @@ export default function VancoTDM() {
           <button onClick={handleReset} style={S.resetBtn}>重新計算</button>
         </div>
       )}
+
+      {/* ── 臨床參考（可展開）── */}
+      <TDMClinicalRef />
 
       <div style={{ textAlign: "center", padding: "24px 0 8px", fontSize: 11, color: "#94A3B8" }}>
         Buelga et al. AAC 2005;49:4934 / Roberts et al. AAC 2011;55:3208<br />

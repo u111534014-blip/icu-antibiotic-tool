@@ -294,6 +294,57 @@ function Warning({ children }: { children: React.ReactNode }) {
   return <div style={S.warning}>{children}</div>;
 }
 
+function ClinicalReferenceBox() {
+  const [open, setOpen] = useState(false);
+
+  const sections = [
+    {
+      heading: "濃度參考範圍",
+      body: "Total VPA：常用 trough plasma concentration 50-125 mcg/mL；不同 indication、院內 lab 與臨床目標可能略有差異。\nFree VPA：本工具採 Fraser 2023 使用的分類：<5 mcg/mL 偏低、5-17 mcg/mL 為參考範圍、>17 mcg/mL 偏高。\n一般 free fraction 約 5-10%，但 ICU、低白蛋白、uremia、propofol/lipid therapy、aspirin 等情境可明顯上升。",
+    },
+    {
+      heading: "半衰期與 hold 估算",
+      body: "Depakote label：成人 oral valproate monotherapy terminal half-life 約 9-16 小時；肝病時半衰期可能延長，且 free clearance 下降。\n本工具的 hold 劑數是粗估：需要下降的半衰期數 = log(目前 active free VPA / restart target) / log(2)；hold 小時數 = 半衰期數 x 9-16 小時；hold 劑數 = ceiling(hold 小時數 / 原本給藥間隔)。\nICU、肝病、overdose、交互作用或 ER 劑型都可能讓下降變慢，因此建議以複測 trough/free VPA 與毒性改善作為 restart 依據。",
+    },
+    {
+      heading: "抽血與解讀",
+      body: "用於調整維持劑量時，最好使用 steady-state trough / pre-dose level。\n剛 loading、剛調劑量、post-load 或 random level 比較適合做安全性判讀，不建議直接用比例法調整維持劑量。\n若可送檢 free VPA，劑量調整應優先依實測 free level；Fraser equation 只是 free level 未回來時的 surrogate。",
+    },
+    {
+      heading: "高濃度或疑似毒性時",
+      body: "建議評估 mental status、sedation/tremor、platelet、LFT、ammonia、pancreatitis symptoms。\n若有 unexplained lethargy/vomiting/mental status change，應測 ammonia；若 ammonia 上升或懷疑 hyperammonemic encephalopathy，需評估停用 valproate。\n若 valproate 用於預防 major seizure，避免在沒有替代抗癲癇 coverage 下長時間 abrupt discontinuation，需同步評估 bridge/rescue AED。",
+    },
+    {
+      heading: "主要來源",
+      body: "Fraser 2023：Liu JT et al. Crit Care Explor. 2023;5(10):e0987. PMID 37868026。\nDailyMed Depakote label：therapeutic concentration、half-life、thrombocytopenia、hyperammonemia 與 abrupt discontinuation warnings。",
+    },
+  ];
+
+  return (
+    <div style={S.referenceBox}>
+      <button onClick={() => setOpen(!open)} style={S.referenceHeader}>
+        <span>📖 臨床參考</span>
+        <svg
+          width="14" height="14" viewBox="0 0 16 16" fill="none"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
+        >
+          <path d="M4 6L8 10L12 6" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={S.referenceContent}>
+          {sections.map((section, idx) => (
+            <div key={section.heading} style={{ marginBottom: idx < sections.length - 1 ? 14 : 0 }}>
+              <div style={S.referenceSectionTitle}>{section.heading}</div>
+              <div style={S.referenceText}>{section.body}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DepakineTDM() {
   const [total, setTotal] = useState("");
   const [albumin, setAlbumin] = useState("");
@@ -585,12 +636,7 @@ export default function DepakineTDM() {
         </div>
       )}
 
-      <div style={S.referenceBox}>
-        <div style={S.referenceTitle}>臨床提醒</div>
-        <div>
-          Fraser 2023 是 ICU adult cohort 衍生並驗證的估算式；文中指出模型 bias 低但 precision 不佳。若可送檢 free VPA，劑量調整仍應優先依實測 free level、臨床反應與毒性表現判斷。
-        </div>
-      </div>
+      <ClinicalReferenceBox />
 
       {(total || albumin || bun || measuredFree || currentDose || propofol || aspirin || toxicityConcern || seizureConcern) && (
         <button onClick={resetAll} style={S.resetBtn}>重新評估</button>
@@ -637,7 +683,10 @@ const S: Record<string, CSSProperties> = {
   notePreviewTitle: { marginTop: 14, marginBottom: 6, fontSize: 12, fontWeight: 800, color: "#475569" },
   notePreview: { background: "#1E293B", color: "#E2E8F0", padding: 14, borderRadius: 8, fontSize: 11, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 360, overflowY: "auto", margin: 0 },
   copyBtn: { width: "100%", marginTop: 14, padding: "12px 0", borderRadius: 8, border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", transition: "background 0.2s" },
-  referenceBox: { background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 14, fontSize: 13, color: "#475569", lineHeight: 1.65 },
-  referenceTitle: { fontSize: 13, fontWeight: 800, color: "#0F172A", marginBottom: 4 },
+  referenceBox: { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, marginTop: 16, overflow: "hidden" },
+  referenceHeader: { width: "100%", padding: "14px 16px", background: "#F8FAFC", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 800, color: "#475569", textAlign: "left" },
+  referenceContent: { padding: "16px 16px 18px" },
+  referenceSectionTitle: { fontSize: 13, fontWeight: 800, color: "#0F172A", marginBottom: 6, paddingBottom: 4, borderBottom: "2px solid #F0FDFA" },
+  referenceText: { fontSize: 13, color: "#475569", lineHeight: 1.7, whiteSpace: "pre-wrap" },
   resetBtn: { width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 15, fontWeight: 600, cursor: "pointer" },
 };

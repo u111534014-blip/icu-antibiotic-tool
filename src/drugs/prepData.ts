@@ -46,7 +46,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   unasyn: {
     vial: "乾粉 1.5 g / 3 g/Vial（Ampicillin:Sulbactam = 2:1）",
-    reconstitution: "先以無菌水或 NS 回溶，IV 用再稀釋",
+    reconstitution: "1.5 g 加 3.2 mL、3 g 加 6.4 mL 無菌水 → 375 mg/mL；IV 用再稀釋",
     diluent: "NS（首選，較穩定）；亦可 D5W 但時效較短",
     finalNote: "稀釋至 ≤45 mg/mL；NS 室溫 ≤8 hr、冷藏 ≤48 hr；D5W 時效短",
   },
@@ -58,7 +58,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   brosym: {
     vial: "乾粉（Cefoperazone:Sulbactam = 1:1）",
-    reconstitution: "先以無菌水 / D5W / NS 回溶，充分搖溶",
+    reconstitution: "每 1 g 加約 3–4 mL 無菌水 / D5W / NS，充分搖溶（體積依院內品項）",
     diluent: "NS 或 D5W",
     finalNote: "回溶後盡快使用；室溫時效有限，詳依仿單",
   },
@@ -70,7 +70,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   flomoxef: {
     vial: "乾粉 1 g/Vial（Flomoxef）",
-    reconstitution: "以無菌水 / NS / D5W 回溶",
+    reconstitution: "每 1 g 加約 10 mL 無菌水 / NS / D5W",
     diluent: "NS 或 D5W",
     finalNote: "回溶後盡快使用；詳依仿單",
   },
@@ -100,7 +100,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   teicoplanin: {
     vial: "乾粉 400 mg/Vial（附溶劑，Teicod）",
-    reconstitution: "以附帶無菌水緩慢注入、沿壁滾動溶解，避免起泡",
+    reconstitution: "400 mg 加附帶 3.2 mL 無菌水，緩慢沿壁滾動溶解，避免起泡",
     diluent: "NS 或 D5W（亦可直接 IV push 3–5 min）",
     finalNote: "若起泡靜置消泡再抽取；回溶後盡快使用",
   },
@@ -124,19 +124,19 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   imipenem: {
     vial: "乾粉 500 mg/Vial（Tienam）",
-    reconstitution: "取部分稀釋液回溶成懸浮液後再稀釋（勿直接注射）",
+    reconstitution: "自 100 mL 稀釋液取約 10 mL 注入 vial 搖成懸浮液，再全部倒回該袋（勿直接注射）",
     diluent: "NS 或 D5W（⚠️ 禁乳酸鹽 / LR 稀釋）",
     finalNote: "稀釋至約 5 mg/mL（250–500 mg 用 100 mL）；室溫 ≤4 hr、冷藏 ≤24 hr",
   },
   ceftazidime: {
     vial: "乾粉 1 g / 2 g/Vial（Fortum）",
-    reconstitution: "以無菌水回溶會釋出 CO₂（正常），靜置排氣",
+    reconstitution: "1 g 加 10 mL、2 g 加 10 mL 無菌水（回溶釋出 CO₂ 為正常，靜置排氣）",
     diluent: "NS 或 D5W",
     finalNote: "室溫 ≤24 hr、冷藏 ≤7 天；延長滴注 3 hr",
   },
   cefoxitin: {
     vial: "乾粉 1 g / 2 g/Vial（Mefoxin）",
-    reconstitution: "以無菌水 / NS 回溶",
+    reconstitution: "1 g 加 10 mL、2 g 加 10–20 mL 無菌水 / NS",
     diluent: "NS 或 D5W",
     finalNote: "室溫 ≤6 hr、冷藏 ≤7 天；可 IV push 3–5 min",
   },
@@ -154,7 +154,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   cefmetazole: {
     vial: "乾粉 1 g/Vial（Zefazone）",
-    reconstitution: "以無菌水 / NS / D5W 回溶",
+    reconstitution: "每 1 g 加約 10 mL 無菌水 / NS / D5W",
     diluent: "NS 或 D5W",
     finalNote: "回溶後盡快使用；詳依仿單",
   },
@@ -165,10 +165,10 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "☣️ 細胞毒性需防護；輸注 ≥1 hr 並水化；回溶室溫 ≤12 hr（勿冷藏原液）",
   },
   anidulafungin: {
-    vial: "乾粉 100 mg/Vial（附溶劑，Eraxis）",
-    reconstitution: "以附帶無菌水回溶 → 3.33 mg/mL",
+    vial: "乾粉 100 mg/Vial（Eraxis，未附溶劑）",
+    reconstitution: "自備無菌注射用水回溶：每 100 mg 加 30 mL → 3.33 mg/mL（LD 200 mg 需 2 瓶）",
     diluent: "僅限 NS 或 D5W",
-    finalNote: "稀釋後約 0.5–0.77 mg/mL；室溫 ≤24 hr；LD 輸 ≥90 min",
+    finalNote: "稀釋後約 0.5–0.77 mg/mL；輸速 ≤1.1 mg/min；室溫 ≤24 hr；LD 輸 ≥90 min",
   },
   zerbaxa: {
     vial: "乾粉 1.5 g/Vial（Ceftolozane 1 g / Tazobactam 0.5 g）",
@@ -196,7 +196,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   },
   polymyxinB: {
     vial: "乾粉 500,000 units/Vial（Bobimixyn）",
-    reconstitution: "以無菌水或 NS 回溶",
+    reconstitution: "50 萬 units 加 2 mL 無菌水或 NS → 25 萬 units/mL",
     diluent: "D5W（輸注用）",
     finalNote: "LD 輸 ≥2 hr、MD 約 1 hr；回溶後冷藏 ≤72 hr；避免與其他藥混合",
   },

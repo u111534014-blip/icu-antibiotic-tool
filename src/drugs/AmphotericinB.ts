@@ -131,13 +131,13 @@ function buildSubResult(spec: DoseSpec, tbw: number, ibw: number | null, bmi: nu
 }
 
 export const amphotericinB: Drug = {
-  name: "Amphotericin B",
-  subtitle: "Fungizone / AmBisome / Ampholipad",
+  name: "Fungizone / AmBisome",
+  subtitle: "Amphotericin B",
   infusionTime: "Fungizone 通常 ≥4 hr；AmBisome 約 2 hr（耐受後可縮短）；皆以 D5W 稀釋，避免 NS/電解質混合",
   searchTerms: [
     "amphotericin", "amphotericin b", "fungizone", "防治黴",
     "ambisome", "脂黴素", "ampholipad", "安畢黴",
-    "deoxycholate", "liposomal", "lipid", "polyene", "mucor", "mucormycosis",
+    "deoxycholate", "liposomal",
   ],
 
   needsRenal: false,

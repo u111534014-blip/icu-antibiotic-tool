@@ -7,8 +7,10 @@ import {
   artDrugClassTable,
   artPrinciples,
   artSelectionTables,
+  artTimingTable,
   hepatitisCards,
   initialArtRegimens,
+  irisCards,
   monitoringTables,
   oiCards,
   pepCards,
@@ -207,6 +209,10 @@ function OiView() {
   return (
     <div>
       <SectionHeader title="伺機性感染預防與治療" subtitle="常用 CD4 門檻、首選處方、停用預防條件。" />
+      <div style={S.subhead}>IRIS 與 ART 時機</div>
+      {irisCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <SimpleTableCard table={artTimingTable} />
+      <div style={S.subhead}>OI 預防與治療速查</div>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}

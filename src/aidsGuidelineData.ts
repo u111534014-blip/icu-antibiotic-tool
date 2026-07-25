@@ -520,6 +520,56 @@ export const oiCards: AidsKeyPoint[] = [
   },
 ];
 
+export const irisCards: AidsKeyPoint[] = [
+  {
+    title: "IRIS 判斷重點",
+    body:
+      "IRIS（immune reconstitution inflammatory syndrome，免疫重建發炎症候群）是開始 ART 後，HIV viral load 下降、免疫功能恢復時，對已知或隱藏感染產生過度發炎反應的臨床症候群。",
+    bullets: [
+      "Paradoxical IRIS：已知 OI 在有效治療後本來改善，開始 ART 後又出現臨床或影像惡化。",
+      "Unmasking IRIS：ART 前沒有明顯 OI，ART 後因免疫恢復而表現出原本隱藏的感染。",
+      "診斷前需排除藥物過敏、新感染、原 OI 治療失敗、抗藥或服藥不佳；並確認原感染已有適當治療。",
+      "多數發生在 ART 後 3 個月內，但可早至數天或晚於 1 年；低 CD4、高 viral load 與 viral load 快速下降者風險較高。",
+    ],
+    source: "第 1 章免疫重建發炎症候群；第 3 章 TB-IRIS、MAC、PJP、隱球菌章節",
+  },
+  {
+    title: "IRIS 處理原則",
+    body:
+      "大多數 IRIS 不應停止 ART 或 OI 治療；重點是排除其他惡化原因、控制發炎與處理危及生命的部位，例如 CNS、呼吸衰竭或嚴重壓迫症狀。",
+    bullets: [
+      "輕中度：症狀治療或 NSAIDs，並密切追蹤。",
+      "嚴重或危及器官功能：可考慮 systemic corticosteroid；TB-IRIS 指引列有 prednisone 依 rifamycin 併用情境調整的建議。",
+      "Kaposi sarcoma 相關 IRIS 避免使用 steroid，因可能造成腫瘤快速惡化。",
+      "隱球菌腦膜炎相關 IRIS 需特別處理顱內壓；嚴重時才考慮短期 steroid。",
+    ],
+    source: "第 1 章免疫重建發炎症候群；第 3 章 TB-IRIS、隱球菌、HHV-8/Kaposi 章節",
+  },
+];
+
+export const artTimingTable: AidsTable = {
+  title: "常見 OI 開始 ART 時機",
+  source: "第 1 章 ART 起始原則；第 3 章 PJP、弓蟲、TB、隱球菌、MAC、CMV、青黴菌章節",
+  columns: ["感染 / 情境", "開始 ART 時機", "IRIS / 處方注意"],
+  rows: [
+    ["一般新診斷 HIV", "診斷後儘早；台灣指引推動 7 日內或當日診斷當日治療。", "開始前仍抽 viral load、CD4、HBV/HCV、腎肝功能與交互作用；結果回來後再調整。"],
+    ["PJP / PCP", "建議 OI 治療後盡快，通常 2 週內開始 ART。", "PJP-IRIS 可表現發燒、喘、肺部惡化；排除其他感染後可考慮 steroid。"],
+    ["Toxoplasma encephalitis", "通常診斷後 2-3 週內開始 ART。", "Toxo-IRIS 少見；可能有病灶變大或腦水腫，需排除治療失敗。"],
+    ["TB，CD4 <50 且非 TB meningitis", "抗 TB 治療開始後 2 週內。", "IRIS 風險高；需先核對 rifampin/rifabutin 與 ART 交互作用。"],
+    ["TB，CD4 >=50 且衰弱、營養差、貧血、器官功能障礙或播散性 TB", "抗 TB 治療開始後 2-4 週。", "嚴重 TB-IRIS 可考慮 steroid；若有 Kaposi sarcoma 或 active HBV，預防性 steroid 需避免或審慎。"],
+    ["TB，CD4 >=50 且非嚴重免疫低下 / 非嚴重 TB", "可延後，但應在抗 TB 治療開始後 8 週內。", "若使用 rifampin，DTG 常需調整；BIC、EVG/c、boosted PI 與 rifampin 多不適合併用。"],
+    ["TB meningitis", "沒有一致定論；專家建議抗 TB 後 2-8 週，CD4 <50 可考慮第 2 週但需嚴密監測。", "CNS IRIS 可能危及生命；需 ID/神經/結核團隊共同決定。"],
+    ["Cryptococcal meningitis", "不建議立即 ART；通常至少延後到診斷後 2 週，且依顱內壓、CSF 發炎與臨床穩定度個別化。", "CD4 <100、高顱內壓、CSF WBC <5 時尤其小心；早期 ART 研究顯示死亡率較高。"],
+    ["Disseminated MAC", "可儘早加入 ART。", "NTM-IRIS 常約 ART 後 3 週；症狀明顯且 anti-inflammatory response 不佳時可考慮 prednisone 20-40 mg/day 4-8 週。"],
+    ["Talaromycosis", "建議 amphotericin B induction 1 週後儘早開始 ART。", "提早 ART 有助預後，但仍需追蹤 IRIS 與藥物毒性。"],
+    ["CMV disease", "多數情境在抗 CMV 治療後 2 週內開始；CMV neurological disease 則建議儘早。", "CNS CMV 或 retinitis 需小心 IRIS；眼病變需眼科追蹤。"],
+  ],
+  notes: [
+    "此表是速查；實際時機需同時看感染部位、CD4、viral load、病況穩定度、顱內壓、藥物交互作用與抗藥史。",
+    "若 OI 處方含 rifamycin，請特別核對 ART：rifampin 會明顯影響多數 INSTI/PI/NNRTI 暴露量。",
+  ],
+};
+
 export const hepatitisCards: AidsKeyPoint[] = [
   {
     title: "HIV/HBV coinfection",
@@ -571,7 +621,8 @@ export const pepCards: AidsKeyPoint[] = [
 export const pepRegimens: AidsRegimen[] = [
   {
     id: "pep-bic",
-    name: "TAF/FTC/BIC",
+    name: "TAF/FTC/BIC (Biktarvy)",
+    localName: "吉他韋",
     category: "PEP / nPEP 優先建議",
     dose: "1 tab PO QD x 28 days",
     whenToUse: "職業與非職業暴露後預防優先建議；單錠、耐受性佳、服藥方便。",

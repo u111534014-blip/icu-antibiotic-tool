@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { DRUG_REGISTRY } from './drugs';
+import { PREP_DATA } from './drugs/prepData';
 import { round1 } from './drugs/shared/helpers';
 import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types';
 import VancoTDM from './VancoTDM';
@@ -478,12 +479,101 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
   );
 }
 
+// ── 院內針劑泡製速查（可搜尋卡片）─────────────────────────────
+function PrepField({ label, value }: { label: string; value?: string }) {
+  return (
+    <div style={{ display: "flex", gap: 8, padding: "6px 0", borderTop: "1px solid #F1F5F9" }}>
+      <span style={{ flexShrink: 0, width: 92, fontSize: 12, fontWeight: 600, color: "#94A3B8", lineHeight: 1.5 }}>{label}</span>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: value ? "#334155" : "#CBD5E1", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
+
+function PrepQuickRef() {
+  const [search, setSearch] = useState("");
+
+  const list = Object.entries(DRUG_REGISTRY)
+    .map(([id, d]) => ({ id, drug: d, prep: PREP_DATA[id] || d.prep }))
+    // 有泡製資料或輸注時間才列入
+    .filter(x => x.prep || x.drug.infusionTime)
+    .sort((a, b) => a.drug.name.localeCompare(b.drug.name));
+
+  const filtered = list.filter(x => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const d = x.drug;
+    return (
+      d.name.toLowerCase().includes(q) ||
+      d.subtitle.toLowerCase().includes(q) ||
+      (d.searchTerms || []).some(t => t.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div>
+      <div style={{ textAlign: "center", padding: "16px 0 20px" }}>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#0F172A" }}>💉 院內針劑泡製速查</div>
+        <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>IV Reconstitution & Infusion Quick Reference</div>
+      </div>
+
+      {/* 草稿警告 */}
+      <div style={{
+        background: "#FEF3C7", border: "1px solid #F59E0B", borderRadius: 10,
+        padding: "10px 14px", marginBottom: 16, fontSize: 12.5, color: "#92400E", lineHeight: 1.6,
+        display: "flex", gap: 8, alignItems: "flex-start",
+      }}>
+        <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+        <span>目前資料為<strong>仿單標準值草稿</strong>，尚未對照本院藥劑部實際 SOP。臨床配製前請務必由藥師逐項核對。</span>
+      </div>
+
+      {/* 搜尋框 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", borderRadius: 10, padding: "10px 14px", marginBottom: 14, border: "1.5px solid #E2E8F0" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <circle cx="7" cy="7" r="5" stroke="#94A3B8" strokeWidth="1.5"/>
+          <path d="M11 11L14 14" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="藥名、商品名、學名、中文..."
+          style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, color: "#0F172A", width: "100%", minWidth: 0 }} />
+        {search && (
+          <button onClick={() => setSearch("")}
+            style={{ border: "none", background: "none", cursor: "pointer", color: "#94A3B8", fontSize: 16, padding: 0 }}>✕</button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ padding: "24px 16px", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>找不到符合的藥物</div>
+      ) : (
+        filtered.map(({ id, drug, prep }) => (
+          <div key={id} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ marginBottom: 4 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "#0F172A" }}>{drug.name}</span>
+              <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: 8 }}>{drug.subtitle}</span>
+            </div>
+            <PrepField label="院內品項/規格" value={prep?.vial} />
+            <PrepField label="回溶" value={prep?.reconstitution} />
+            <PrepField label="建議稀釋液" value={prep?.diluent} />
+            <PrepField label="稀釋後/安定性/備註" value={prep?.finalNote} />
+            <PrepField label="⏱️ 輸注時間" value={drug.infusionTime} />
+          </div>
+        ))
+      )}
+
+      <div style={{ textAlign: "center", padding: "16px 0 8px", fontSize: 11, color: "#94A3B8" }}>
+        共 {list.length} 種針劑{search ? `，符合 ${filtered.length} 種` : ""}　·　僅供臨床參考，請依實際情境調整
+      </div>
+    </div>
+  );
+}
+
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  🏗️ 主程式                                                     ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "infusionRef" | "tbGuideline" | "aidsGuideline">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
@@ -656,9 +746,9 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "depakineTDM" ? S.menuItemActive : {}) }}>
                 🧪 Depakine TDM
               </button>
-              <button onClick={() => { setPage("infusionRef"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "infusionRef" ? S.menuItemActive : {}) }}>
-                ⏱️ 輸注時間速查
+              <button onClick={() => { setPage("prepRef"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "prepRef" ? S.menuItemActive : {}) }}>
+                💉 院內針劑泡製速查
               </button>
               <button onClick={() => { setPage("tbGuideline"); setMenuOpen(false); }}
                 style={{ ...S.menuItem, ...(page === "tbGuideline" ? S.menuItemActive : {}) }}>
@@ -685,37 +775,8 @@ export default function App() {
           <TbGuideline />
         ) : page === "aidsGuideline" ? (
           <AidsGuideline />
-        ) : page === "infusionRef" ? (
-          <div>
-            <div style={{ textAlign: "center", padding: "16px 0 24px" }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "#0F172A" }}>⏱️ 輸注時間速查</div>
-              <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>IV Infusion Time Quick Reference</div>
-            </div>
-            <div style={{ background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "10px 8px", textAlign: "left", borderBottom: "2px solid #E2E8F0", color: "#475569", fontWeight: 700 }}>藥物</th>
-                    <th style={{ padding: "10px 8px", textAlign: "left", borderBottom: "2px solid #E2E8F0", color: "#475569", fontWeight: 700 }}>輸注時間</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.values(DRUG_REGISTRY)
-                    .filter((d: any) => d.infusionTime)
-                    .sort((a: any, b: any) => a.name.localeCompare(b.name))
-                    .map((d: any, i: number) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <td style={{ padding: "10px 8px", fontWeight: 600, color: "#0F172A" }}>
-                        {d.name}<br /><span style={{ fontWeight: 400, fontSize: 11, color: "#94A3B8" }}>{d.subtitle}</span>
-                      </td>
-                      <td style={{ padding: "10px 8px", color: "#334155" }}>{d.infusionTime}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ textAlign: "center", padding: "24px 0 8px", fontSize: 11, color: "#94A3B8" }}>僅供臨床參考，請依實際情境調整</div>
-          </div>
+        ) : page === "prepRef" ? (
+          <PrepQuickRef />
         ) : (
         <>
         <div style={S.header}>

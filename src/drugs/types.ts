@@ -70,6 +70,15 @@ export type ClinicalPearls = {
   sections: ClinicalPearlSection[];      // 多個小節
 };
 
+// ── 針劑泡製速查（回溶 / 稀釋 / 安定性）────────────────────────
+// 給「院內針劑泡製速查」頁面用。皆為選填，缺欄位頁面顯示「—」。
+export type PrepInfo = {
+  vial?: string;            // 院內品項 / 規格（如「乾粉 500 mg/Vial」）
+  reconstitution?: string;  // 回溶：溶劑 + 體積（+ 濃度）
+  diluent?: string;         // 建議稀釋液（NS / D5W / 配伍禁忌）
+  finalNote?: string;       // 稀釋後體積 / 安定性 / 備註
+};
+
 // ── 藥師配藥輸入 ─────────────────────────────────────────────
 export type DilutionResult = {
   text: string;
@@ -139,6 +148,8 @@ export type Drug = {
   clinicalPearls?: ClinicalPearls; // 選填：臨床參考（可展開的補充知識）
 
   infusionTime?: string;           // 選填：輸注時間（如 "30 min / 3 hr 延長"）
+
+  prep?: PrepInfo;                 // 選填：針劑泡製速查資料（回溶/稀釋/安定性）
 
   calculate: (params: CalculateParams) => CalculateResult;
 };

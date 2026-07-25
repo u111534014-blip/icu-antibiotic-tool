@@ -3,7 +3,10 @@ import type { CSSProperties } from "react";
 import {
   aidsGuidelineMeta,
   aidsSections,
+  artAbbreviationTable,
+  artDrugClassTable,
   artPrinciples,
+  artSelectionTables,
   hepatitisCards,
   initialArtRegimens,
   monitoringTables,
@@ -57,6 +60,21 @@ function KeyPointCard({ item }: { item: AidsKeyPoint }) {
 }
 
 function RegimenCard({ regimen }: { regimen: AidsRegimen }) {
+  const metaRows = [
+    ["商品中文", regimen.localName],
+    ["處方架構", regimen.regimenType],
+    ["Backbone", regimen.backbone],
+    ["Third agent", regimen.thirdAgent],
+    ["用藥建議", regimen.food],
+    ["腎功能", regimen.renal],
+    ["肝功能", regimen.hepatic],
+    ["病毒量限制", regimen.viralLoadLimit],
+    ["CD4 限制", regimen.cd4Limit],
+    ["HBV", regimen.hbv],
+    ["切半/磨碎", regimen.crush],
+    ["常見副作用", regimen.keyAdverse],
+  ].filter(([, value]) => Boolean(value));
+
   return (
     <section style={S.card}>
       <div style={S.rowTop}>
@@ -67,6 +85,26 @@ function RegimenCard({ regimen }: { regimen: AidsRegimen }) {
         <span style={S.badge}>{regimen.dose}</span>
       </div>
       <div style={S.cardBody}>{regimen.whenToUse}</div>
+      {regimen.components && (
+        <div style={S.tagWrap}>
+          {regimen.components.map((component) => (
+            <span key={`${regimen.id}-${component.abbr}`} style={S.tag}>
+              {component.abbr} <span style={S.tagMuted}>{component.drugClass}</span>
+              {component.dose ? ` ${component.dose}` : ""}
+            </span>
+          ))}
+        </div>
+      )}
+      {metaRows.length > 0 && (
+        <div style={S.metaGrid}>
+          {metaRows.map(([label, value]) => (
+            <div key={`${regimen.id}-${label}`} style={S.metaItem}>
+              <span style={S.label}>{label}</span>
+              {value}
+            </div>
+          ))}
+        </div>
+      )}
       <Bullets items={regimen.cautions} />
       <Source text={regimen.source} />
     </section>
@@ -111,7 +149,19 @@ function ArtView() {
     const q = query.trim().toLowerCase();
     if (!q) return initialArtRegimens;
     return initialArtRegimens.filter((regimen) =>
-      [regimen.name, regimen.category, regimen.whenToUse, ...regimen.cautions].join(" ").toLowerCase().includes(q)
+      [
+        regimen.name,
+        regimen.localName,
+        regimen.category,
+        regimen.regimenType,
+        regimen.backbone,
+        regimen.thirdAgent,
+        regimen.renal,
+        regimen.hbv,
+        regimen.whenToUse,
+        ...(regimen.components || []).map((component) => `${component.abbr} ${component.generic} ${component.drugClass}`),
+        ...regimen.cautions,
+      ].join(" ").toLowerCase().includes(q)
     );
   }, [query]);
 
@@ -119,15 +169,20 @@ function ArtView() {
     <div>
       <SectionHeader title="初始 ART 與快速治療" subtitle="以台灣第一線處方與開始治療前檢查為核心。" />
       {artPrinciples.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>處方選擇架構</div>
+      {artSelectionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
+      <SimpleTableCard table={artDrugClassTable} />
       <div style={S.subhead}>第一線與常見轉換處方</div>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="搜尋 Biktarvy、HBV、RPV、Dovato..."
+        placeholder="搜尋 Biktarvy、HBV、eGFR、NRTI、RPV、Dovato..."
         style={S.searchInput}
       />
       {filtered.map((regimen) => <RegimenCard key={regimen.id} regimen={regimen} />)}
       {filtered.length === 0 && <div style={S.empty}>找不到符合的 ART 處方</div>}
+      <div style={S.subhead}>縮寫原文</div>
+      <SimpleTableCard table={artAbbreviationTable} />
     </div>
   );
 }
@@ -273,6 +328,12 @@ const S: Record<string, CSSProperties> = {
   source: { marginTop: 10, fontSize: 11, color: "#94A3B8", lineHeight: 1.45 },
   rowTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
   badge: { flexShrink: 0, display: "inline-flex", alignItems: "center", borderRadius: 999, padding: "4px 8px", background: "#EDE9FE", color: "#5B21B6", fontSize: 11, fontWeight: 750, lineHeight: 1.2, maxWidth: 150, textAlign: "center" },
+  tagWrap: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  tag: { borderRadius: 999, padding: "5px 8px", background: "#F5F3FF", color: "#5B21B6", border: "1px solid #DDD6FE", fontSize: 11, fontWeight: 850, lineHeight: 1.2 },
+  tagMuted: { color: "#7C3AED", fontWeight: 700 },
+  metaGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 8, marginTop: 11 },
+  metaItem: { background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: 9, color: "#334155", fontSize: 12, lineHeight: 1.45 },
+  label: { display: "block", color: "#64748B", fontSize: 10, fontWeight: 850, textTransform: "uppercase", letterSpacing: 0, marginBottom: 3 },
   tableWrap: { overflowX: "auto", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, margin: "10px 0 8px" },
   table: { width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 560 },
   th: { padding: "9px 8px", borderBottom: "2px solid #E2E8F0", textAlign: "left", color: "#475569", fontWeight: 850, background: "#F8FAFC" },

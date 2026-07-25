@@ -12,6 +12,19 @@ export type AidsRegimen = {
   name: string;
   category: string;
   dose: string;
+  localName?: string;
+  regimenType?: string;
+  backbone?: string;
+  thirdAgent?: string;
+  components?: { abbr: string; generic: string; drugClass: string; dose?: string }[];
+  food?: string;
+  renal?: string;
+  hepatic?: string;
+  viralLoadLimit?: string;
+  cd4Limit?: string;
+  crush?: string;
+  hbv?: string;
+  keyAdverse?: string;
   whenToUse: string;
   cautions: string[];
   source: string;
@@ -29,7 +42,7 @@ export const aidsGuidelineMeta = {
   title: "愛滋病檢驗及治療指引",
   subtitle: "Taiwan HIV/AIDS Guideline Quick Reference",
   source:
-    "台灣愛滋病學會 / 衛生福利部疾病管制署，依使用者提供 PDF 整理：第 1 章 2024/10/16；第 2 章 2025/02/07；第 3 章 2022/12/26；第 5 章 2025/02/03；第 6 章 2024/12/18；第 9、11 章 2025/12/23；第 12 章 2022/05/12。",
+    "台灣愛滋病學會 / 衛生福利部疾病管制署：第 1 章 2024/10/16；第 2 章 2025/02/07；第 3 章 2022/12/26；第 5 章 2025/02/03；第 6 章 2024/12/18；第 9、11 章 2025/12/23；第 12 章 2022/05/12。",
   notice:
     "此頁是臨床速查，不取代完整指引、藥物交互作用資料庫、健保/疾管署給付規範或 HIV 專家會診。PEP、懷孕、治療失敗、抗藥、CNS OI、HBV/HCV 共病與複雜交互作用請務必核對最新版文件。",
 };
@@ -70,15 +83,60 @@ export const artPrinciples: AidsKeyPoint[] = [
   },
 ];
 
+export const artSelectionTables: AidsTable[] = [
+  {
+    title: "初始 ART 處方組成概念",
+    source: "第 1 章前言、表 1-5、表 1-6",
+    columns: ["架構", "常見組合", "臨床意義"],
+    rows: [
+      ["Backbone", "通常為 2 個 NRTIs，例如 TAF/FTC、TDF/3TC、ABC/3TC", "決定 HBV 涵蓋、腎功能/骨質限制與長期耐受性。"],
+      ["Third agent", "NNRTI、INSTI 或 PI，例如 RPV、DOR、BIC、DTG、DRV/c", "決定抗藥屏障、交互作用、食物限制與快速抑制能力。"],
+      ["第一線三合一", "2 NRTIs + NNRTI 或 2 NRTIs + INSTI", "台灣 2024 規範：TAF/FTC/RPV、TDF/3TC/DOR、ABC/3TC/DTG、TAF/FTC/BIC。"],
+      ["第一線二合一", "INSTI + NRTI", "台灣 2024 規範：DTG/3TC；需確認 HBV 不適用、病毒量限制與抗藥風險。"],
+      ["第二線/轉換", "PI-containing、DTG/RPV、LA CAB/RPV 等", "常需符合規範、審查或病毒穩定條件；處方前要查交互作用與抗藥史。"],
+    ],
+    notes: ["STR = single-tablet regimen；斜線代表固定劑量複方。"],
+  },
+  {
+    title: "台灣第一線推薦處方（2024 年 4 月版）",
+    source: "第 1 章表 1-5",
+    columns: ["分類", "處方", "成分分類"],
+    rows: [
+      ["三合一 NNRTI-containing", "TAF/FTC/RPV", "2 NRTIs + NNRTI"],
+      ["三合一 NNRTI-containing", "TDF/3TC/DOR", "2 NRTIs + NNRTI"],
+      ["三合一 INSTI-containing", "ABC/3TC/DTG", "2 NRTIs + INSTI"],
+      ["三合一 INSTI-containing", "TAF/FTC/BIC", "2 NRTIs + INSTI"],
+      ["二合一", "DTG/3TC", "INSTI + NRTI"],
+    ],
+  },
+];
+
 export const initialArtRegimens: AidsRegimen[] = [
   {
     id: "biktarvy",
     name: "TAF/FTC/BIC (Biktarvy)",
+    localName: "吉他韋",
     category: "第一線推薦 STR",
     dose: "1 tab PO QD",
+    regimenType: "INSTI-containing three-drug combination",
+    backbone: "TAF 25 mg + FTC 200 mg",
+    thirdAgent: "BIC 50 mg",
+    components: [
+      { abbr: "TAF", generic: "tenofovir alafenamide", drugClass: "NRTI", dose: "25 mg" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg" },
+      { abbr: "BIC", generic: "bictegravir", drugClass: "INSTI", dose: "50 mg" },
+    ],
+    food: "空腹或隨餐",
+    renal: "表 1-6：eGFR >=30 mL/min/1.73m2 或洗腎患者可用；註 e：不建議 eGFR 15-29，或 eGFR <15 且未洗腎者。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "無",
+    cd4Limit: "無",
+    crush: "可泡水溶解；不建議磨碎。",
+    hbv: "含 TAF/FTC，對 HBV 有活性；HBV 共病或 HBV 狀態未明時是較穩的選項。",
+    keyAdverse: "BIC/INSTI：噁心、頭痛、腹瀉、體重增加；可能抑制腎小管 creatinine 排出，使 SCr 輕升但不影響實際 GFR。",
     whenToUse: "第二代 INSTI，抗藥屏障高；同時含 TAF/FTC，適合快速/當日治療，且可涵蓋 HBV 活性。",
     cautions: [
-      "需評估腎功能與藥物交互作用。",
+      "快速/當日治療常用選項，尤其 HBV 狀態未明、需要避免 3TC-only HBV pressure 時。",
       "與 polyvalent cations（Fe、Ca、Mg、Al 等）併用需注意服藥間隔或隨餐規則。",
     ],
     source: "第 1 章表 1-5、表 1-6",
@@ -86,8 +144,25 @@ export const initialArtRegimens: AidsRegimen[] = [
   {
     id: "odefsey",
     name: "TAF/FTC/RPV (Odefsey)",
+    localName: "安以斯",
     category: "第一線推薦 STR",
     dose: "1 tab PO QD with food",
+    regimenType: "NNRTI-containing three-drug combination",
+    backbone: "TAF 25 mg + FTC 200 mg",
+    thirdAgent: "RPV 25 mg",
+    components: [
+      { abbr: "TAF", generic: "tenofovir alafenamide", drugClass: "NRTI", dose: "25 mg" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg" },
+      { abbr: "RPV", generic: "rilpivirine", drugClass: "NNRTI", dose: "25 mg" },
+    ],
+    food: "隨餐；空腹 RPV 暴露量偏低。",
+    renal: "表 1-6：eGFR >=30 mL/min/1.73m2。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "HIV RNA <100,000 copies/mL",
+    cd4Limit: "CD4 >200 cells/uL",
+    crush: "不可切半或磨碎。",
+    hbv: "含 TAF/FTC，對 HBV 有活性；停用 TAF 時需注意 HBV flare。",
+    keyAdverse: "RPV：皮疹、肝功能異常、頭痛、憂鬱、睡眠障礙；會抑制腎小管 creatinine 排出但不影響實際 GFR。",
     whenToUse: "含 TAF/FTC，可涵蓋 HBV 活性；RPV 適合 CD4 >200 cells/uL 且 HIV RNA <100,000 copies/mL 的初始治療者。",
     cautions: [
       "須隨餐服用。",
@@ -99,8 +174,25 @@ export const initialArtRegimens: AidsRegimen[] = [
   {
     id: "delstrigo",
     name: "TDF/3TC/DOR (Delstrigo)",
+    localName: "達滋克",
     category: "第一線推薦 STR",
     dose: "1 tab PO QD",
+    regimenType: "NNRTI-containing three-drug combination",
+    backbone: "TDF 300 mg + 3TC 300 mg",
+    thirdAgent: "DOR 100 mg",
+    components: [
+      { abbr: "TDF", generic: "tenofovir disoproxil fumarate", drugClass: "NRTI", dose: "300 mg" },
+      { abbr: "3TC", generic: "lamivudine", drugClass: "NRTI", dose: "300 mg" },
+      { abbr: "DOR", generic: "doravirine", drugClass: "NNRTI", dose: "100 mg" },
+    ],
+    food: "空腹或隨餐",
+    renal: "表 1-6：eGFR >=50 mL/min/1.73m2。TDF 需監測腎功能、尿蛋白/近端腎小管病變與骨質風險。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "無",
+    cd4Limit: "無",
+    crush: "不可切半或磨碎。",
+    hbv: "含 TDF/3TC，對 HBV 有活性；停用 TDF 時需注意 HBV flare。",
+    keyAdverse: "DOR：頭痛、睡眠障礙；TDF：腎功能損傷、近端腎小管病變、骨密度下降。",
     whenToUse: "DOR 為較新的 NNRTI；TDF/3TC 對 HBV 有活性。",
     cautions: [
       "TDF 需注意腎功能、尿蛋白與骨質風險。",
@@ -112,8 +204,25 @@ export const initialArtRegimens: AidsRegimen[] = [
   {
     id: "triumeq",
     name: "ABC/3TC/DTG (Triumeq)",
+    localName: "三恩美",
     category: "第一線推薦 STR",
     dose: "1 tab PO QD",
+    regimenType: "INSTI-containing three-drug combination",
+    backbone: "ABC 600 mg + 3TC 300 mg",
+    thirdAgent: "DTG 50 mg",
+    components: [
+      { abbr: "ABC", generic: "abacavir", drugClass: "NRTI", dose: "600 mg" },
+      { abbr: "3TC", generic: "lamivudine", drugClass: "NRTI", dose: "300 mg" },
+      { abbr: "DTG", generic: "dolutegravir", drugClass: "INSTI", dose: "50 mg" },
+    ],
+    food: "空腹或隨餐",
+    renal: "表 1-6：eGFR >=30 mL/min/1.73m2；註 f：DHHS 建議 >=30，EACS 建議 >=50 可用 ABC/3TC/DTG 單錠。",
+    hepatic: "表 1-6：不建議。註 g：Child-Pugh A 需降低 ABC 劑量，應用單方而非 Triumeq；Child-Pugh B/C 安全性、療效、PK 未確立，禁用。",
+    viralLoadLimit: "無",
+    cd4Limit: "無",
+    crush: "可切半或磨碎。",
+    hbv: "不建議 HBV coinfection；只有 3TC 對 HBV 有活性，長期易誘發 HBV 抗藥。",
+    keyAdverse: "ABC：過敏反應、肝功能異常、可能增加缺血性心臟病風險；DTG：失眠、頭痛、噁心、肝毒性、體重增加。",
     whenToUse: "DTG 抗藥屏障高；國人 ABC 過敏風險低，指引未建議例行 HLA-B*5701。",
     cautions: [
       "不建議用於慢性 HBV coinfection，因只有 3TC 對 HBV 有活性且易產生 HBV 抗藥。",
@@ -125,8 +234,24 @@ export const initialArtRegimens: AidsRegimen[] = [
   {
     id: "dovato",
     name: "DTG/3TC (Dovato)",
+    localName: "洛瓦梭",
     category: "第一線推薦二合一 STR",
     dose: "1 tab PO QD",
+    regimenType: "Two-drug combination",
+    backbone: "3TC 300 mg",
+    thirdAgent: "DTG 50 mg",
+    components: [
+      { abbr: "DTG", generic: "dolutegravir", drugClass: "INSTI", dose: "50 mg" },
+      { abbr: "3TC", generic: "lamivudine", drugClass: "NRTI", dose: "300 mg" },
+    ],
+    food: "空腹或隨餐",
+    renal: "表 1-6：eGFR >=30 mL/min/1.73m2；註 f：DHHS 建議 >=30，EACS 建議 >=50 可用 DTG/3TC 單錠。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "HIV RNA <500,000 copies/mL",
+    cd4Limit: "無",
+    crush: "可切半或磨碎。",
+    hbv: "不建議 HBV coinfection 或 HBV 狀態未明；3TC 單獨壓 HBV 易產生 HBV 抗藥。",
+    keyAdverse: "DTG：失眠、頭痛、噁心、肝毒性、體重增加；3TC 副作用少但仍可能嚴重肝功能異常或乳酸中毒。",
     whenToUse: "初始治療二合一處方；臨床試驗顯示在適當族群不劣於三合一。",
     cautions: [
       "證據主要限於 HIV RNA <500,000 copies/mL。",
@@ -136,19 +261,164 @@ export const initialArtRegimens: AidsRegimen[] = [
     source: "第 1 章表 1-5、表 1-6",
   },
   {
+    id: "symtuza",
+    name: "TAF/FTC/DRV/c (Symtuza)",
+    localName: "信澤力",
+    category: "第二線 / PI-containing STR",
+    dose: "1 tab PO QD with food",
+    regimenType: "PI-containing three-drug combination",
+    backbone: "TAF 10 mg + FTC 200 mg",
+    thirdAgent: "DRV 800 mg + COBI 150 mg",
+    components: [
+      { abbr: "TAF", generic: "tenofovir alafenamide", drugClass: "NRTI", dose: "10 mg" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg" },
+      { abbr: "DRV", generic: "darunavir", drugClass: "PI", dose: "800 mg" },
+      { abbr: "COBI", generic: "cobicistat", drugClass: "PK booster", dose: "150 mg" },
+    ],
+    food: "隨餐",
+    renal: "表 1-6：eGFR >=30 mL/min/1.73m2。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "無",
+    cd4Limit: "無",
+    crush: "可切半或磨碎。",
+    hbv: "含 TAF/FTC，對 HBV 有活性。",
+    keyAdverse: "DRV/c：噁心、腹瀉、高血脂、皮疹、腎結石；COBI 抑制腎小管 creatinine 排出但不影響實際 GFR。",
+    whenToUse: "PI 抗藥屏障高，來源或病人有疑似抗藥、治療史複雜時可考慮；PEP/nPEP 中也作替代處方。",
+    cautions: [
+      "CYP3A 交互作用多，處方前應查 Liverpool HIV interaction 或同等資料庫。",
+      "DRV 含 sulfa moiety，需詢問磺胺藥物過敏史。",
+      "第 11 章 nPEP 註明不適用於懷孕婦女和未滿 12 歲兒童。",
+    ],
+    source: "第 1 章表 1-3、表 1-6；第 9、11 章 PEP",
+  },
+  {
+    id: "genvoya",
+    name: "TAF/FTC/EVG/c (Genvoya)",
+    category: "第二線 / INSTI-containing STR",
+    dose: "1 tab PO QD with food",
+    regimenType: "INSTI-containing three-drug combination",
+    backbone: "TAF 10 mg + FTC 200 mg",
+    thirdAgent: "EVG + COBI",
+    components: [
+      { abbr: "TAF", generic: "tenofovir alafenamide", drugClass: "NRTI", dose: "10 mg" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg" },
+      { abbr: "EVG", generic: "elvitegravir", drugClass: "INSTI" },
+      { abbr: "COBI", generic: "cobicistat", drugClass: "PK booster" },
+    ],
+    food: "隨餐",
+    renal: "表 1-6：eGFR >=30 mL/min/1.73m2。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "無",
+    cd4Limit: "無",
+    crush: "可切半或磨碎。",
+    hbv: "含 TAF/FTC，對 HBV 有活性。",
+    keyAdverse: "EVG/INSTI：噁心、頭痛、腹瀉、體重增加；COBI 使 SCr 輕升但不影響實際 GFR。",
+    whenToUse: "因第一代 INSTI 抗藥屏障較低，Biktarvy 等第二代 INSTI 單錠上市後已移出第一線清單。",
+    cautions: [
+      "含 COBI，交互作用較 BIC/DTG 多。",
+      "需隨餐；polyvalent cations 也需注意間隔。",
+    ],
+    source: "第 1 章表 1-4、表 1-6",
+  },
+  {
+    id: "juluca",
+    name: "DTG/RPV (Juluca)",
+    localName: "滋若愷",
+    category: "二合一轉換處方",
+    dose: "1 tab PO QD with food",
+    regimenType: "Two-drug switch regimen",
+    backbone: "無 NRTI backbone",
+    thirdAgent: "DTG 50 mg + RPV 25 mg",
+    components: [
+      { abbr: "DTG", generic: "dolutegravir", drugClass: "INSTI", dose: "50 mg" },
+      { abbr: "RPV", generic: "rilpivirine", drugClass: "NNRTI", dose: "25 mg" },
+    ],
+    food: "隨餐",
+    renal: "表 1-6：無限制；註 e：腎功能不全臨床資料有限，但 PK 分析顯示劑量不需調整。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "限用於病毒量控制穩定患者；HIV-1 RNA <50 copies/mL 持續至少 6 個月。",
+    cd4Limit: "無",
+    crush: "不可切半或磨碎。",
+    hbv: "不適合 HBV coinfection；無 HBV 活性 backbone。",
+    keyAdverse: "DTG：失眠、頭痛、體重增加；RPV：皮疹、肝功能異常、憂鬱、睡眠障礙。",
+    whenToUse: "僅供病毒穩定且符合規範者轉換；不能作為 ART-naive 初始治療。",
+    cautions: [
+      "需確認對 DTG/RPV 無已知或疑似抗藥。",
+      "不可併用 PPI；rifampin/rifapentine 禁用。",
+      "轉換後下一次回診需檢測 viral load。",
+    ],
+    source: "第 1 章表 1-5、表 1-6 註 c",
+  },
+  {
     id: "cab-rpv",
     name: "LA CAB/RPV (Vocabria + Rekambys)",
+    localName: "莫帕滋 + 瑞卡必",
     category: "長效針劑 / 第二線規範",
     dose: "CAB + RPV IM，依核准療程與給付規範",
+    regimenType: "Long-acting injectable",
+    backbone: "無 NRTI backbone",
+    thirdAgent: "CAB + RPV",
+    components: [
+      { abbr: "CAB", generic: "cabotegravir", drugClass: "INSTI", dose: "200 mg/mL" },
+      { abbr: "RPV", generic: "rilpivirine", drugClass: "NNRTI", dose: "300 mg/mL" },
+    ],
+    food: "肌肉注射；RPV 針劑不受食物或 PPI 影響。",
+    renal: "表 1-6：無限制。",
+    hepatic: "Child-Pugh A/B 可用不需調整；Child-Pugh C 無資料。",
+    viralLoadLimit: "限用於病毒量控制穩定患者；近 6 個月 HIV viral load <50 copies/mL。",
+    cd4Limit: "無",
+    crush: "NA",
+    hbv: "不適合 HBV coinfection；CAB/RPV 對 HBV 無活性。",
+    keyAdverse: "注射部位疼痛/硬塊、頭痛；長效藥物需注意過敏與長尾濃度。",
     whenToUse: "台灣 2024 年納入給付；主要用於已達病毒抑制且符合條件者的轉換治療。",
     cautions: [
       "不適合 HBV coinfection，因 CAB/RPV 對 HBV 無活性。",
       "使用前需確認無已知或疑似 RPV 抗藥；長治療史或抗藥資料不完整者要小心。",
-      "BMI >30 kg/m2 需選合適針頭並考慮更密切 viral load 追蹤。",
+      "BMI >30 kg/m2 需選 2 英吋針頭並考慮更密切 viral load 追蹤。",
+      "需同意每 2 個月注射；未完成 TB/LTBI 治療或 LTBI 檢驗未符合條件者需核對規範。",
     ],
-    source: "第 1 章長效針劑處方",
+    source: "第 1 章長效針劑處方；表 1-6 註 d",
   },
 ];
+
+export const artDrugClassTable: AidsTable = {
+  title: "成分分類與常見注意事項",
+  source: "第 1 章表 1-1、1-2、1-3、1-4",
+  columns: ["類別", "成分", "重點"],
+  rows: [
+    ["NRTI", "3TC, FTC, ABC, TAF, TDF, ZDV", "Backbone 主力。TAF/TDF + FTC/3TC 可治療 HBV；TDF 腎/骨風險較高；ABC 注意過敏與心血管風險。"],
+    ["NNRTI", "DOR, RPV", "服用方便但抗藥屏障較低。RPV 需 VL <100,000、CD4 >200、隨餐且不可併 PPI；DOR 無 VL 限制但避開強效 CYP3A inducer。"],
+    ["PI", "DRV", "抗藥屏障高，常需 booster；交互作用與代謝副作用較多，需隨餐。DRV 有 sulfa moiety。"],
+    ["PK booster", "COBI", "抑制 CYP3A 增加藥物濃度；會抑制腎小管 creatinine 排出造成 SCr 上升，但不影響實際 GFR。"],
+    ["INSTI", "BIC, DTG, EVG, RAL, CAB", "耐受性佳、快速抑制。BIC/DTG 為第二代、抗藥屏障較高；EVG/RAL 屬第一代；需注意 polyvalent cation 交互作用。"],
+  ],
+};
+
+export const artAbbreviationTable: AidsTable = {
+  title: "縮寫原文速查",
+  source: "第 1 章表 1-1、1-2、1-3、1-4、1-6",
+  columns: ["縮寫", "英文原文", "類別"],
+  rows: [
+    ["3TC", "lamivudine", "NRTI"],
+    ["ABC", "abacavir", "NRTI"],
+    ["BIC", "bictegravir", "INSTI"],
+    ["CAB", "cabotegravir", "INSTI"],
+    ["COBI / c", "cobicistat", "PK booster"],
+    ["DOR", "doravirine", "NNRTI"],
+    ["DRV", "darunavir", "PI"],
+    ["DTG", "dolutegravir", "INSTI"],
+    ["EVG", "elvitegravir", "INSTI"],
+    ["FTC", "emtricitabine", "NRTI"],
+    ["RAL", "raltegravir", "INSTI"],
+    ["RPV", "rilpivirine", "NNRTI"],
+    ["TAF", "tenofovir alafenamide", "NRTI"],
+    ["TDF", "tenofovir disoproxil fumarate", "NRTI"],
+    ["ZDV / AZT", "zidovudine", "NRTI"],
+    ["ART", "antiretroviral therapy", "治療概念"],
+    ["STR", "single-tablet regimen", "處方形式"],
+    ["LA", "long-acting", "處方形式"],
+  ],
+};
 
 export const monitoringTables: AidsTable[] = [
   {

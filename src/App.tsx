@@ -5,6 +5,7 @@ import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types
 import VancoTDM from './VancoTDM';
 import TbGuideline from './TbGuideline';
 import DepakineTDM from './DepakineTDM';
+import AidsGuideline from './AidsGuideline';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -482,7 +483,7 @@ function ClinicalPearlsBox({ pearls }: { pearls: ClinicalPearls }) {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "infusionRef" | "tbGuideline">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "infusionRef" | "tbGuideline" | "aidsGuideline">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
@@ -663,6 +664,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "tbGuideline" ? S.menuItemActive : {}) }}>
                 🫁 結核病診治指引
               </button>
+              <button onClick={() => { setPage("aidsGuideline"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "aidsGuideline" ? S.menuItemActive : {}) }}>
+                🧬 AIDS 治療指引
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -678,6 +683,8 @@ export default function App() {
           <DepakineTDM />
         ) : page === "tbGuideline" ? (
           <TbGuideline />
+        ) : page === "aidsGuideline" ? (
+          <AidsGuideline />
         ) : page === "infusionRef" ? (
           <div>
             <div style={{ textAlign: "center", padding: "16px 0 24px" }}>

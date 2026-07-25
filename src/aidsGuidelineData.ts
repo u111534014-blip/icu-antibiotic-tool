@@ -1,0 +1,406 @@
+export type AidsSectionId = "art" | "monitoring" | "oi" | "hepatitis" | "pep" | "sti" | "special";
+
+export type AidsKeyPoint = {
+  title: string;
+  body: string;
+  bullets?: string[];
+  source: string;
+};
+
+export type AidsRegimen = {
+  id: string;
+  name: string;
+  category: string;
+  dose: string;
+  whenToUse: string;
+  cautions: string[];
+  source: string;
+};
+
+export type AidsTable = {
+  title: string;
+  source: string;
+  columns: string[];
+  rows: string[][];
+  notes?: string[];
+};
+
+export const aidsGuidelineMeta = {
+  title: "愛滋病檢驗及治療指引",
+  subtitle: "Taiwan HIV/AIDS Guideline Quick Reference",
+  source:
+    "台灣愛滋病學會 / 衛生福利部疾病管制署，依使用者提供 PDF 整理：第 1 章 2024/10/16；第 2 章 2025/02/07；第 3 章 2022/12/26；第 5 章 2025/02/03；第 6 章 2024/12/18；第 9、11 章 2025/12/23；第 12 章 2022/05/12。",
+  notice:
+    "此頁是臨床速查，不取代完整指引、藥物交互作用資料庫、健保/疾管署給付規範或 HIV 專家會診。PEP、懷孕、治療失敗、抗藥、CNS OI、HBV/HCV 共病與複雜交互作用請務必核對最新版文件。",
+};
+
+export const aidsSections: { id: AidsSectionId; label: string; short: string }[] = [
+  { id: "art", label: "初始 ART", short: "當日治療" },
+  { id: "monitoring", label: "檢驗追蹤", short: "VL/CD4" },
+  { id: "oi", label: "OI 預防/治療", short: "CD4 門檻" },
+  { id: "hepatitis", label: "HBV/HCV", short: "共病" },
+  { id: "pep", label: "PEP / nPEP", short: "72 hr" },
+  { id: "sti", label: "STD", short: "篩檢治療" },
+  { id: "special", label: "特殊情境", short: "孕產/癌症/物質" },
+];
+
+export const artPrinciples: AidsKeyPoint[] = [
+  {
+    title: "診斷後儘早開始 ART",
+    body:
+      "目前治療目標是快速抑制血漿 HIV RNA、提升 CD4、降低 OI/腫瘤/死亡風險，並減少傳播。新診斷者可採快速或當日治療，不需等待抗藥性基因檢測結果才開始。",
+    bullets: [
+      "開始前仍應抽 HIV viral load、CD4，並評估 HBV/HCV、梅毒、腎肝功能、懷孕、LTBI 與藥物交互作用。",
+      "若後續抗藥或檢驗結果顯示不合適，再依結果調整處方。",
+      "服藥後 2-4 週內回診，確認服藥時間、副作用與遵囑性。",
+    ],
+    source: "第 1 章；第 2 章表 2-1、2-2",
+  },
+  {
+    title: "有 OI 時的 ART 時機",
+    body:
+      "多數 OI 建議儘快開始 ART，但結核腦膜炎、隱球菌腦膜炎，或會與 rifampin/rifabutin 等產生重大交互作用的治療，需要個別評估。",
+    bullets: [
+      "PJP：通常建議 OI 治療後 2 週內開始 ART。",
+      "Toxoplasma encephalitis：一般建議診斷後 2-3 週內開始 ART。",
+      "Cryptococcal meningitis：需注意 IRIS 與顱內壓，ART 時機應與 ID/專家討論。",
+      "TB：依 CD4、疾病部位與 TB meningitis 風險調整 ART 時機與 rifamycin 交互作用。",
+    ],
+    source: "第 1 章；第 3 章 PJP、弓蟲、TB、隱球菌章節",
+  },
+];
+
+export const initialArtRegimens: AidsRegimen[] = [
+  {
+    id: "biktarvy",
+    name: "TAF/FTC/BIC (Biktarvy)",
+    category: "第一線推薦 STR",
+    dose: "1 tab PO QD",
+    whenToUse: "第二代 INSTI，抗藥屏障高；同時含 TAF/FTC，適合快速/當日治療，且可涵蓋 HBV 活性。",
+    cautions: [
+      "需評估腎功能與藥物交互作用。",
+      "與 polyvalent cations（Fe、Ca、Mg、Al 等）併用需注意服藥間隔或隨餐規則。",
+    ],
+    source: "第 1 章表 1-5、表 1-6",
+  },
+  {
+    id: "odefsey",
+    name: "TAF/FTC/RPV (Odefsey)",
+    category: "第一線推薦 STR",
+    dose: "1 tab PO QD with food",
+    whenToUse: "含 TAF/FTC，可涵蓋 HBV 活性；RPV 適合 CD4 >200 cells/uL 且 HIV RNA <100,000 copies/mL 的初始治療者。",
+    cautions: [
+      "須隨餐服用。",
+      "不可併用 PPI；與 H2 blocker/antacid 需錯開。",
+      "RPV 抗藥屏障較 INSTI/boosted PI 低。",
+    ],
+    source: "第 1 章表 1-5、表 1-6",
+  },
+  {
+    id: "delstrigo",
+    name: "TDF/3TC/DOR (Delstrigo)",
+    category: "第一線推薦 STR",
+    dose: "1 tab PO QD",
+    whenToUse: "DOR 為較新的 NNRTI；TDF/3TC 對 HBV 有活性。",
+    cautions: [
+      "TDF 需注意腎功能、尿蛋白與骨質風險。",
+      "DOR 由 CYP3A4 代謝，不可併用強效 CYP3A inducer。",
+      "懷孕資料較少，孕婦需另行評估。",
+    ],
+    source: "第 1 章表 1-5、表 1-6",
+  },
+  {
+    id: "triumeq",
+    name: "ABC/3TC/DTG (Triumeq)",
+    category: "第一線推薦 STR",
+    dose: "1 tab PO QD",
+    whenToUse: "DTG 抗藥屏障高；國人 ABC 過敏風險低，指引未建議例行 HLA-B*5701。",
+    cautions: [
+      "不建議用於慢性 HBV coinfection，因只有 3TC 對 HBV 有活性且易產生 HBV 抗藥。",
+      "ABC 過敏常在 2-4 週內出現，特別是 10-14 天。",
+      "ABC 可能增加心血管風險，心血管高風險者需審慎。",
+    ],
+    source: "第 1 章；第 2 章初次評估",
+  },
+  {
+    id: "dovato",
+    name: "DTG/3TC (Dovato)",
+    category: "第一線推薦二合一 STR",
+    dose: "1 tab PO QD",
+    whenToUse: "初始治療二合一處方；臨床試驗顯示在適當族群不劣於三合一。",
+    cautions: [
+      "證據主要限於 HIV RNA <500,000 copies/mL。",
+      "不建議用於 HBV coinfection 或 HBV 狀態不明者。",
+      "若疑似抗藥、PrEP failure、嚴重 OI 或需快速涵蓋 HBV，通常選其他三合一更穩。",
+    ],
+    source: "第 1 章表 1-5、表 1-6",
+  },
+  {
+    id: "cab-rpv",
+    name: "LA CAB/RPV (Vocabria + Rekambys)",
+    category: "長效針劑 / 第二線規範",
+    dose: "CAB + RPV IM，依核准療程與給付規範",
+    whenToUse: "台灣 2024 年納入給付；主要用於已達病毒抑制且符合條件者的轉換治療。",
+    cautions: [
+      "不適合 HBV coinfection，因 CAB/RPV 對 HBV 無活性。",
+      "使用前需確認無已知或疑似 RPV 抗藥；長治療史或抗藥資料不完整者要小心。",
+      "BMI >30 kg/m2 需選合適針頭並考慮更密切 viral load 追蹤。",
+    ],
+    source: "第 1 章長效針劑處方",
+  },
+];
+
+export const monitoringTables: AidsTable[] = [
+  {
+    title: "HIV viral load / CD4 追蹤時程",
+    source: "第 2 章表 2-1",
+    columns: ["情境", "建議"],
+    rows: [
+      ["新開始服藥或停藥後重啟", "服藥前 VL/CD4；服藥 1 個月後 VL/CD4；第一年內 q3mo VL/CD4"],
+      ["第一年內已穩定", "若遵囑性佳，且連續兩次間隔 3 個月 VL undetectable，可延長至 q6mo"],
+      ["長期穩定且 VL <50 copies/mL", "至少 q6mo VL/CD4；漏藥、停藥、改服法或交互作用疑慮時加驗 VL"],
+      ["因副作用或簡化處方而換藥", "換藥後 3 個月建議檢驗一次 viral load，確認仍維持病毒抑制"],
+      ["疑似治療失敗或服藥 >6 個月仍未抑制", "考慮抗藥性基因檢測；傳統 population sequencing 通常 VL >1,000 copies/mL 成功率較高"],
+    ],
+    notes: ["健保病毒量檢驗原則上每年四次；額外檢驗需於病歷詳述適應症。"],
+  },
+  {
+    title: "初次評估檢驗速查",
+    source: "第 2 章表 2-2、表 2-3",
+    columns: ["檢驗", "重點"],
+    rows: [
+      ["CBC/diff、AST/ALT、renal function、urinalysis", "建立基準；TDF 需追腎功能與近端腎小管相關指標"],
+      ["HBsAg / anti-HBc / anti-HBs", "診斷 HIV 時即做；三者皆陰性建議 HBV vaccine；isolated anti-HBc 建議 HBV DNA"],
+      ["anti-HCV；陽性接 HCV RNA", "anti-HCV 陽性應確認是否 active HCV；高風險再感染者用 HCV RNA/core antigen 追蹤"],
+      ["RPR + TPHA/TPPA", "確診 HIV 時檢驗；高風險者 q6mo RPR；治療後梅毒 q3-6mo RPR"],
+      ["anti-HAV IgG", "陰性者考慮 HAV vaccine"],
+      ["lipid、glucose/HbA1c、體重", "服藥前建立基準；穩定後 lipid/glucose 至少每年，體重 q6-12mo"],
+      ["CXR + TB symptoms + IGRA", "新診斷 HIV 建議評估 LTBI；IGRA 陽性或不確定且排除活動性 TB 後治療 LTBI"],
+      ["Cryptococcal antigen", "CD4 <100 強烈建議篩檢；CD4 100-200 可考慮篩檢"],
+    ],
+  },
+];
+
+export const oiCards: AidsKeyPoint[] = [
+  {
+    title: "PJP / PCP",
+    body: "CD4 <200 cells/uL 時給 primary prophylaxis；治療首選 TMP-SMX 21 天。中重症缺氧需在治療 72 小時內加 steroid。",
+    bullets: [
+      "預防：TMP-SMX DS 160/800 mg PO QD 或 SS 80/400 mg PO QD；替代 dapsone 100 mg QD。",
+      "中重症治療：TMP 15-20 mg/kg/day + SMX 75-100 mg/kg/day IV divided q6-8h，改善後可改 PO，總療程 21 天。",
+      "輕中症治療：TMP-SMX PO divided TID；或 DS 2 tabs PO TID。",
+      "Steroid：room air PaO2 <70 mmHg 或 A-a gradient >=35 mmHg。",
+      "停預防：ART 後 CD4 >200 超過 3 個月；VL 持續測不到且 CD4 100-200 時也可考慮。",
+    ],
+    source: "第 3 章表 3-1 PJP",
+  },
+  {
+    title: "Toxoplasma encephalitis",
+    body: "Toxoplasma IgG positive 且 CD4 <100 cells/uL 時需 primary prophylaxis。腦部病灶常先經驗性治療，1-2 週評估臨床/影像反應。",
+    bullets: [
+      "預防首選：TMP-SMX DS 160/800 mg PO QD；替代 TMP-SMX SS QD 或 dapsone + pyrimethamine + leucovorin。",
+      "急性治療至少 6 週：pyrimethamine loading + sulfadiazine + leucovorin，依體重調整。",
+      "Sulfadiazine 不耐受：pyrimethamine + clindamycin + leucovorin，但需另加 PCP 預防。",
+      "維持治療：急性期後給 pyrimethamine + sulfadiazine + leucovorin，或替代處方。",
+      "停維持：完成初始治療、無症狀且 ART 後 CD4 >200 超過 6 個月；CD4 <200 時應重啟。",
+    ],
+    source: "第 3 章表 3-1 Toxoplasma；弓蟲章節",
+  },
+  {
+    title: "Disseminated MAC",
+    body: "MAC 風險主要見於 CD4 <50 cells/uL。若可立即有效 ART，是否 primary prophylaxis 需個別化；發病後治療至少 12 個月。",
+    bullets: [
+      "治療骨幹：clarithromycin 500 mg PO BID + ethambutol 15 mg/kg PO QD；或 azithromycin 500-600 mg QD + ethambutol。",
+      "高菌量、CD4 <50、未使用有效 ART 時，可考慮加 rifabutin、amikacin/streptomycin 或 fluoroquinolone。",
+      "停治療/次級預防：治療至少 12 個月、症狀消失、ART 後 CD4 >100 超過 6 個月。",
+      "CD4 再降至 <100 cells/uL 時需重啟次級預防。",
+    ],
+    source: "第 3 章表 3-1 MAC",
+  },
+  {
+    title: "Cryptococcal meningitis",
+    body: "CD4 低者若 cryptococcal antigen 陽性，不論有無症狀都應依指引處理。CNS disease 需注意腰穿、顱內壓與 ART 時機。",
+    bullets: [
+      "CD4 <100 建議篩檢 cryptococcal antigen；CD4 100-200 可考慮。",
+      "典型治療分 induction、consolidation、maintenance，常以 amphotericin B formulation + flucytosine 開始，後接 fluconazole。",
+      "ART 過早可能增加嚴重 IRIS 風險，尤其 CNS disease，建議 ID/專家共同決定。",
+    ],
+    source: "第 2 章表 2-3；第 3 章隱球菌腦膜炎章節",
+  },
+  {
+    title: "CMV disease",
+    body: "CMV retinitis、colitis、CNS disease 常見於重度免疫低下。治療以 ganciclovir/valganciclovir、foscarnet 或 cidofovir 為主，依部位與腎功能調整。",
+    bullets: [
+      "CMV retinitis 常需眼科評估，必要時 intravitreal therapy。",
+      "Ganciclovir 注意骨髓抑制；foscarnet/cidofovir 注意腎毒性與電解質。",
+      "Retinitis 維持治療通常至 CD4 >100 cells/uL，且 ART 超過 3-6 個月。",
+      "不建議 valganciclovir 作 primary prophylaxis；最重要預防仍是有效 ART。",
+    ],
+    source: "第 3 章 CMV 章節、表 3-1",
+  },
+  {
+    title: "TB / LTBI in HIV",
+    body: "所有 HIV 感染者都建議評估 LTBI；IGRA/TST 陽性或 IGRA 不確定且排除活動性 TB 後，應治療 LTBI。",
+    bullets: [
+      "LTBI 檢驗陽性或不確定性（Mitogen-Nil <0.5），且排除活動性 TB、無既往完整治療史者，建議治療 LTBI。",
+      "短程處方如 1HP、3HP 需注意 rifapentine 與 ART 交互作用。",
+      "TB meningitis 或 rifamycin 交互作用複雜時，ART 時機與處方需專家討論。",
+    ],
+    source: "第 2 章表 2-2；第 3 章表 3-1 TB；結核病診治指引",
+  },
+];
+
+export const hepatitisCards: AidsKeyPoint[] = [
+  {
+    title: "HIV/HBV coinfection",
+    body: "HIV/HBV 共病者，ART 的 NRTI backbone 應同時治療 HBV，通常使用 TDF 或 TAF 加上 FTC 或 3TC。",
+    bullets: [
+      "不建議以 3TC 或 FTC 單獨作為 HBV 活性藥物，容易誘發 HBV 抗藥。",
+      "若停止或更換含 HBV 活性的 ART，需小心 HBV flare，監測肝功能與 HBV DNA。",
+      "Odefsey、Delstrigo、Biktarvy 含兩種 HBV 活性成分；Triumeq、Dovato、CAB/RPV 不適合 HBV coinfection 作為唯一方案。",
+      "HIV/HBV 感染者建議戒酒、HAV vaccine（若未免疫）、安全性行為與肝癌監測。",
+    ],
+    source: "第 1 章；第 5 章 HIV/HBV",
+  },
+  {
+    title: "HBV serology 判讀入口",
+    body: "診斷 HIV 時應檢驗 HBsAg、anti-HBc、anti-HBs。若三者皆陰性，建議接種 HBV vaccine；若 isolated anti-HBc，需以 HBV DNA 釐清。",
+    bullets: [
+      "HBsAg positive：慢性 HBV 或活動性感染，ART 需含 TAF/TDF + FTC/3TC。",
+      "anti-HBs negative 且 HBsAg negative：若無免疫證據，建議疫苗。",
+      "isolated anti-HBc：可能是低效價帶原或低效價保護抗體，開始 ART 前建議 HBV DNA。",
+    ],
+    source: "第 2 章表 2-2；第 5 章表 5-2",
+  },
+  {
+    title: "HIV/HCV coinfection",
+    body: "anti-HCV 陽性後需確認 HCV RNA，以判定是否為 active HCV；HCV RNA 陽性者應盡快接受 DAA 治療並檢查交互作用。",
+    bullets: [
+      "曾感染或治癒 HCV 後，anti-HCV 多半持續陽性；高風險再感染者不能用 anti-HCV 追再感染。",
+      "持續高風險或疑似 reinfection：使用 HCV RNA 或 HCV core antigen。",
+      "DAA 與 ART、acid reducer、抗癲癇藥、rifamycin、statin 等交互作用需逐一核對。",
+    ],
+    source: "第 2 章表 2-2、2-4；第 5 章 HIV/HCV",
+  },
+];
+
+export const pepCards: AidsKeyPoint[] = [
+  {
+    title: "PEP 共通原則",
+    body: "無論職業或非職業暴露，若評估需用藥，應越快越好，24 小時內最佳，不得晚於 72 小時；療程 28 天。",
+    bullets: [
+      "若證實無感染風險，可停止 PEP，但仍完成必要追蹤。",
+      "PEP 前評估來源者 HIV 狀態、viral load、ART history、抗藥與 HBV/HCV/STI 風險。",
+      "暴露者需驗 HIV baseline，並評估 HBV、HCV、懷孕與腎肝功能。",
+      "疑似來源有抗藥、孕婦、兒童、腎肝功能問題或複雜交互作用，建議盡速與 HIV 專家討論。",
+    ],
+    source: "第 9 章重點提示；第 11 章使用預防藥物建議",
+  },
+];
+
+export const pepRegimens: AidsRegimen[] = [
+  {
+    id: "pep-bic",
+    name: "TAF/FTC/BIC",
+    category: "PEP / nPEP 優先建議",
+    dose: "1 tab PO QD x 28 days",
+    whenToUse: "職業與非職業暴露後預防優先建議；單錠、耐受性佳、服藥方便。",
+    cautions: ["開始前評估腎肝功能、HBV 狀態與交互作用。", "HBV 帶原者停藥後需追肝功能，必要時接續 HBV 治療。"],
+    source: "第 9 章表 9-2；第 11 章表 11-2",
+  },
+  {
+    id: "pep-tdfdtg",
+    name: "TDF/FTC + DTG",
+    category: "PEP / nPEP 替代處方",
+    dose: "TDF/FTC 1 tab PO QD + DTG 50 mg PO QD x 28 days",
+    whenToUse: "無法使用 TAF/FTC/BIC 或依院內可近性選用。",
+    cautions: ["TDF 需注意腎功能。", "DTG 與 polyvalent cations 需注意間隔；孕婦目前主流指引可使用但仍需評估。"],
+    source: "第 9 章表 9-2；第 11 章表 11-2",
+  },
+  {
+    id: "pep-drv",
+    name: "TAF/FTC/DRV/c",
+    category: "PEP / nPEP 替代處方",
+    dose: "1 tab PO QD x 28 days",
+    whenToUse: "來源者已知或疑似抗藥時可考慮，抗藥屏障較高。",
+    cautions: ["藥物交互作用較多。", "第 11 章註明不適用於懷孕婦女和未滿 12 歲兒童。"],
+    source: "第 9 章表 9-2；第 11 章表 11-2",
+  },
+];
+
+export const pepFollowUpTable: AidsTable = {
+  title: "PEP 追蹤時程",
+  source: "第 9 章重點提示、暴露者追蹤；第 11 章",
+  columns: ["時間", "追蹤"],
+  rows: [
+    ["暴露當時", "HIV Ag/Ab baseline；評估 HBV/HCV、肝腎功能、懷孕、STI 與暴露風險"],
+    ["72 小時內", "早期重新評估：確認是否繼續 PEP、處方是否需調整、副作用與遵囑性"],
+    ["4-6 週", "HIV Ag/Ab 或抗體檢測；依暴露型態追 HBV/HCV/STI"],
+    ["12 週", "HIV 最終追蹤點；現代 Ag/Ab 檢驗下通常不需延長至 6-12 個月"],
+  ],
+};
+
+export const stiTables: AidsTable[] = [
+  {
+    title: "性傳染病篩檢頻次",
+    source: "第 12 章表 12-1",
+    columns: ["對象", "檢測", "頻次"],
+    rows: [
+      ["有性行為的年輕女性 <25 歲", "披衣菌、淋病", "每年"],
+      ["高風險較年長女性", "披衣菌、淋病", "每年"],
+      ["懷孕婦女", "梅毒、披衣菌、淋病", "第一次產檢；第三孕期視風險；生產時視風險追梅毒"],
+      ["有性行為的 MSM", "梅毒、披衣菌、淋病", "診斷 HIV 時；每年；若持續風險則 q3-6mo"],
+      ["已治療 STD 個案", "梅毒、披衣菌、淋病、陰道滴蟲", "治療後 3 個月追再感染"],
+    ],
+    notes: ["依性接觸部位採檢：尿液、肛門、咽部。"],
+  },
+  {
+    title: "常見 STD 治療速查",
+    source: "第 12 章表 12-2；尿道炎、淋病與梅毒章節",
+    columns: ["疾病/情境", "建議治療", "追蹤/注意"],
+    rows: [
+      ["早期梅毒", "Benzathine penicillin G 2.4 MU IM once", "HIV 感染者 RPR 建議 3, 6, 9, 12, 24 個月追蹤"],
+      ["晚期潛伏或不明期間梅毒", "Benzathine penicillin G 2.4 MU IM weekly x 3", "懷孕且 penicillin allergy 需減敏後給 penicillin"],
+      ["神經性梅毒", "Aqueous crystalline penicillin G 3-4 MU IV q4h x 10-14 days", "有神經、眼、耳症狀需評估 CSF/眼科/耳鼻喉"],
+      ["尿道炎經驗治療", "Ceftriaxone 500 mg IM once + doxycycline 100 mg PO BID x 7 days", "同時採檢 NAAT；依結果調整"],
+      ["披衣菌", "Doxycycline 100 mg PO BID x 7 days；替代 azithromycin 1 g once", "治療後 3 個月追再感染"],
+      ["淋病", "Ceftriaxone 500 mg IM once；若 chlamydia 未排除加 doxycycline", "咽喉部或替代處方治療時較需 test-of-cure"],
+      ["DGI arthritis-dermatitis", "Ceftriaxone 1 g IM/IV QD >=7 days", "腦膜炎/心內膜炎需 ceftriaxone 1-2 g IV q12-24h x 10-14 days"],
+    ],
+  },
+];
+
+export const specialCards: AidsKeyPoint[] = [
+  {
+    title: "懷孕與母子垂直感染預防",
+    body:
+      "孕婦應儘早開始 ART，viral load 與母子傳染風險高度相關。用藥選擇、分娩方式、新生兒預防與哺乳建議需依第 6 章完整流程處理。",
+    bullets: [
+      "育齡女性新診斷 HIV 時應確認 LMP 與 pregnancy test。",
+      "DTG 後續資料顯示神經管缺損風險很小，但孕婦處方仍需依第 6 章與專家評估。",
+      "TAF/FTC/DRV/c 不適用於懷孕婦女作 nPEP 替代處方。",
+    ],
+    source: "第 2 章表 2-2；第 6 章；第 11 章表 11-2 註",
+  },
+  {
+    title: "愛滋病毒感染者腫瘤",
+    body:
+      "第 4 章涵蓋 Kaposi sarcoma、lymphoma、HPV 相關癌症等。臨床上需同時控制 HIV、評估腫瘤分期、治療交互作用與 OI 風險。",
+    bullets: [
+      "疑似 AIDS-defining cancer 時建議早期 HIV/腫瘤/感染科共同照護。",
+      "類固醇治療 IRIS 時若合併 Kaposi sarcoma 需特別小心，可能惡化。",
+      "HPV 疫苗、子宮頸/肛門相關篩檢與 STD 控制是長期照護重點。",
+    ],
+    source: "第 4 章；第 3 章 TB-IRIS；第 12 章 HPV",
+  },
+  {
+    title: "物質使用疾患",
+    body:
+      "第 10 章提醒 HIV care 需納入海洛因、安非他命等物質使用疾患照護，重點是降低失聯、提高 ART adherence、處理精神共病與 harm reduction。",
+    bullets: [
+      "評估藥物交互作用、肝炎共病、注射風險與伴侶服務。",
+      "若有 HCV 風險，anti-HCV 陰性者至少每年追蹤；曾感染者用 HCV RNA/core antigen 追再感染。",
+    ],
+    source: "第 10 章；第 2 章表 2-4",
+  },
+];

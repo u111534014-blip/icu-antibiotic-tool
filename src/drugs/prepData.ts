@@ -20,8 +20,8 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     brand: "Sevatrim",
     vial: "安瓿 5 mL（TMP 80 mg + SMX 400 mg）",
     reconstitution: "安瓿為濃縮液，不需回溶",
-    diluent: "須稀釋（5% 葡萄糖或 0.9% 生理食鹽水）：1 安瓿(5 mL)→125 mL、2 安瓿(10 mL)→250 mL、3 安瓿(15 mL)→500 mL",
-    finalNote: "稀釋後振搖混勻、使用前才配製；不建議與其他藥混合；未用稀釋液丟棄。25℃ 以下儲存",
+    diluent: "須稀釋（5% 葡萄糖或 0.9% 生理食鹽水）：1 安瓿(5 mL)→125 mL、2 安瓿(10 mL)→250 mL、3 安瓿(15 mL)→500 mL；限水可每 5 mL→75 mL",
+    finalNote: "稀釋後振搖混勻、使用前才配製；不建議與其他藥混合；未用稀釋液丟棄。25℃ 以下儲存；限水濃度仍需觀察析晶/混濁",
   },
   mepem: { // Meropenem
     brand: "Meropenem",
@@ -54,12 +54,12 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     vial: "乾粉 2.25 g/Vial（Piperacillin 2 g / Tazobactam 0.25 g）",
     reconstitution: "2.25 g 加 10 mL 稀釋液，充分振搖 → 202.5 mg/mL",
     diluent: "0.9% 食鹽水 / 5% 葡萄糖 / 滅菌注射用水（每劑最多 50 mL），常稀釋至 50–150 mL",
-    finalNote: "瓶內未用部分：室溫 20–25℃ 24 hr、冰箱 2–8℃ 48 hr；輸液袋：室溫 24 hr、冰箱 1 週；與 aminoglycoside 需分開或 Y 型（含 EDTA 藥瓶）",
+    finalNote: "瓶內未用部分：室溫 20–25℃ 24 hr、冰箱 2–8℃ 48 hr；輸液袋：室溫 24 hr、冰箱 1 週；移動式輸液幫浦可稀釋至 25 或 37.5 mL，室溫 12 hr；與 aminoglycoside 需分開或 Y 型（含 EDTA 藥瓶）",
   },
   brosym: { // Brosym（Cefoperazone/Sulbactam 1:1）
     vial: "乾粉 2 g/Vial（Cefoperazone 1 g / Sulbactam 1 g）",
     reconstitution: "每瓶（2 g）加 6–10 mL 注射用水 / 5% 葡萄糖 / 0.9% 食鹽水，充分振搖至完全溶解",
-    diluent: "回溶：注射用水 / 5% 葡萄糖 / 0.9% 食鹽水；輸注稀釋：5% 葡萄糖或 0.9% 食鹽水",
+    diluent: "回溶：注射用水 / 5% 葡萄糖 / 0.9% 食鹽水；輸注稀釋：50–100 mL 5% 葡萄糖或 0.9% 食鹽水",
     finalNote: "配好立即使用；室溫 ≤6 hr、冰箱 ≤48 hr",
   },
   vfend: { // Vfend（Voriconazole）
@@ -97,7 +97,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   zavicefta: { // Zavicefta（Ceftazidime/Avibactam）
     vial: "乾粉 2.5 g/Vial（Ceftazidime 2 g / Avibactam 0.5 g）",
     reconstitution: "加 10 mL 注射用水 → ceftaz 167.3 + avibactam 41.8 mg/mL（總量約 12 mL）",
-    diluent: "取全量加入輸注袋（NS / D5W / LR），稀釋至 ceftaz 8–40 mg/mL",
+    diluent: "取全量加入 100 mL 輸注袋（NS / D5W / LR），稀釋至 ceftazidime 8–40 mg/mL",
     finalNote: "調配小瓶應立即使用；稀釋後 ceftazidime 8 mg/mL 可 2–8℃ ≤12 hr 後室溫 ≤4 hr，>8–40 mg/mL 室溫 ≤4 hr",
   },
   teicoplanin: { // Teicod
@@ -177,7 +177,7 @@ export const PREP_DATA: Record<string, PrepInfo> = {
   anidulafungin: { // Eraxis（未附溶劑）
     vial: "乾粉 100 mg/Vial（未附溶劑）",
     reconstitution: "自備注射用水：每 100 mg 加 30 mL → 3.33 mg/mL（LD 200 mg 需 2 瓶）",
-    diluent: "僅限 5% 葡萄糖或 0.9% 食鹽水，稀釋至 0.77 mg/mL",
+    diluent: "僅限 5% 葡萄糖或 0.9% 食鹽水，稀釋至 0.77 mg/mL；100 mg 加 100 mL（總量 130 mL），200 mg 加 200 mL（總量 260 mL）",
     finalNote: "輸注速率 ≤1.1 mg/min（84 mL/hr）；配製液 25℃ ≤24 hr；勿冷凍、勿與其他藥/電解質併輸",
   },
   zerbaxa: { // Zerbaxa（Ceftolozane/Tazobactam）
@@ -197,14 +197,14 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     brand: "U-Vanco",
     vial: "乾粉 1 g/Vial",
     reconstitution: "1 g 加 20 mL 無菌注射用水 → 50 mg/mL",
-    diluent: "加 ≥200 mL 稀釋至 ≤5 mg/mL（5% 葡萄糖 / 0.9% 食鹽水 / 林格等）",
-    finalNote: "避免紅人症/低血壓；回溶液需冷藏，可 14 天；再稀釋後室溫 24 hr、冷藏 96 hr；與 β-lactam 分開並沖管",
+    diluent: "IV：500 mg 至少加 100 mL、1 g 至少加 200 mL，稀釋至 ≤5 mg/mL（D5W / NS / 林格等）；限水可 500 mg/50 mL 或 1 g/100 mL（10 mg/mL）",
+    finalNote: "避免紅人症/低血壓，限水高濃度可能增加 infusion reaction；回溶液需冷藏，可 14 天；再稀釋後室溫 24 hr、冷藏 96 hr；與 β-lactam 分開並沖管；口服/NG（非 IV）：DailyMed 1 g + 10 mL 無菌注射用水 → 100 mg/mL；院內常見 1 g + 8 mL NS → 125 mg/mL，抽 1 mL = 125 mg",
   },
   polymyxinB: { // Bobimixyn（Polymyxin B）
     vial: "乾粉 500,000 units/Vial",
     reconstitution: "溶解後加入 300–500 mL 5% 葡萄糖或 0.9% 食鹽水",
     diluent: "5% 葡萄糖或 0.9% 食鹽水（連續輸注）",
-    finalNote: "輸注 60–90 min；限水病人：單次劑量 0.5–1.5 mg/kg（5,000–15,000 units/kg = 5–15 KIU/kg）稀釋於 50 mL D5W 或 NS，IV over 60 min；未開封 20–25℃、調製後 2–8℃ 冷藏 ≤72 hr（超過丟棄）",
+    finalNote: "輸注 60–90 min；限水病人：單次劑量 0.5–1.5 mg/kg（5,000–15,000 units/kg = 5–15 KIU/kg）稀釋於 50–100 mL D5W 或 NS，IV over 1–4 hr；未開封 20–25℃、調製後 2–8℃ 冷藏 ≤72 hr（超過丟棄）",
   },
   amphotericinB: { // 三劑型分列（不可互換）
     products: [

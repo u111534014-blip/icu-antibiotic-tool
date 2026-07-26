@@ -49,7 +49,7 @@ export const polymyxinB: Drug = {
   needsHepatic: false,
 
   extraFields: [
-    { key: "waterLimit", type: "toggle", label: "限水病人（單次劑量稀釋於 50 mL D5W/NS）", default: false },
+    { key: "waterLimit", type: "toggle", label: "限水病人（單次劑量稀釋於 50–100 mL D5W/NS）", default: false },
   ],
 
   indications: [
@@ -174,7 +174,7 @@ export const polymyxinB: Drug = {
         const waterMax = r(1.5 * wt);
         rows.push({
           label: "限水病人給藥方式",
-          value: `單次 ${waterMin}-${waterMax} mg（${mgToUnits(waterMin)}-${mgToUnits(waterMax)}；5-15 KIU/kg）稀釋於 50 mL D5W 或 NS，IV over 60 min`,
+          value: `單次 ${waterMin}-${waterMax} mg（${mgToUnits(waterMin)}-${mgToUnits(waterMax)}；5-15 KIU/kg）稀釋於 50–100 mL D5W 或 NS，IV over 1–4 hr`,
           highlight: true,
         });
         rows.push({
@@ -267,7 +267,7 @@ export const polymyxinB: Drug = {
           "  LD：2-2.5 mg/kg（20,000-25,000 units/kg）× 1，over ≥2hr\n" +
           "  MD：1.25-1.5 mg/kg（12,500-15,000 units/kg）Q12H，over ~1hr\n" +
           "  LD 後 12hr 開始 MD\n" +
-          "  限水病人：單次 0.5-1.5 mg/kg（5,000-15,000 units/kg = 5-15 KIU/kg），稀釋於 50 mL D5W 或 NS，IV over 60 min\n\n" +
+          "  限水病人：單次 0.5-1.5 mg/kg（5,000-15,000 units/kg = 5-15 KIU/kg），稀釋於 50-100 mL D5W 或 NS，IV over 1-4 hr\n\n" +
           "【吸入霧化】500,000 units Q12H（⚠️ 熱病不建議）\n" +
           "【鞘內/腦室內】50,000 units QD\n" +
           "【眼科】點眼 0.1-0.25% Q1H / Subconjunctival ≤100,000 units/day",

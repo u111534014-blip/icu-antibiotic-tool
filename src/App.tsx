@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { DRUG_REGISTRY } from './drugs';
 import { PREP_DATA } from './drugs/prepData';
 import { round1 } from './drugs/shared/helpers';
+import { getMajorInteractions } from './drugs/shared/majorInteractions';
 import type { Drug, Indication, ExtraField, ClinicalPearls } from './drugs/types';
 import VancoTDM from './VancoTDM';
 import TbGuideline from './TbGuideline';
@@ -615,6 +616,7 @@ export default function App() {
   const resultRef = useRef<HTMLDivElement>(null);
 
   const drugConfig: Drug | null = DRUG_REGISTRY[drugId] || null;
+  const majorInteractions = getMajorInteractions(drugId);
 
   const indicationData: Indication | null = drugConfig && indication
     ? drugConfig.indications.find(i => i.id === indication) || null
@@ -1114,6 +1116,10 @@ export default function App() {
 
         {drugConfig?.clinicalPearls && (
           <ClinicalPearlsBox pearls={drugConfig.clinicalPearls} />
+        )}
+
+        {majorInteractions && (
+          <ClinicalPearlsBox pearls={majorInteractions} />
         )}
 
         {drugId && <button onClick={resetAll} style={S.resetBtn}>重新評估</button>}

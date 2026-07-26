@@ -3,8 +3,7 @@
 // ║                                                                ║
 // ║  📚 資料依「院內品項 Excel + 各藥仿單」整理（2026/07）。            ║
 // ║     仍建議臨床配製前由藥師對照最新仿單/院內 SOP 再確認。           ║
-// ║     少數為掃描檔（Ampholipad、Cefin、Flumarin）取得細節有限，       ║
-// ║     已於 finalNote 標註。                                          ║
+// ║     掃描檔（Ampholipad、Cefin、Flumarin）已逐頁 OCR 補齊回溶體積。 ║
 // ║                                                                ║
 // ║  🔑 key 必須對應 drugs/index.ts 裡 DRUG_REGISTRY 的名稱            ║
 // ║  🛠 要修改：直接改下面文字即可，頁面會自動更新。缺欄位顯示「—」。 ║
@@ -24,8 +23,8 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "稀釋後振搖混勻、使用前才配製，輸注約 1.5 hr；不建議與其他藥混合；未用稀釋液丟棄。25℃ 以下儲存",
   },
   mepem: { // Meropenem
-    vial: "乾粉 250 mg / 500 mg/Vial",
-    reconstitution: "仿單：0.25 g / 0.5 g 用 ≥100 mL 生理食鹽水溶解（注射用水不得使用）",
+    vial: "乾粉 500 mg/Vial",
+    reconstitution: "0.5 g 用 ≥100 mL 生理食鹽水溶解（仿單：注射用水不得使用）",
     diluent: "等張生理食鹽水",
     finalNote: "溶解後立即使用；NS 室溫 ≤6 hr、5℃ ≤24 hr。重症可延長滴注 3 hr",
   },
@@ -42,20 +41,20 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "黃橙色為正常；室溫 ≤25℃ 24 hr（瓶內 6 hr + 袋中）、稀釋後 2–8℃ 48 hr；專用/Y 型管路（勿與 amphotericin B 共管）",
   },
   unasyn: { // Sulampi（Ampicillin/Sulbactam 2:1）
-    vial: "乾粉（Ampicillin/Sulbactam = 2:1；Sulbactam 每日上限 4 g）",
-    reconstitution: "以無菌注射用水回溶（依規格）；充分溶解",
+    vial: "乾粉 1.5 g/Vial（Ampicillin 1 g / Sulbactam 0.5 g）",
+    reconstitution: "1.5 g 加 3.2 mL 無菌水 → 375 mg/mL；IV 用再稀釋",
     diluent: "無菌注射用水 / 生理食鹽水（≤45 mg/mL）；含葡萄糖溶液較不穩定",
     finalNote: "IV 緩慢注射或稀釋後輸注 15–30 min；NS/注射用水 45 mg/mL 25℃ 8 hr、5℃ 48 hr；5% 葡萄糖 15–30 mg/mL 僅 ~3 hr；勿與血液製劑/胺基酸混合",
   },
   tazocin: { // Tapimycin（Piperacillin/Tazobactam）
-    vial: "乾粉 2.25 g / 4.5 g/Vial（Piperacillin/Tazobactam 8:1）",
-    reconstitution: "每 1 g piperacillin 用 5 mL：2.25 g→10 mL、4.5 g→20 mL，充分振搖 → 202.5 mg/mL",
+    vial: "乾粉 2.25 g/Vial（Piperacillin 2 g / Tazobactam 0.25 g）",
+    reconstitution: "2.25 g 加 10 mL 稀釋液，充分振搖 → 202.5 mg/mL",
     diluent: "0.9% 食鹽水 / 5% 葡萄糖 / 滅菌注射用水",
     finalNote: "輸注 >30 min；室溫 20–25℃ 24 hr、冰箱 2–8℃ 48 hr；與 aminoglycoside 需分開或 Y 型（含 EDTA 藥瓶）",
   },
   brosym: { // Brosym（Cefoperazone/Sulbactam 1:1）
-    vial: "乾粉 1g/1g、2g/2g、4g/4g（Cefoperazone/Sulbactam = 1:1）",
-    reconstitution: "每瓶加稀釋液（1g/2g 瓶約 6–10 mL；4g 瓶約 10–15 mL），充分振搖至溶",
+    vial: "乾粉 2 g/Vial（Cefoperazone 1 g / Sulbactam 1 g）",
+    reconstitution: "每瓶（2 g）加約 6–10 mL 稀釋液，充分振搖至溶",
     diluent: "回溶：注射用水 / 5% 葡萄糖 / 0.9% 食鹽水；輸注稀釋：5% 葡萄糖或 0.9% 食鹽水",
     finalNote: "IV 注射 ≥3 min 或輸注 15–60 min；配好立即使用，室溫 ≤6 hr、冰箱 ≤48 hr",
   },
@@ -65,11 +64,11 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     diluent: "稀釋至 ≤5 mg/mL（NS / D5W / LR 等相容輸液）",
     finalNote: "輸注速率 ≤3 mg/kg/hr、1–2 hr 完成；勿與其他輸注品共用管路",
   },
-  flomoxef: { // Flumarin（Flomoxef，Shionogi）
-    vial: "乾粉 1 g/Vial",
-    reconstitution: "每 1 g 加約 10 mL 注射用水 / 生理食鹽水 / 葡萄糖溶解",
-    diluent: "生理食鹽水或葡萄糖溶液",
-    finalNote: "溶解後盡快使用；輸注 15–30 min（仿單為掃描檔，體積/時效細節有限）",
+  flomoxef: { // Flumarin（氟黴寧，Flomoxef Sodium，Shionogi）
+    vial: "乾粉 1 g/Vial（10 mL 瓶，含氯化鈉 50 mg）",
+    reconstitution: "每 1 g 加 ≥4 mL（注射用水 / 5% 葡萄糖 / 生理食鹽水），充分振盪溶解",
+    diluent: "5% 葡萄糖或生理食鹽水（點滴靜注）",
+    finalNote: "調製後盡快使用；室溫 6 hr、冰箱 2–8℃ 24 hr；IV 大量投與放慢速度防血管痛/靜脈炎；輸注 15–30 min",
   },
   ertapenem: { // Ertapenem
     vial: "乾粉 1 g/Vial",
@@ -78,16 +77,16 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "稀釋後 6 hr 內輸注完畢（輸注 >30 min）；勿與其他藥混合或同時輸注",
   },
   fluconazole: { // Diflucan
-    vial: "點滴瓶 2 mg/mL（生理食鹽水配製之等張液）",
+    vial: "點滴瓶 100 mg / 50 mL（2 mg/mL 等張液）",
     reconstitution: "成品溶液，不需回溶",
     diluent: "本身即 NS 溶液；不建議輸注前與其他藥混合",
-    finalNote: "靜脈輸注速率 ≤10 mL/min；每 200 mg(100 mL) 含 15 mmol 鈉，限鈉/限水者注意",
+    finalNote: "靜脈輸注速率 ≤10 mL/min；含 NaCl（限鈉/限水者注意）",
   },
-  ceftriaxone: { // Cefin（Ceftriaxone，汎生舒復）
-    vial: "乾粉 1 g/Vial",
-    reconstitution: "IV：每 1 g 加 10 mL 注射用水 → 100 mg/mL",
-    diluent: "0.9% 食鹽水或 5% 葡萄糖（⚠️ 勿與含鈣溶液如乳酸林格同管/同袋，尤其新生兒）",
-    finalNote: "IV 注射 2–4 min 或輸注 30 min；稀釋後盡快使用（仿單為掃描檔，細節有限）",
+  ceftriaxone: { // Cefin（汎生舒復，Ceftriaxone）
+    vial: "乾粉 2 g/Vial",
+    reconstitution: "2 g 加約 20 mL 滅菌注射用水 → ~100 mg/mL（供輸注再稀釋；仿單比例 1 g→10 mL）",
+    diluent: "0.9% 食鹽水或 5% 葡萄糖（⚠️ 勿用含鈣溶液 Ringer's/Hartmann's 配製或稀釋；勿與含鈣同管，尤其新生兒）",
+    finalNote: "IV 注射 2–4 min 或輸注 ≥30 min；室溫 6 hr、2–8℃ 24 hr",
   },
   zavicefta: { // Zavicefta（Ceftazidime/Avibactam）
     vial: "乾粉 2.5 g/Vial（Ceftazidime 2 g / Avibactam 0.5 g）",
@@ -96,14 +95,14 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "輸注 120 min；室溫 ≤25℃ 時效有限、冷藏 ≤24 hr（詳見劑量頁泡製說明）",
   },
   teicoplanin: { // Teicod
-    vial: "乾粉 200 mg / 400 mg/Vial（附注射用水）",
-    reconstitution: "整安瓿注射用水緩慢加入、輕轉溶解、避免起泡（200mg→200mg/3mL、400mg→400mg/3mL）；起泡靜置 ~15 min",
+    vial: "乾粉 200 mg/Vial（附注射用水）",
+    reconstitution: "附帶注射用水（約 3 mL）緩慢沿壁加入、輕轉溶解、避免起泡（→ 200 mg/3 mL）；起泡靜置 ~15 min",
     diluent: "可直接注射或以 0.9% 食鹽水 / 5% 葡萄糖稀釋",
     finalNote: "IV 直接灌注 3–5 min 或輸注 >30 min（新生兒僅用輸注）",
   },
   cefepime: { // Antifect（Cefepime）
-    vial: "乾粉 0.5 g / 1 g / 2 g/Vial",
-    reconstitution: "依表6加稀釋液（約 1 g→10 mL、2 g→10 mL；無菌水 / 5% 葡萄糖 / 0.9% 食鹽水）",
+    vial: "乾粉 1 g/Vial（1000 mg）",
+    reconstitution: "1 g 加 10 mL 稀釋液（無菌水 / 5% 葡萄糖 / 0.9% 食鹽水）",
     diluent: "0.9% 食鹽水 / 5%、10% 葡萄糖 / 乳酸林格等（1–40 mg/mL 相容）",
     finalNote: "IV 注射或輸注；室溫 24 hr、冰箱 7 天；勿與 β-lactam 抗生素同溶液混合",
   },
@@ -126,14 +125,14 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "滴注：≤500 mg 需 >20–30 min、>500 mg 需 40–60 min；輸注中噁心時放慢",
   },
   ceftazidime: { // Tatumcef（Ceftazidime）
-    vial: "乾粉 0.5 g / 1 g / 2 g/Vial（含碳酸鹽）",
-    reconstitution: "加注射用水發泡溶解、釋出 CO₂（小氣泡可忽略）；1 g 加 10 mL；點滴用稀釋液分兩次加入",
+    vial: "乾粉 2 g/Vial（含碳酸鹽）",
+    reconstitution: "2 g 加 10 mL 無菌水發泡溶解、釋出 CO₂（小氣泡可忽略）；點滴用稀釋液分兩次加入",
     diluent: "多數常用靜脈點滴輸注液相容（NS / D5W 等）",
     finalNote: "溶解時正壓、產生 CO₂ 屬正常；配好後可直接注射或注入點滴管",
   },
   cefoxitin: { // Cefmore（Cefoxitin）
-    vial: "乾粉 1 g / 2 g/Vial",
-    reconstitution: "每 1 g 加 10 mL、2 g 加 10–20 mL 注射用水 / 0.9% 食鹽水",
+    vial: "乾粉 2 g/Vial",
+    reconstitution: "2 g 加 10–20 mL 注射用水 / 0.9% 食鹽水",
     diluent: "0.9% 食鹽水或 5% 葡萄糖",
     finalNote: "配製後注射液 37℃ 以下可保存 24 hr；25℃ 以下避光儲存；IV 注射或輸注",
   },
@@ -150,8 +149,8 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "標準劑量輸注 5–60 min；高劑量 600 mg Q8H 輸注 120 min；配好應盡快使用",
   },
   cefmetazole: { // Cetazone（喜達隆，Cefmetazole）
-    vial: "乾粉 250 mg / 500 mg / 1 g / 2 g/Vial",
-    reconstitution: "溶解液加入量：250mg→2.5mL、500mg→5mL、1g→10mL、2g→(點滴用)20mL 注射用蒸餾水",
+    vial: "乾粉 500 mg/Vial",
+    reconstitution: "500 mg 加 5 mL 注射用蒸餾水（仿單比例：1g→10mL、2g→20mL）",
     diluent: "注射用蒸餾水（點滴另以輸液稀釋）",
     finalNote: "溶解後 pH 4.2–6.2、滲透壓比約 1；配好盡快使用",
   },
@@ -174,15 +173,15 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     finalNote: "非供直接注射；輸注 1 hr；不含防腐劑、需無菌操作；勿與其他藥混合",
   },
   micafungin: { // Myfungin（Micafungin，光敏感）
-    vial: "乾粉 50 mg / 100 mg/Vial",
-    reconstitution: "每 50 mg 加 5 mL（0.9% 食鹽水或 5% 葡萄糖，不含抑菌劑）沿壁輕搖勿劇搖 → 10 mg/mL",
+    vial: "乾粉 50 mg/Vial",
+    reconstitution: "50 mg 加 5 mL（0.9% 食鹽水或 5% 葡萄糖，不含抑菌劑）沿壁輕搖勿劇搖 → 10 mg/mL",
     diluent: "加入 100 mL（0.9% 食鹽水或 5% 葡萄糖），最終 0.5–4 mg/mL",
     finalNote: "☂️ 避光；配製液/稀釋液室溫 25℃ ≤24 hr；輸注 1 hr、先以 NS 沖管；>1.5 mg/mL 建議中央靜脈",
   },
   vancomycin: { // U-Vanco
-    vial: "乾粉 500 mg / 1 g/Vial",
-    reconstitution: "500 mg 加 10 mL、1 g 加 20 mL 無菌注射用水 → 50 mg/mL",
-    diluent: "500 mg 加 ≥100 mL、1 g 加 ≥200 mL 稀釋（5% 葡萄糖 / 0.9% 食鹽水 / 林格等）",
+    vial: "乾粉 1 g/Vial",
+    reconstitution: "1 g 加 20 mL 無菌注射用水 → 50 mg/mL",
+    diluent: "加 ≥200 mL 稀釋（5% 葡萄糖 / 0.9% 食鹽水 / 林格等）",
     finalNote: "輸注速率 ≤10 mg/min 且 ≥60 min（防紅人症/低血壓）",
   },
   polymyxinB: { // Bobimixyn（Polymyxin B）
@@ -214,11 +213,11 @@ export const PREP_DATA: Record<string, PrepInfo> = {
       {
         name: "Ampholipad（安畢黴）",
         subtitle: "Amphotericin B liposome（微脂粒）",
-        vial: "凍晶 50 mg/Vial（pH 5.0–6.0）",
-        reconstitution: "以無菌注射用水配製成微脂粒懸液（體積詳依仿單，掃描檔細節有限）",
-        diluent: "⚠️ 以 5% 葡萄糖稀釋；勿與食鹽水/電解質混合",
-        finalNote: "液狀微脂粒；避光、25℃ 以下保存；輸注 >2 hr；與 Fungizone 不可互換",
-        infusionTime: "> 2 hr",
+        vial: "凍晶 50 mg/Vial（附 5 μm 過濾器，pH 5.0–6.0）",
+        reconstitution: "加 12 mL 無菌注射用水（不含抑菌劑）→ 4 mg/mL，加水後用力搖 30 秒至完全分散",
+        diluent: "經附贈 5 μm 過濾器，以 5% 葡萄糖稀釋至 1–2 mg/mL（幼兒 0.2–0.5）；⚠️ 勿用食鹽水/抑菌劑",
+        finalNote: "輸注 >120 min（耐受可減至 ~60 min）；濃縮液 2–8℃ ≤24 hr 勿冷凍、5% 葡萄糖稀釋液 6 hr 內用完；與 Fungizone 不可互換",
+        infusionTime: "> 120 min（耐受後可縮短至 ~60 min）",
       },
     ],
   },

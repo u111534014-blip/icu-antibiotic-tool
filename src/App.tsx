@@ -546,7 +546,7 @@ function PrepQuickRef() {
         display: "flex", gap: 8, alignItems: "flex-start",
       }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-        <span>資料依<strong>院內品項與各藥仿單</strong>整理；少數為掃描檔取得細節有限。臨床配製前仍請對照最新仿單/院內 SOP 確認。</span>
+        <span>資料依<strong>院內品項與各藥仿單</strong>整理。臨床配製前仍請對照最新仿單/院內 SOP 確認。</span>
       </div>
 
       {/* 搜尋框 */}

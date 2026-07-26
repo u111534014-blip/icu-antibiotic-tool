@@ -4,7 +4,7 @@ import type { Drug } from './types';
 // ═══════════════════════════════════════════════════════════════
 // Tazocin (Piperacillin/Tazobactam)
 // ═══════════════════════════════════════════════════════════════
-// 院內品項：帝斯坦乾粉注射劑 2.25 g/Vial
+// 院內品項：Tapimycin 乾粉注射劑 2.25 g/Vial（前廠牌帝斯坦，已換）
 //   每支 = Piperacillin 2 g + Tazobactam 0.25 g（8:1）
 //
 // 劑量以「總克數（pip + tazo）」表示
@@ -317,7 +317,7 @@ export const tazocin: Drug = {
         { label: "適應症常規劑量", value: sc.usualDoseLabel },
         { label: "建議劑量", value: `${dose_str} IV`, highlight: true },
         { label: "給藥頻率", value: freq, highlight: true },
-        { label: "每次取藥", value: `${vials} 支帝斯坦（每支 2.25 g）` },
+        { label: "每次取藥", value: `${vials} 支 Tapimycin（每支 2.25 g）` },
         { label: "調整依據", value: note },
       ];
 
@@ -343,7 +343,7 @@ export const tazocin: Drug = {
         hotlineRows = [
           { label: "建議劑量", value: `${hotline.doseStr} IV`, highlight: true },
           { label: "給藥頻率", value: hotline.freq, highlight: true },
-          { label: "每次取藥", value: `${hotline.vialsStr} 支帝斯坦` },
+          { label: "每次取藥", value: `${hotline.vialsStr} 支 Tapimycin` },
           { label: "調整依據", value: hotline.note },
         ];
       }
@@ -387,7 +387,7 @@ export const tazocin: Drug = {
         heading: "藥物特性",
         body:
           "• Piperacillin（antipseudomonal penicillin）+ Tazobactam（β-lactamase inhibitor）\n" +
-          "• 院內品項：帝斯坦乾粉注射劑 2.25 g/Vial（pip 2 g + tazo 0.25 g）\n" +
+          "• 院內品項：Tapimycin 乾粉注射劑 2.25 g/Vial（pip 2 g + tazo 0.25 g；前廠牌帝斯坦）\n" +
           "• 1 支 = 2.25 g；1.5 支 = 3.375 g；2 支 = 4.5 g\n" +
           "• 腎功能排除為主\n" +
           "• 肝功能 CTP A-C 不需調整",

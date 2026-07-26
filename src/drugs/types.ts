@@ -77,6 +77,14 @@ export type PrepInfo = {
   reconstitution?: string;  // 回溶：溶劑 + 體積（+ 濃度）
   diluent?: string;         // 建議稀釋液（NS / D5W / 配伍禁忌）
   finalNote?: string;       // 稀釋後體積 / 安定性 / 備註
+  infusionTime?: string;    // 選填：覆蓋 drug.infusionTime（多品項時各自不同）
+  products?: PrepProduct[]; // 選填：同一藥有多種院內品項/劑型時分開列（如 Amphotericin B 三劑型）
+};
+
+// 多品項時的單一品項（如 Fungizone / AmBisome / Ampholipad）
+export type PrepProduct = PrepInfo & {
+  name: string;             // 該品項商品名（如 Fungizone）
+  subtitle?: string;        // 補充（如 amphotericin B deoxycholate）
 };
 
 // ── 藥師配藥輸入 ─────────────────────────────────────────────

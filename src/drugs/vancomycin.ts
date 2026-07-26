@@ -152,10 +152,14 @@ function getContinuousDose(crcl: number, rrt: string, tbw: number): {
 }
 
 export const vancomycin: Drug = {
-  name: "Vancocin",
+  name: "U-Vanco",
   subtitle: "Vancomycin",
   infusionTime: "依劑量，速率 ≤10-15 mg/min",
   searchTerms: [
+    "u-vanco",
+    "uvanco",
+    "vancocin",
+    "汎克黴",
     "vancomycin", "vancocin", "vanco", "優凡可",
     "glycopeptide",
   ],

@@ -511,6 +511,27 @@ function PrepQuickRef() {
     );
   });
 
+  // 攤平成「卡片」：有 products（多品項/多劑型）的藥拆成多張卡
+  type Card = { key: string; name: string; subtitle: string; prep?: any; infusionTime?: string };
+  const cards: Card[] = filtered.flatMap(({ id, drug, prep }) => {
+    if (prep?.products?.length) {
+      return prep.products.map((p: any, i: number) => ({
+        key: `${id}-${i}`,
+        name: p.name,
+        subtitle: p.subtitle ?? drug.subtitle,
+        prep: p,
+        infusionTime: p.infusionTime ?? drug.infusionTime,
+      }));
+    }
+    return [{
+      key: id,
+      name: drug.name,
+      subtitle: drug.subtitle,
+      prep,
+      infusionTime: prep?.infusionTime ?? drug.infusionTime,
+    }];
+  });
+
   return (
     <div>
       <div style={{ textAlign: "center", padding: "16px 0 20px" }}>
@@ -525,7 +546,7 @@ function PrepQuickRef() {
         display: "flex", gap: 8, alignItems: "flex-start",
       }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-        <span>目前資料為<strong>仿單標準值草稿</strong>，尚未對照本院藥劑部實際 SOP。臨床配製前請務必由藥師逐項核對。</span>
+        <span>資料依<strong>院內品項與各藥仿單</strong>整理；少數為掃描檔取得細節有限。臨床配製前仍請對照最新仿單/院內 SOP 確認。</span>
       </div>
 
       {/* 搜尋框 */}
@@ -543,26 +564,26 @@ function PrepQuickRef() {
         )}
       </div>
 
-      {filtered.length === 0 ? (
+      {cards.length === 0 ? (
         <div style={{ padding: "24px 16px", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>找不到符合的藥物</div>
       ) : (
-        filtered.map(({ id, drug, prep }) => (
-          <div key={id} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        cards.map(({ key, name, subtitle, prep, infusionTime }) => (
+          <div key={key} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ marginBottom: 4 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#0F172A" }}>{drug.name}</span>
-              <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: 8 }}>{drug.subtitle}</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "#0F172A" }}>{name}</span>
+              <span style={{ fontSize: 13, color: "#94A3B8", marginLeft: 8 }}>{subtitle}</span>
             </div>
             <PrepField label="院內品項/規格" value={prep?.vial} />
             <PrepField label="回溶" value={prep?.reconstitution} />
             <PrepField label="建議稀釋液" value={prep?.diluent} />
             <PrepField label="稀釋後/安定性/備註" value={prep?.finalNote} />
-            <PrepField label="⏱️ 輸注時間" value={drug.infusionTime} />
+            <PrepField label="⏱️ 輸注時間" value={infusionTime} />
           </div>
         ))
       )}
 
       <div style={{ textAlign: "center", padding: "16px 0 8px", fontSize: 11, color: "#94A3B8" }}>
-        共 {list.length} 種針劑{search ? `，符合 ${filtered.length} 種` : ""}　·　僅供臨床參考，請依實際情境調整
+        共 {cards.length} 項{search ? `（符合 ${filtered.length} 種藥）` : ""}　·　僅供臨床參考，請依實際情境調整
       </div>
     </div>
   );

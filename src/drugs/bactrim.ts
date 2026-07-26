@@ -144,10 +144,14 @@ function buildDoseRows(
 }
 
 export const bactrim: Drug = {
-  name: "Bactrim",
+  name: "Sevatrim",
   subtitle: "Trimethoprim / Sulfamethoxazole",
   infusionTime: "60-90 min（IV）",
   searchTerms: [
+    "sevatrim",
+    "sulfatrim",
+    "bactrim",
+    "舒發錠",
     "bactrim", "baktar", "septra", "co-trimoxazole",
     "trimethoprim", "sulfamethoxazole", "tmp-smx", "tmp/smx",
     "sevatrim", "雪白淨", "morcasin", "孟克杏",

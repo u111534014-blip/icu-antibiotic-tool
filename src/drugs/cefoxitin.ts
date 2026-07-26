@@ -110,10 +110,12 @@ function getCefoxitinDose(crcl: number, rrt: string, baseKey: string): {
 }
 
 export const cefoxitin: Drug = {
-  name: "Mefoxin",
+  name: "Cefmore",
   subtitle: "Cefoxitin",
   infusionTime: "15-30 min / 3-5 min（IV push）",
   searchTerms: [
+    "cefmore",
+    "mefoxin",
     "cefoxitin", "mefoxin", "世優", "Cefmore",
   ],
 

@@ -115,10 +115,14 @@ function getImipenemDose(crcl: number, rrt: string, baseKey: string): {
 }
 
 export const imipenem: Drug = {
-  name: "Tienam",
+  name: "Culin",
   subtitle: "Imipenem / Cilastatin",
   infusionTime: "20-30 min（≤500 mg）/ 40-60 min（1 g）",
   searchTerms: [
+    "culin",
+    "tienam",
+    "庫寧",
+    "恬納",
     "imipenem", "cilastatin", "culin",
     "carbapenem", "tienam",
   ],

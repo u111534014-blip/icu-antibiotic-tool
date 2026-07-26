@@ -26,10 +26,14 @@ function toHalfVials(mg: number): string {
 }
 
 export const ceftriaxone: Drug = {
-  name: "Rocephin",
+  name: "Cefin",
   subtitle: "Ceftriaxone",
   infusionTime: "30 min（IV drip）/ 2-4 min（IV push）",
   searchTerms: [
+    "cefin",
+    "rocephin",
+    "舒復",
+    "汎生",
     "rocephin", "ceftriaxone", "cefin", "舒復", "羅氏芬"
   ],
 

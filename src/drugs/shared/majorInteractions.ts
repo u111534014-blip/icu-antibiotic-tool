@@ -77,8 +77,8 @@ export const MAJOR_INTERACTIONS: Record<string, ClinicalPearls> = {
         heading: "Ampicillin / Sulbactam",
         body:
           "• Allopurinol：ampicillin 類併用 allopurinol 皮疹風險增加；若出現廣泛皮疹需評估停藥與過敏。\n" +
-          `• ${probenecidBetaLactam}\n` +
-          `• ${betaLactamBleeding}`,
+          `${probenecidBetaLactam}\n` +
+          `${betaLactamBleeding}`,
       },
     ],
   },
@@ -92,7 +92,7 @@ export const MAJOR_INTERACTIONS: Record<string, ClinicalPearls> = {
           "• Methotrexate：可能降低 MTX 清除；若必要併用，需追蹤 MTX level、CBC、SCr、黏膜炎，並確認 rescue/水化鹼化策略。\n" +
           "• Heparin / oral anticoagulants：建議追蹤 PT/INR、aPTT 或出血徵象。\n" +
           "• Vecuronium 等非去極化肌肉鬆弛劑：可能延長 neuromuscular blockade，ICU 病人注意甦醒延遲與呼吸肌無力。\n" +
-          `• ${probenecidBetaLactam}`,
+          `${probenecidBetaLactam}`,
       },
     ],
   },
@@ -120,7 +120,7 @@ export const MAJOR_INTERACTIONS: Record<string, ClinicalPearls> = {
         body:
           "• Calcium-containing IV solutions（含 TPN、Ringer、Hartmann）：不可同時 Y-site 或同袋混合；非新生兒若需先後給藥，需以相容液完整沖管。\n" +
           "• Vancomycin、aminoglycosides、fluconazole 等：與 ceftriaxone 混合可能物理不相容；間歇輸注請分開給、沖管。\n" +
-          `• ${betaLactamBleeding}`,
+          `${betaLactamBleeding}`,
       },
     ],
   },
@@ -132,7 +132,7 @@ export const MAJOR_INTERACTIONS: Record<string, ClinicalPearls> = {
         body:
           "• Probenecid / 強 OAT inhibitor：可能降低 avibactam 排除，不建議併用。\n" +
           "• 重大 CYP 交互作用少；臨床重點是依腎功能即時調整，避免腎功能改善後劑量不足或腎功能惡化後神經毒性。\n" +
-          `• ${betaLactamBleeding}`,
+          `${betaLactamBleeding}`,
       },
     ],
   },
@@ -187,7 +187,7 @@ export const MAJOR_INTERACTIONS: Record<string, ClinicalPearls> = {
         body:
           "• Probenecid / OAT1/OAT3 inhibitors：可能增加 tazobactam 暴露；通常不需為此調整，但腎功能不穩或高劑量時仍建議監測副作用。\n" +
           "• 重大 CYP 交互作用少；臨床重點是依腎功能即時調整，CRRT/ARC 病人避免低估劑量。\n" +
-          `• ${betaLactamBleeding}`,
+          `${betaLactamBleeding}`,
       },
     ],
   },

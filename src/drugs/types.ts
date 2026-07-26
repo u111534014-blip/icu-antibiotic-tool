@@ -73,6 +73,8 @@ export type ClinicalPearls = {
 // ── 針劑泡製速查（回溶 / 稀釋 / 安定性）────────────────────────
 // 給「院內針劑泡製速查」頁面用。皆為選填，缺欄位頁面顯示「—」。
 export type PrepInfo = {
+  brand?: string;           // 選填：院內商品名（僅泡製速查頁顯示；劑量頁用 drug.name 原商品名）
+  subtitle?: string;        // 選填：覆蓋卡片副標（預設用 drug.subtitle 學名）
   vial?: string;            // 院內品項 / 規格（如「乾粉 500 mg/Vial」）
   reconstitution?: string;  // 回溶：溶劑 + 體積（+ 濃度）
   diluent?: string;         // 建議稀釋液（NS / D5W / 配伍禁忌）

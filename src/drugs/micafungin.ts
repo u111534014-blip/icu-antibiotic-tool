@@ -27,7 +27,7 @@ function toHalfVials(mg: number): string {
 }
 
 export const micafungin: Drug = {
-  name: "Myfungin",
+  name: "Mycamine",
   subtitle: "Micafungin",
   infusionTime: "≥1 hr",
   searchTerms: [

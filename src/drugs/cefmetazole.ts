@@ -113,7 +113,7 @@ function getCefmetazoleDose(crcl: number, rrt: string, baseKey: string): {
 }
 
 export const cefmetazole: Drug = {
-  name: "Cetazone",
+  name: "Zefazone",
   subtitle: "Cefmetazole",
   infusionTime: "15-30 min",
   searchTerms: [

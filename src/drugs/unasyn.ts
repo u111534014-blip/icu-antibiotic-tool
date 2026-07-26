@@ -15,7 +15,7 @@ import type { Drug } from './types';
 // PD：1.5 g Q12H 或 3 g Q24H
 // CRRT：3 g Q8–12H
 export const unasyn: Drug = {
-  name: "Sulampi",
+  name: "Unasyn",
   subtitle: "Ampicillin / Sulbactam",
   infusionTime: "15-30 min（標準）/ 4 hr（CRAB 高劑量）",
   needsRenal: true,

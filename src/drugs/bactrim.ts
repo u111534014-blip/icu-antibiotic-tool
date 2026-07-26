@@ -144,7 +144,7 @@ function buildDoseRows(
 }
 
 export const bactrim: Drug = {
-  name: "Sevatrim",
+  name: "Bactrim",
   subtitle: "Trimethoprim / Sulfamethoxazole",
   infusionTime: "60-90 min（IV）",
   searchTerms: [

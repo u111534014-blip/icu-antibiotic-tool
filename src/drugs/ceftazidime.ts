@@ -99,7 +99,7 @@ function getCeftazDose(crcl: number, rrt: string, baseKey: string): {
 }
 
 export const ceftazidime: Drug = {
-  name: "Tatumcef",
+  name: "Fortum",
   subtitle: "Ceftazidime",
   infusionTime: "15-30 min（傳統）/ 3 hr（延長滴注）",
   searchTerms: [

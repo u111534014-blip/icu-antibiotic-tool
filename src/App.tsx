@@ -498,20 +498,23 @@ function PrepQuickRef() {
     .map(([id, d]) => ({ id, drug: d, prep: PREP_DATA[id] || d.prep }))
     // 有泡製資料或輸注時間才列入
     .filter(x => x.prep || x.drug.infusionTime)
-    .sort((a, b) => a.drug.name.localeCompare(b.drug.name));
+    // 依「院內商品名（若有）」排序，否則用原商品名
+    .sort((a, b) => (a.prep?.brand || a.drug.name).localeCompare(b.prep?.brand || b.drug.name));
 
   const filtered = list.filter(x => {
     if (!search) return true;
     const q = search.toLowerCase();
     const d = x.drug;
     return (
-      d.name.toLowerCase().includes(q) ||
+      (x.prep?.brand || "").toLowerCase().includes(q) ||   // 院內商品名
+      d.name.toLowerCase().includes(q) ||                   // 原商品名
       d.subtitle.toLowerCase().includes(q) ||
       (d.searchTerms || []).some(t => t.toLowerCase().includes(q))
     );
   });
 
   // 攤平成「卡片」：有 products（多品項/多劑型）的藥拆成多張卡
+  // 泡製速查頁一律顯示「院內商品名」（prep.brand），沒有才用原商品名 drug.name
   type Card = { key: string; name: string; subtitle: string; prep?: any; infusionTime?: string };
   const cards: Card[] = filtered.flatMap(({ id, drug, prep }) => {
     if (prep?.products?.length) {
@@ -525,8 +528,8 @@ function PrepQuickRef() {
     }
     return [{
       key: id,
-      name: drug.name,
-      subtitle: drug.subtitle,
+      name: prep?.brand ?? drug.name,
+      subtitle: prep?.subtitle ?? drug.subtitle,
       prep,
       infusionTime: prep?.infusionTime ?? drug.infusionTime,
     }];

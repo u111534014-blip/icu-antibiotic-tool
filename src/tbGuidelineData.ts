@@ -633,6 +633,87 @@ export const specialPopulationCards: TbKeyPoint[] = [
   },
 ];
 
+export const rifamycinInteractionTables: TbSimpleTable[] = [
+  {
+    title: "Rifamycin 重大交互作用速查",
+    source: "ATS/CDC/IDSA drug-susceptible TB guideline；NIH HIV/TB coinfection guideline；CDC TB adverse events；WHO TB preventive treatment guideline",
+    columns: ["併用藥/類別", "主要風險", "建議處置", "監測"],
+    rows: [
+      [
+        "BIC、EVG/c、CAB/RPV LA、lenacapavir 等 ART",
+        "RMP/RPT 強誘導 CYP/UGT/P-gp，ARV 暴露下降，可能造成 virologic failure。",
+        "避免併用 RMP/RPT；改 ART、改 rifabutin，或由 HIV/TB 專家共同設計處方。",
+        "HIV viral load、CD4、TB 治療反應；換藥後 2-4 週內回頭確認。",
+      ],
+      [
+        "DTG 或 RAL-based ART",
+        "RMP 會降低 INSTI 濃度；RPT 依療程與頻率而異。",
+        "RMP 併 DTG 時常需 DTG 50 mg BID；RAL 可考慮 800 mg BID。3HP/1HP 與 DTG 需依 NIH 表格與抗藥史評估。",
+        "HIV viral load；確認沒有 INSTI resistance；Rifamycin 停用後約 2 週內需回調 ART 劑量。",
+      ],
+      [
+        "Boosted PI 或 cobicistat regimens",
+        "RMP 可使 PI 暴露大幅下降；boosting 亦可能增加 rifabutin 毒性。",
+        "避免 RMP；常以 rifabutin 替代並調整 rifabutin/ART 劑量，建議專家討論。",
+        "HIV viral load、LFT、rifabutin 相關 uveitis/CBC；必要時藥物濃度。",
+      ],
+      [
+        "Azoles：voriconazole、posaconazole、itraconazole、isavuconazole、fluconazole",
+        "RMP/RPT 會顯著降低多數 azole 濃度；azole 也可能影響 rifabutin 濃度。",
+        "避免 RMP/RPT + triazole；必要時改 antifungal、改 rifabutin 或做 TDM 後個別化。",
+        "Azole trough、LFT、感染反應；rifabutin 併 azole 時監測 uveitis/CBC。",
+      ],
+      [
+        "Warfarin",
+        "RMP/RPT 使 INR 下降；停 rifamycin 後誘導解除，INR 可能反彈升高。",
+        "預期需調整 warfarin；開始、停用或換 rifamycin 後都要密集追蹤。停 rifamycin 後 2 週內記得回降劑量。",
+        "INR 每數日到每週追蹤至穩定；觀察出血/血栓。",
+      ],
+      [
+        "DOAC：apixaban、rivaroxaban、dabigatran、edoxaban",
+        "RMP/RPT 誘導 P-gp/CYP，抗凝濃度下降，血栓風險增加。",
+        "通常避免；改 warfarin 並監測 INR，或改 LMWH/UFH 等可監測方案。",
+        "血栓/出血、腎功能；若改 warfarin 則追 INR。",
+      ],
+      [
+        "Hormonal contraceptives",
+        "避孕效果下降。",
+        "建議使用非荷爾蒙或屏障避孕；避孕諮詢要主動提醒。",
+        "月經變化、懷孕風險；用藥結束後仍需考慮誘導消退時間。",
+      ],
+      [
+        "Tacrolimus、cyclosporine、sirolimus/everolimus",
+        "RMP/RPT 使免疫抑制劑濃度下降，可能排斥；停藥後濃度快速上升造成毒性。",
+        "優先專家討論；可考慮 rifabutin 替代或大幅調整免疫抑制劑，停 rifamycin 後須反向降劑量。",
+        "Trough level、SCr、LFT、血壓、神經毒性、移植排斥徵象。",
+      ],
+      [
+        "Methadone / buprenorphine",
+        "RMP/RPT 降低 opioid agonist 暴露，可能誘發 withdrawal。",
+        "開始 rifamycin 後主動評估戒斷並調整劑量；停用後需回降避免過量。",
+        "戒斷症狀、嗜睡/呼吸抑制、QTc（methadone）。",
+      ],
+      [
+        "Systemic corticosteroids",
+        "RMP/RPT 使 steroid 暴露下降，可能治療不足；停用後暴露回升。",
+        "若用於 TB meningitis、IRIS、腎上腺不足等高風險情境，需依臨床反應調整 steroid。",
+        "症狀控制、血糖、血壓、感染惡化；停 rifamycin 後留意 steroid 毒性。",
+      ],
+      [
+        "Phenytoin、carbamazepine 等抗癲癇藥",
+        "RMP/RPT 可能降低濃度；INH 也可能抑制代謝而增加 phenytoin/carbamazepine 毒性。",
+        "避免只看單一方向；開始或停用 TB 藥時需重新評估劑量。",
+        "Seizure control、藥物濃度、嗜睡/共濟失調、LFT。",
+      ],
+    ],
+    notes: [
+      "RMP 誘導最強、RFB 較弱；RPT 誘導強度與給藥頻率相關，每日 RPT 可接近 RMP，3HP 每週 RPT 影響較小但仍需核對。",
+      "誘導作用通常在開始後約 1-2 週達穩定，停用後約 2 週逐漸消退；若曾為了 rifamycin 加量，停藥後務必回調。",
+      "此表只列常見重大交互作用；實際處方仍需逐項核對完整交互作用資料庫。",
+    ],
+  },
+];
+
 export const drugResistantTbTables: TbSimpleTable[] = [
   {
     title: "表 12-1 個人化長程 MDR-TB 處方藥物",

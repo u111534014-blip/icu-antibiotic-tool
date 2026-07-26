@@ -11,6 +11,7 @@ import {
   monitoringTimeline,
   rechallengeProtocols,
   regimenAdjustmentRows,
+  rifamycinInteractionTables,
   specialPopulationCards,
   tbDrugCards,
   tbGuidelineMeta,
@@ -309,7 +310,7 @@ function SimpleTableCard({ table }: { table: TbSimpleTable }) {
             {table.rows.map((row, rowIndex) => (
               <tr key={`${table.title}-${rowIndex}`}>
                 {row.map((cell, cellIndex) => (
-                  <td key={`${table.title}-${rowIndex}-${cellIndex}`} style={cellIndex === 0 ? S.tdStrong : S.td}>
+                  <td key={`${table.title}-${rowIndex}-${cellIndex}`} style={{ ...(cellIndex === 0 ? S.tdStrong : S.td), whiteSpace: "normal", verticalAlign: "top", lineHeight: 1.5 }}>
                     {cell || "-"}
                   </td>
                 ))}
@@ -329,6 +330,8 @@ function SpecialView() {
     <div>
       <SectionHeader title="特殊族群與抗藥性 TB" subtitle="包含第 12 章 MDR/RR-TB 表格與特殊族群入口。" />
       {specialPopulationCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>Rifamycin 重大交互作用</div>
+      {rifamycinInteractionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <div style={S.subhead}>第 12 章抗藥性 TB 表格</div>
       {drugResistantTbTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
     </div>

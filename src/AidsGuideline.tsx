@@ -5,6 +5,7 @@ import {
   aidsSections,
   artAbbreviationTable,
   artDrugClassTable,
+  artInteractionTables,
   artPrinciples,
   artSelectionTables,
   artTimingTable,
@@ -174,6 +175,8 @@ function ArtView() {
       <div style={S.subhead}>處方選擇架構</div>
       {artSelectionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <SimpleTableCard table={artDrugClassTable} />
+      <div style={S.subhead}>ART 重大交互作用</div>
+      {artInteractionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <div style={S.subhead}>第一線與常見轉換處方</div>
       <input
         value={query}

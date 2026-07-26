@@ -111,6 +111,75 @@ export const artSelectionTables: AidsTable[] = [
   },
 ];
 
+export const artInteractionTables: AidsTable[] = [
+  {
+    title: "ART 常見重大交互作用速查",
+    source: "NIH Adult and Adolescent ARV Guidelines：Drug Interactions Overview；Tables 24a, 24b, 24d；Statin Therapy in People With HIV；Special Populations: Transplantation",
+    columns: ["ART / 併用藥", "主要風險", "建議處置", "監測"],
+    rows: [
+      [
+        "BIC/DTG/EVG/RAL + polyvalent cations（Al/Mg/Ca/Fe/Zn、制酸劑、鐵鈣鎂鋅、sucralfate、multivitamin）",
+        "螯合使 INSTI 吸收下降，可能造成病毒抑制失敗。",
+        "BIC/DTG 與 Ca/Fe 可隨餐同服；空腹或 Al/Mg 制酸劑需錯開。常用原則：INSTI 至少提前 2 hr，或 cation 延後 4-6 hr；EVG/c、RAL 也需錯開。",
+        "HIV viral load、服藥時間與營養品/制酸劑使用史；新併用後 2-4 週內確認遵囑性。",
+      ],
+      [
+        "RPV PO + acid reducers",
+        "胃酸下降使 RPV 暴露量下降；PPI 併用可能導致 virologic failure。",
+        "PPI 禁用。H2 blocker 至少在 RPV 前 12 hr 或後 4 hr；antacid 至少在 RPV 前 2 hr 或後 4 hr。RPV 必須隨餐。",
+        "HIV viral load、胃藥使用史、QTc 風險藥物；若需長期 PPI，改非 RPV 處方。",
+      ],
+      [
+        "Rifampin / rifapentine / rifabutin 或強效 CYP/UGT/P-gp inducer（carbamazepine、phenytoin、phenobarbital、St. John's wort 等）",
+        "降低多數 ART 暴露量；BIC、EVG/c、RPV、DOR、LA CAB/RPV、lenacapavir 特別容易受影響。",
+        "避免自行併用；TB 治療需參考 rifamycin 表格。DTG/RAL 可能需加量；DOR/RPV/BIC/EVG/c/LA CAB/RPV 多需避免或改藥。",
+        "HIV viral load、TB/OI 治療反應；開始與停用誘導劑後都要重新核對劑量，停 rifamycin 後通常仍需等待誘導消退。",
+      ],
+      [
+        "DRV/c、EVG/c 或其他 boosted regimen + statins",
+        "COBI/RTV 抑制 CYP3A/transporters，使 statin 暴露上升；simvastatin/lovastatin 可嚴重肌毒性。",
+        "Simvastatin、lovastatin 禁用。優先 pitavastatin；pravastatin 相對安全但 DRV 併用仍需低劑量起始。Atorvastatin/rosuvastatin 低劑量起始、依耐受與 LDL 反應調整。",
+        "肌痛/無力、CK（有症狀時）、AST/ALT、lipid profile；新增或停用 booster 時重估 statin 劑量。",
+      ],
+      [
+        "Boosted PI/COBI regimens + DOAC / warfarin",
+        "P-gp/CYP 交互作用使 DOAC 暴露上升；rivaroxaban 風險高。Warfarin 可能上升或下降，且 RTV 與 COBI 不可互相外推。",
+        "Rivaroxaban 通常避免。Apixaban 需依原劑量判斷是否避免或減量；複雜抗凝建議改 warfarin/LMWH 並專家討論。",
+        "出血/血栓、腎功能；warfarin 需密集 INR，開始/停用或更換 booster 後重新追蹤。",
+      ],
+      [
+        "Boosted PI/COBI regimens + corticosteroids（特別是 fluticasone、budesonide、triamcinolone；含吸入、鼻噴、關節注射）",
+        "Steroid 暴露上升，可能 Cushing syndrome、adrenal suppression；長效注射風險特別麻煩。",
+        "避免 fluticasone/budesonide/triamcinolone；可評估 beclomethasone 或非 steroid 替代。必須使用時需明確療程與監測計畫。",
+        "體重、血糖、血壓、Cushingoid features、早晨 cortisol/ACTH stimulation（有疑慮時）。",
+      ],
+      [
+        "Boosted PI/COBI 或 EVG/c + tacrolimus / cyclosporine / sirolimus / everolimus",
+        "免疫抑制劑濃度可大幅上升，造成腎毒性、神經毒性或感染；NNRTI inducer 則可能降低濃度。",
+        "移植病人優先選 BIC 或 DTG 等 unboosted second-generation INSTI。若無法避免 booster，免疫抑制劑需大幅減量/延長間隔並以 TDM 調整。",
+        "Tacrolimus/sirolimus/cyclosporine trough、SCr、K、血壓、神經毒性、排斥/感染徵象。",
+      ],
+      [
+        "TDF 或 TAF + nephrotoxic drugs（NSAIDs、aminoglycoside、amphotericin B、vancomycin、contrast、boosted PI 等）",
+        "Tenofovir 相關腎毒性或近端腎小管病變風險增加；TDF 風險較 TAF 高。",
+        "高風險或 eGFR 下降者優先考慮 TAF 或非 tenofovir backbone；避免高劑量/多重 nephrotoxin，必要時縮短療程並補監測。",
+        "SCr/eGFR、urinalysis、尿糖/尿蛋白、serum phosphate（蛋白尿/糖尿或骨痛肌痛時）、藥物濃度（如 vancomycin）。",
+      ],
+      [
+        "DTG 或 BIC / COBI / RPV + SCr 解讀；DTG + metformin",
+        "DTG、BIC、COBI、RPV 可抑制 creatinine tubular secretion，使 SCr 輕升但不代表真 GFR 下降；DTG 會增加 metformin 暴露。",
+        "SCr 輕升需和真正 AKI 區分；DTG 併 metformin 時低劑量起始/調整，腎功能差或高劑量 metformin 者更謹慎。",
+        "SCr 趨勢、尿液異常、乳酸中毒/腸胃副作用、血糖/HbA1c；SCr 上升 >0.4 mg/dL 或持續上升時評估真腎損傷。",
+      ],
+    ],
+    notes: [
+      "此表只列臨床常見且需要行動的重大交互作用；完整處方仍需逐項核對 Liverpool HIV interaction、NIH interaction tables 或同等資料庫。",
+      "COBI 與 RTV 都是 booster，但不能把所有交互作用完全互相外推，特別是 warfarin、DOAC、statin、voriconazole、phenytoin 等。",
+      "新增、停用或更換 ART / 交互作用藥物後，病毒量、毒性與治療效果都要重新確認。",
+    ],
+  },
+];
+
 export const initialArtRegimens: AidsRegimen[] = [
   {
     id: "biktarvy",

@@ -8,6 +8,7 @@ import VancoTDM from './VancoTDM';
 import TbGuideline from './TbGuideline';
 import DepakineTDM from './DepakineTDM';
 import AidsGuideline from './AidsGuideline';
+import SepticShock from './SepticShock';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -598,7 +599,7 @@ function PrepQuickRef() {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const [drugId, setDrugId] = useState("");
   const [crclMode, setCrclMode] = useState<"auto" | "direct">("auto");
@@ -784,6 +785,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "aidsGuideline" ? S.menuItemActive : {}) }}>
                 🧬 AIDS 治療指引
               </button>
+              <button onClick={() => { setPage("septicShock"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "septicShock" ? S.menuItemActive : {}) }}>
+                🚨 Sepsis / Septic shock
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -801,6 +806,8 @@ export default function App() {
           <TbGuideline />
         ) : page === "aidsGuideline" ? (
           <AidsGuideline />
+        ) : page === "septicShock" ? (
+          <SepticShock />
         ) : page === "prepRef" ? (
           <PrepQuickRef />
         ) : (

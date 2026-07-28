@@ -495,6 +495,9 @@ function SedationPumpCalculator() {
       <div style={S.cardTitle}>Pump mL/hr 換算</div>
       <div style={S.calcNote}>
         公式：先算濃度，再把目標劑量換成每小時總量。mL/hr = 每小時需求量 ÷ 濃度。
+        <div style={{ marginTop: 6 }}>
+          配製後總體積是藥物加稀釋液後的 final volume；例如 50 mg + NS 補至 100 mL，這格填 100，不是只填加入的 NS 量。
+        </div>
       </div>
 
       <div style={S.presetRow}>
@@ -526,7 +529,7 @@ function SedationPumpCalculator() {
         </label>
 
         <label style={S.inputLabel}>
-          <span>總體積</span>
+          <span>配製後總體積</span>
           <div style={S.inputWrap}>
             <input value={volume} onChange={(e) => setVolume(e.target.value)} inputMode="decimal" style={S.input} />
             <span style={S.inputSuffix}>mL</span>
@@ -565,6 +568,9 @@ function SedationPumpCalculator() {
         {doseUnit.includes("/kg") && weightNum > 0 && <>｜體重：{weightNum} kg</>}
         <div style={{ marginTop: 6 }}>
           範例：Midazolam 50 mg/100 mL = 0.5 mg/mL；60 kg 給 0.03 mg/kg/hr → 1.8 mg/hr ÷ 0.5 mg/mL = 3.6 mL/hr。
+        </div>
+        <div style={{ marginTop: 6 }}>
+          Pump volume 會計入每日 I/O；但通常不當作 septic shock 30 mL/kg 的主要 resuscitation volume，除非院內另有定義。
         </div>
       </div>
     </section>

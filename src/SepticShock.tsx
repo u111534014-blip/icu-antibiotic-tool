@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 
 const ACCENT = "#0D9488";
 
-type SepsisSectionId = "bundle" | "antimicrobial" | "hemodynamics" | "steroids" | "monitoring";
+type SepsisSectionId = "bundle" | "antimicrobial" | "hemodynamics" | "sedation" | "steroids" | "monitoring";
 
 type KeyCard = {
   title: string;
@@ -21,10 +21,16 @@ type SimpleTable = {
   notes?: string[];
 };
 
+function round(value: number, digits = 1) {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
 const sections: { id: SepsisSectionId; label: string; short: string }[] = [
   { id: "bundle", label: "1 小時 bundle", short: "初始處置" },
   { id: "antimicrobial", label: "抗生素", short: "coverage" },
   { id: "hemodynamics", label: "輸液/升壓劑", short: "MAP 目標" },
+  { id: "sedation", label: "鎮痛鎮靜", short: "插管" },
   { id: "steroids", label: "類固醇/輔助", short: "refractory" },
   { id: "monitoring", label: "追蹤與降階", short: "reassess" },
 ];
@@ -220,6 +226,66 @@ const fluidTypeTables: SimpleTable[] = [
   },
 ];
 
+const sedationCards: KeyCard[] = [
+  {
+    title: "插管病人先止痛，再鎮靜",
+    body: "PADIS / ICU Liberation 的核心是 pain first 與 assessment-driven sedation。能溝通時用 0-10 NRS；不能溝通時用 CPOT 或 BPS，不要只用心跳、血壓當疼痛指標。",
+    bullets: [
+      "多數 mechanically ventilated ICU 病人目標為 light sedation，常見 RASS -2 到 0；需每日重新設定目標。",
+      "Deep sedation 只保留給特定情境：severe ARDS/ventilator dyssynchrony、neuromuscular blockade、ICP crisis、active seizure、therapeutic hypothermia 等。",
+      "若使用 neuromuscular blocker，一定要先有足夠鎮痛鎮靜；paralytic 不能取代 sedative。",
+    ],
+    source: "SCCM PADIS 2018；SCCM ICU Liberation ABCDEF bundle",
+  },
+  {
+    title: "Midazolam 在 shock 病人的位置",
+    body: "PADIS 整體偏好 propofol 或 dexmedetomidine over benzodiazepines；但在健保、藥價、深鎮靜需求與 shock 低血壓情境下，midazolam 仍是許多院內會實際使用的選項。",
+    bullets: [
+      "指引原則：一般避免 benzodiazepine 作 routine sedative；若使用，應有明確理由與每日退場評估。",
+      "優點：相對熟悉、便宜、血壓影響通常比 propofol 可控，適合需要 deeper sedation 或 propofol 不耐受時。",
+      "缺點：蓄積、延長清醒/拔管、delirium 風險；肝腎功能差、肥胖、長時間 infusion 時更明顯。",
+      "做法：用最低有效劑量，至少每日評估能否減量、SAT/SBT 或轉成較容易喚醒的策略。",
+    ],
+    source: "SCCM PADIS 2018 Agitation-Sedation；DailyMed midazolam injection",
+  },
+  {
+    title: "Daily SAT/SBT 與譫妄監測",
+    body: "Sepsis 病人插管後很容易一路深鎮靜到忘記停。建議每天確認能否做 SAT/SBT，並至少每班用 CAM-ICU 或 ICDSC 追蹤 delirium。",
+    bullets: [
+      "SAT safety screen 常見排除：seizure、alcohol withdrawal、paralysis、ICP 升高、嚴重 hypoxemia 或 hemodynamic instability。",
+      "SBT safety screen 需看氧合、apnea、agitation、vasopressor 劑量與 ICP 等。",
+      "非藥物 delirium prevention：日夜節律、眼鏡/助聽器、睡眠保護、早期活動、家屬參與、避免不必要 restraint。",
+    ],
+    source: "SCCM ICU Liberation ABCDEF bundle；SCCM PADIS 2018",
+  },
+];
+
+const sedationDoseTable: SimpleTable = {
+  title: "ICU 插管鎮痛鎮靜常用劑量",
+  columns: ["藥物", "常用角色", "起始/範圍", "Shock 與監測提醒"],
+  rows: [
+    ["Fentanyl", "第一線止痛；可 analgesia-first sedation", "IV bolus 25-100 mcg；CI 常見 12.5-25 mcg/hr 起始，或 0.35-0.5 mcg/kg/hr 起始；常用範圍 0.5-5 mcg/kg/hr。", "血壓相對穩；長時間 infusion 會蓄積、延長清醒；注意 ileus、呼吸抑制、胸壁僵硬（高劑量快速給）。"],
+    ["Midazolam", "院內常見 sedative；shock/propofol 不耐受或需 deeper sedation 時常用", "需要快速鎮靜可 0.01-0.05 mg/kg slow IV/infuse，10-15 min 可重複；CI 起始 0.02-0.10 mg/kg/hr（約 1-7 mg/hr）。", "避免無目標長期深鎮靜；肝腎功能差、肥胖、長時間使用易蓄積；每日評估減量/SAT。"],
+    ["Propofol", "短效 sedative；容易喚醒與調整", "ICU CI 起始 5 mcg/kg/min；每 5-10 min 增 5-10 mcg/kg/min；常用 5-50 mcg/kg/min。除非效益大於風險，不建議 >4 mg/kg/hr。", "Sepsis/低血容量/vasoplegia 易低血壓；監測 TG、乳酸、CK、酸中毒、PRIS 風險；注意熱量與無菌操作。"],
+    ["Dexmedetomidine", "light sedation、減少 delirium/接近拔管時常用", "ICU maintenance 0.2-0.7 mcg/kg/hr；轉換其他 sedative 時常可不給 loading。", "可能 bradycardia/hypotension；深鎮靜效果有限；肝功能不全與老人可考慮降劑量。"],
+    ["Ketamine adjunct", "opioid-sparing；疼痛明顯或 opioid tolerance 時可考慮", "PADIS 提及 postsurgical ICU adjunct：0.5 mg/kg IV once，接 1-2 mcg/kg/min。", "可能流涎、幻覺、tachycardia/HTN；shock 時血壓影響較複雜，依院內經驗與醫囑。"],
+  ],
+  notes: [
+    "劑量需依 RASS/CPOT/BPS、血壓、器官功能、合併 opioid/sedative 與院內 protocol 調整。",
+    "插管病人不是一定要深睡；能達到同步呼吸器與安全照護的最低鎮靜深度最好。",
+  ],
+  source: "SCCM PADIS 2018；SCCM PADIS focused update 2025；SCCM ICU Liberation；DailyMed midazolam, propofol, dexmedetomidine labels",
+};
+
+const pumpPresets = [
+  { label: "Midazolam 50 mg/100 mL", amount: "50", amountUnit: "mg", volume: "100", dose: "0.03", doseUnit: "mg/kg/hr" },
+  { label: "Midazolam 25 mg/50 mL", amount: "25", amountUnit: "mg", volume: "50", dose: "0.03", doseUnit: "mg/kg/hr" },
+  { label: "Fentanyl 500 mcg/50 mL", amount: "500", amountUnit: "mcg", volume: "50", dose: "1", doseUnit: "mcg/kg/hr" },
+  { label: "Fentanyl 2500 mcg/50 mL", amount: "2500", amountUnit: "mcg", volume: "50", dose: "50", doseUnit: "mcg/hr" },
+  { label: "Propofol 10 mg/mL", amount: "1000", amountUnit: "mg", volume: "100", dose: "10", doseUnit: "mcg/kg/min" },
+  { label: "Dexmedetomidine 200 mcg/50 mL", amount: "200", amountUnit: "mcg", volume: "50", dose: "0.4", doseUnit: "mcg/kg/hr" },
+] as const;
+
 const steroidCards: KeyCard[] = [
   {
     title: "何時考慮 hydrocortisone",
@@ -383,6 +449,128 @@ function FluidCalculator() {
   );
 }
 
+function SedationPumpCalculator() {
+  const [weight, setWeight] = useState("60");
+  const [amount, setAmount] = useState("50");
+  const [amountUnit, setAmountUnit] = useState<"mg" | "mcg">("mg");
+  const [volume, setVolume] = useState("100");
+  const [dose, setDose] = useState("0.03");
+  const [doseUnit, setDoseUnit] = useState<"mg/kg/hr" | "mcg/kg/hr" | "mcg/kg/min" | "mg/hr" | "mcg/hr">("mg/kg/hr");
+
+  const weightNum = Number(weight);
+  const amountNum = Number(amount);
+  const volumeNum = Number(volume);
+  const doseNum = Number(dose);
+  const concentrationMcgMl = amountNum > 0 && volumeNum > 0
+    ? (amountUnit === "mg" ? amountNum * 1000 : amountNum) / volumeNum
+    : null;
+
+  const desiredMcgHr = doseNum > 0
+    ? doseUnit === "mg/kg/hr" && weightNum > 0 ? doseNum * 1000 * weightNum
+    : doseUnit === "mcg/kg/hr" && weightNum > 0 ? doseNum * weightNum
+    : doseUnit === "mcg/kg/min" && weightNum > 0 ? doseNum * weightNum * 60
+    : doseUnit === "mg/hr" ? doseNum * 1000
+    : doseUnit === "mcg/hr" ? doseNum
+    : null
+    : null;
+
+  const rateMlHr = concentrationMcgMl && desiredMcgHr ? desiredMcgHr / concentrationMcgMl : null;
+  const desiredMgHr = desiredMcgHr ? desiredMcgHr / 1000 : null;
+  const concentrationDisplay = concentrationMcgMl
+    ? concentrationMcgMl >= 1000
+      ? `${round(concentrationMcgMl / 1000, 2)} mg/mL`
+      : `${round(concentrationMcgMl, 1)} mcg/mL`
+    : "—";
+
+  const applyPreset = (preset: typeof pumpPresets[number]) => {
+    setAmount(preset.amount);
+    setAmountUnit(preset.amountUnit);
+    setVolume(preset.volume);
+    setDose(preset.dose);
+    setDoseUnit(preset.doseUnit);
+  };
+
+  return (
+    <section style={S.calcCard}>
+      <div style={S.cardTitle}>Pump mL/hr 換算</div>
+      <div style={S.calcNote}>
+        公式：先算濃度，再把目標劑量換成每小時總量。mL/hr = 每小時需求量 ÷ 濃度。
+      </div>
+
+      <div style={S.presetRow}>
+        {pumpPresets.map((preset) => (
+          <button key={preset.label} type="button" onClick={() => applyPreset(preset)} style={S.presetButton}>
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={S.pumpGrid}>
+        <label style={S.inputLabel}>
+          <span>體重</span>
+          <div style={S.inputWrap}>
+            <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="decimal" style={S.input} />
+            <span style={S.inputSuffix}>kg</span>
+          </div>
+        </label>
+
+        <label style={S.inputLabel}>
+          <span>藥物總量</span>
+          <div style={S.inputWrap}>
+            <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" style={S.input} />
+            <select value={amountUnit} onChange={(e) => setAmountUnit(e.target.value as "mg" | "mcg")} style={S.selectInline}>
+              <option value="mg">mg</option>
+              <option value="mcg">mcg</option>
+            </select>
+          </div>
+        </label>
+
+        <label style={S.inputLabel}>
+          <span>總體積</span>
+          <div style={S.inputWrap}>
+            <input value={volume} onChange={(e) => setVolume(e.target.value)} inputMode="decimal" style={S.input} />
+            <span style={S.inputSuffix}>mL</span>
+          </div>
+        </label>
+
+        <label style={S.inputLabel}>
+          <span>目標劑量</span>
+          <div style={S.inputWrap}>
+            <input value={dose} onChange={(e) => setDose(e.target.value)} inputMode="decimal" style={S.input} />
+            <select value={doseUnit} onChange={(e) => setDoseUnit(e.target.value as typeof doseUnit)} style={S.selectWide}>
+              <option value="mg/kg/hr">mg/kg/hr</option>
+              <option value="mcg/kg/hr">mcg/kg/hr</option>
+              <option value="mcg/kg/min">mcg/kg/min</option>
+              <option value="mg/hr">mg/hr</option>
+              <option value="mcg/hr">mcg/hr</option>
+            </select>
+          </div>
+        </label>
+      </div>
+
+      <div style={S.resultBox}>
+        {rateMlHr ? (
+          <>
+            <span style={S.resultLabel}>Pump rate</span>
+            <strong style={S.resultValue}>{round(rateMlHr, 1)} mL/hr</strong>
+          </>
+        ) : (
+          <span style={S.resultPlaceholder}>輸入完整資料後顯示 mL/hr</span>
+        )}
+      </div>
+
+      <div style={S.calcNote}>
+        濃度：{concentrationDisplay}
+        {desiredMgHr && <>｜每小時需求量：約 {round(desiredMgHr, 2)} mg/hr</>}
+        {doseUnit.includes("/kg") && weightNum > 0 && <>｜體重：{weightNum} kg</>}
+        <div style={{ marginTop: 6 }}>
+          範例：Midazolam 50 mg/100 mL = 0.5 mg/mL；60 kg 給 0.03 mg/kg/hr → 1.8 mg/hr ÷ 0.5 mg/mL = 3.6 mL/hr。
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function BundleView() {
   return (
     <div>
@@ -413,6 +601,17 @@ function HemodynamicsView() {
   );
 }
 
+function SedationView() {
+  return (
+    <div>
+      <SectionHeader title="插管病人鎮痛鎮靜" subtitle="Sepsis 頁面先放 bedside safety reminders；完整策略仍以 PADIS / ICU Liberation 為主。" />
+      {sedationCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <SimpleTableCard table={sedationDoseTable} />
+      <SedationPumpCalculator />
+    </div>
+  );
+}
+
 function SteroidsView() {
   return (
     <div>
@@ -435,6 +634,7 @@ function CurrentView({ active }: { active: SepsisSectionId }) {
   if (active === "bundle") return <BundleView />;
   if (active === "antimicrobial") return <AntimicrobialView />;
   if (active === "hemodynamics") return <HemodynamicsView />;
+  if (active === "sedation") return <SedationView />;
   if (active === "steroids") return <SteroidsView />;
   return <MonitoringView />;
 }
@@ -443,7 +643,7 @@ export default function SepticShock() {
   const [active, setActive] = useState<SepsisSectionId>("bundle");
 
   const sourceText = useMemo(
-    () => "Surviving Sepsis Campaign 2026 adult guidelines；Sepsis-3；SSC 2021 corticosteroid dosing remarks；DailyMed vasoactive drug labels。",
+    () => "Surviving Sepsis Campaign 2026 adult guidelines；Sepsis-3；SCCM PADIS 2018/2025 focused update；SCCM ICU Liberation；DailyMed vasoactive/sedative drug labels。",
     []
   );
 
@@ -511,10 +711,15 @@ const S: Record<string, CSSProperties> = {
   td: { padding: "9px 8px", borderBottom: "1px solid #F1F5F9", color: "#334155", verticalAlign: "top", lineHeight: 1.5 },
   tdStrong: { padding: "9px 8px", borderBottom: "1px solid #F1F5F9", color: "#0F172A", fontWeight: 850, verticalAlign: "top", lineHeight: 1.5, whiteSpace: "nowrap" },
   calcGrid: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, alignItems: "end", marginTop: 12 },
+  pumpGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, alignItems: "end", marginTop: 12 },
   inputLabel: { display: "block", color: "#475569", fontSize: 12, fontWeight: 800 },
   inputWrap: { display: "flex", alignItems: "center", marginTop: 5, border: "1.5px solid #DDE7EE", borderRadius: 8, background: "#fff", overflow: "hidden" },
   input: { flex: 1, minWidth: 0, border: "none", outline: "none", padding: "10px 10px", fontSize: 14, color: "#0F172A" },
   inputSuffix: { padding: "0 10px", color: "#94A3B8", fontSize: 12, fontWeight: 800 },
+  selectInline: { border: "none", borderLeft: "1px solid #E2E8F0", background: "#F8FAFC", color: "#475569", padding: "10px 8px", fontSize: 12, fontWeight: 800, outline: "none" },
+  selectWide: { border: "none", borderLeft: "1px solid #E2E8F0", background: "#F8FAFC", color: "#475569", padding: "10px 8px", fontSize: 12, fontWeight: 800, outline: "none", maxWidth: 116 },
+  presetRow: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  presetButton: { border: "1px solid #CFE6E1", background: "#F8FFFD", color: "#0F766E", borderRadius: 8, padding: "7px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" },
   toggle: { border: "1.5px solid #DDE7EE", borderRadius: 8, background: "#fff", color: "#475569", padding: "10px 12px", cursor: "pointer", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" },
   toggleActive: { border: `1.5px solid ${ACCENT}`, color: "#0F766E", background: "#F0FDFA" },
   resultBox: { marginTop: 12, borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", padding: 12, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 },

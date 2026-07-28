@@ -132,6 +132,26 @@ const vasopressorTable: SimpleTable = {
 
 const hemodynamicCards: KeyCard[] = [
   {
+    title: "輸液選擇原則",
+    body: "成人 sepsis / septic shock 的初始復甦液體以 crystalloids 為第一線；若是 initial resuscitation，SSC 2026 建議優先選 balanced crystalloids 而非 0.9% saline。",
+    bullets: [
+      "Balanced crystalloids：例如 Lactated Ringer's、Hartmann's、Plasma-Lyte 類溶液，chloride 較低、較接近 plasma strong ion difference。",
+      "0.9% saline 仍可用；若合併 traumatic brain injury，SSC 2026 反而建議使用 0.9% saline。",
+      "Albumin 不建議 routine 加在初始 resuscitation；大量 crystalloid 後或 cirrhosis 可個別考慮，TBI 應避免 supplemental albumin。",
+    ],
+    source: "SSC 2026 Fluid type",
+  },
+  {
+    title: "第三間隙是什麼",
+    body: "第三間隙指體液跑到血管內與細胞內以外、無法有效參與循環的空間，因此病人可能全身水腫或腹水很多，但真正的有效循環血量仍不足。",
+    bullets: [
+      "常見位置：腹水、胸水、腸壁水腫、組織間質水腫、燒傷或發炎組織。",
+      "常見情境：sepsis capillary leak、cirrhosis、pancreatitis、大手術後、低白蛋白。",
+      "臨床重點：不是看到水腫就完全不能補液，而是要用小量 bolus、動態灌流評估與早期 vasopressor 來避免越補越腫。",
+    ],
+    source: "SSC 2026 Fluid resuscitation / Albumin remarks；critical care physiology",
+  },
+  {
     title: "MAP 與灌流目標",
     body: "初始 MAP 目標以 65 mmHg 為主，不需要常規追高；65 歲以上可考慮 60-65 mmHg 範圍，仍需看慢性高血壓、腎灌流、心肌缺血與末梢灌流。",
     bullets: [
@@ -149,6 +169,54 @@ const hemodynamicCards: KeyCard[] = [
       "若仍 hypoperfusion 但已不 fluid responsive，應轉向 vasopressor/inotrope/source control，而不是一直補液。",
     ],
     source: "SSC 2026 Resuscitation / Fluid type / Serial lactate",
+  },
+];
+
+const fluidTypeTables: SimpleTable[] = [
+  {
+    title: "輸液選擇情境速查",
+    columns: ["臨床情境", "較合理選擇", "理由與提醒"],
+    rows: [
+      ["一般 septic shock 初始復甦", "Balanced crystalloid 優先；NS 仍可用。", "SSC 2026：crystalloid 第一線，initial resuscitation 建議 balanced crystalloids over 0.9% saline。"],
+      ["Traumatic brain injury / 腦水腫疑慮", "0.9% saline。", "SSC 2026 對 sepsis + TBI 建議使用 0.9% saline；避免 hypotonicity 與 supplemental albumin。"],
+      ["高氯性代謝性酸中毒、AKI 風險或需大量 crystalloid", "偏向 balanced crystalloid。", "NS chloride load 較高，可能加重 hyperchloremic metabolic acidosis；仍需追 Cl/HCO3/SCr。"],
+      ["Cirrhosis、腹水明顯或低白蛋白，且已需要大量 crystalloid", "先以 crystalloid resuscitation；大量 crystalloid 後仍需補 volume 時，可考慮 supplemental albumin。", "Albumin 不是 routine 起手式，也不是看到低白蛋白就直接取代 crystalloid；需看有效循環血量、肺水腫、Na、腎功能與腹水。"],
+      ["心衰、ESRD、ARDS、肺水腫或限水", "小量 balanced crystalloid 或 NS fluid challenge；早期 vasopressor。", "重點是 fluid responsiveness，不是改用 albumin 就一定比較安全；若不 responsive，停止補液並轉向升壓劑/inotrope/source control。"],
+      ["需要快速達 MAP 目標", "Crystalloid 與 norepinephrine 並行。", "不必等 central line 才開始升壓劑；短期周邊 NE 可接受，但要近端靜脈、低濃度、密切看外滲。"],
+      ["已補大量 crystalloid 仍 hypoperfusion", "依個案採 restrictive 或 liberal strategy；可評估 albumin，但優先確認 source control 與心功能。", "看 PLR/echo/stroke volume response、lactate trend、UO、末梢灌流，不只看 CVP 或固定總量。"],
+    ],
+    notes: [
+      "簡化記法：一般 septic shock 先 balanced crystalloid；TBI 選 NS；大量 crystalloid 後或 cirrhosis 才把 albumin 放進考慮。",
+      "低白蛋白本身不是 sepsis resuscitation 的 albumin 適應症；要合併大量補液需求、第三間隙/肝硬化或有效循環血量不足才比較有臨床意義。",
+    ],
+    source: "SSC 2026 Fluid type / Fluid resuscitation after 30 mL/kg / Albumin remarks；SSC 2021 Fluid management rationale",
+  },
+  {
+    title: "輸液分類與敗血性休克建議",
+    columns: ["分類", "常見品項", "SSC 2026 建議", "臨床提醒"],
+    rows: [
+      ["Crystalloids", "0.9% saline、Lactated Ringer's、Hartmann's、Plasma-Lyte 類 balanced solution", "第一線 resuscitation fluid。", "便宜、取得容易；大量給仍需監測 fluid overload、Cl、酸鹼與腎功能。"],
+      ["Balanced crystalloids", "LR、Hartmann's、Plasma-Lyte / Normosol 類", "Initial resuscitation 建議優於 0.9% saline。", "較少 chloride load；若嚴重高血鉀通常仍可個別評估，不必一概禁用 LR。TBI 情境例外偏好 NS。"],
+      ["0.9% saline", "Normal saline / 生理食鹽水", "不是首選 preference，但仍是可用 crystalloid；TBI 合併 sepsis 建議使用。", "大量使用可能增加 hyperchloremic metabolic acidosis 與 AKI 風險；需追 Cl/HCO3/SCr。"],
+      ["Natural colloid", "Albumin 5% 或 20/25%", "建議 crystalloids alone 優於 crystalloids + albumin；但大量 crystalloid 後或 cirrhosis 可考慮。", "成本高；TBI 應避免 supplemental albumin。若用 20/25% albumin，需同時評估 intravascular expansion 與總水量限制。"],
+      ["Synthetic colloids", "Hydroxyethyl starches、gelatin、dextran", "HES：強烈不建議；gelatin：建議不要用。Dextran 不作常規 sepsis resuscitation。", "HES 增加 RRT/腎傷害風險；gelatin 有 anaphylaxis、凝血與成本疑慮；dextran 也有過敏/凝血與腎臟疑慮。"],
+    ],
+    notes: [
+      "實務上：一般 septic shock 初始可優先選 balanced crystalloid；若院內只有 NS 或病人有 TBI，NS 仍可作為合理選項。",
+      "限水/心衰/ESRD/ARDS 不是完全不補液，而是小量 bolus + fluid responsiveness + 早期 vasopressor 的策略。",
+    ],
+    source: "SSC 2026 Fluid type；SSC 2021 Fluid management rationale",
+  },
+  {
+    title: "什麼時候不要再一直補 crystalloid",
+    columns: ["情境", "建議轉向", "可用評估"],
+    rows: [
+      ["已給 30 mL/kg 但仍 hypoperfusion", "SSC 2026 可依病人與醫療環境採 liberal 或 restrictive strategy；不要只靠固定總量決定。", "MAP、vasopressor dose、UO、lactate trend、capillary refill、echo/IVC、PLR 反應。"],
+      ["肺水腫、ARDS、心衰、ESRD 或明顯 fluid overload", "小量 fluid challenge；若不 fluid responsive，早期 vasopressor / inotrope / source control。", "肺部超音波 B-line、氧合惡化、CXR、JVP/echo、每日 fluid balance。"],
+      ["Cirrhosis 或低白蛋白且已大量 crystalloid", "可考慮 albumin 作為 supplemental fluid，但不是 routine 起手式。", "血壓、腎功能、ascites/edema、Na、肺水腫風險。"],
+      ["需要快速達 MAP 目標", "輸液同時啟動 NE；短期周邊 NE 可接受，之後建立 central access。", "近端大靜脈、低濃度、短時間、頻繁檢查外滲。"],
+    ],
+    source: "SSC 2026 Fluid resuscitation after 30 mL/kg / Vasopressor administration / Albumin remarks",
   },
 ];
 
@@ -336,9 +404,10 @@ function AntimicrobialView() {
 function HemodynamicsView() {
   return (
     <div>
-      <SectionHeader title="輸液、升壓劑與灌流目標" subtitle="MAP 只是其中一個目標；真正要看器官灌流是否改善。" />
+      <SectionHeader title="輸液、升壓劑與灌流目標" subtitle="先分清楚 crystalloid、balanced crystalloid 與 colloid；MAP 只是其中一個目標，真正要看器官灌流是否改善。" />
       <FluidCalculator />
       {hemodynamicCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      {fluidTypeTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <SimpleTableCard table={vasopressorTable} />
     </div>
   );

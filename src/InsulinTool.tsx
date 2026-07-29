@@ -32,6 +32,20 @@ function correctionDose(bg: number, target: number, cf: number) {
   return Math.max(0, Math.round((bg - target) / cf));
 }
 
+function bgAdjustment(bg: number, hadHypo = false) {
+  if (hadHypo) return { pct: -0.2, label: "有低血糖，先降 20%" };
+  if (!bg || bg <= 0) return { pct: 0, label: "未輸入，維持原劑量" };
+  if (bg < 70) return { pct: -0.2, label: "低血糖，降 20%" };
+  if (bg < 100) return { pct: -0.1, label: "偏低，降 10%" };
+  if (bg > 250) return { pct: 0.2, label: "明顯偏高，升 20%" };
+  if (bg > 180) return { pct: 0.1, label: "偏高，升 10%" };
+  return { pct: 0, label: "目標內，維持" };
+}
+
+function adjustedDose(base: number, pct: number) {
+  return units(base * (1 + pct));
+}
+
 const nutritionLabels: Record<NutritionStatus, string> = {
   eating: "有規則進食",
   poor: "吃很少 / 食量不穩",
@@ -85,6 +99,15 @@ export default function InsulinTool() {
   const [currentBg, setCurrentBg] = useState("220");
   const [targetBg, setTargetBg] = useState("150");
   const [steroid, setSteroid] = useState(false);
+  const [currentBasal, setCurrentBasal] = useState("");
+  const [breakfastBolus, setBreakfastBolus] = useState("");
+  const [lunchBolus, setLunchBolus] = useState("");
+  const [dinnerBolus, setDinnerBolus] = useState("");
+  const [fastingBg, setFastingBg] = useState("");
+  const [preLunchBg, setPreLunchBg] = useState("");
+  const [preDinnerBg, setPreDinnerBg] = useState("");
+  const [bedtimeBg, setBedtimeBg] = useState("");
+  const [hadHypo, setHadHypo] = useState(false);
 
   const calc = useMemo(() => {
     const w = Number(weight);
@@ -151,6 +174,25 @@ export default function InsulinTool() {
   const targetText = careArea === "icu"
     ? "ICU：多數病人目標 140-180 mg/dL；persistent BG >=180 mg/dL 時啟動/加強 insulin。"
     : "非 ICU：多數病人目標 100-180 mg/dL；若 >=180 mg/dL 持續出現，考慮 scheduled insulin。";
+
+  const dailyAdjustment = useMemo(() => {
+    const basalBase = Number(currentBasal) || calc.basal;
+    const breakfastBase = Number(breakfastBolus) || calc.mealBolus;
+    const lunchBase = Number(lunchBolus) || calc.mealBolus;
+    const dinnerBase = Number(dinnerBolus) || calc.mealBolus;
+
+    const basalAdj = bgAdjustment(Number(fastingBg), hadHypo);
+    const breakfastAdj = bgAdjustment(Number(preLunchBg), hadHypo);
+    const lunchAdj = bgAdjustment(Number(preDinnerBg), hadHypo);
+    const dinnerAdj = bgAdjustment(Number(bedtimeBg), hadHypo);
+
+    return {
+      basal: { base: basalBase, next: adjustedDose(basalBase, basalAdj.pct), ...basalAdj },
+      breakfast: { base: breakfastBase, next: adjustedDose(breakfastBase, breakfastAdj.pct), ...breakfastAdj },
+      lunch: { base: lunchBase, next: adjustedDose(lunchBase, lunchAdj.pct), ...lunchAdj },
+      dinner: { base: dinnerBase, next: adjustedDose(dinnerBase, dinnerAdj.pct), ...dinnerAdj },
+    };
+  }, [currentBasal, breakfastBolus, lunchBolus, dinnerBolus, fastingBg, preLunchBg, preDinnerBg, bedtimeBg, hadHypo, calc.basal, calc.mealBolus]);
 
   return (
     <div>
@@ -264,12 +306,118 @@ export default function InsulinTool() {
           {nutrition === "tube" && <Row label="Nutritional insulin" value={`${calc.q6hNutrition} units q6h`} note="連續管灌/TPN 可用；營養中斷時要有 hypoglycemia prevention plan。" />}
           {(nutrition === "poor" || nutrition === "npo") && <Row label="Scheduled prandial" value="hold" note={calc.planNote} />}
           <Row label="Correction factor" value={calc.cf ? `1 unit ↓ ~${calc.cf} mg/dL` : "—"} note={`目前依 TDD 分類為 ${calc.scale}；correction 不等於單獨 sliding scale 長期使用。`} />
-          <Row label="Current BG correction" value={`${calc.correction} units`} note={`以 BG ${calc.bg || "—"}、target ${calc.target || "—"} mg/dL 粗估。`} />
+          <Row label="Current BG correction" value={`${calc.correction} units`} note={`以 BG ${calc.bg || "—"}、target ${calc.target || "—"} mg/dL 粗估；單點血糖只影響 correction，不自動改 basal/bolus。`} />
           <div style={S.warningBox}>
             若 BG &lt;70 mg/dL、NPO/營養突然中斷、SCr 急升、vasopressor 增加或 steroid taper，優先處理低血糖風險並下修 basal/bolus。
           </div>
         </section>
       </div>
+
+      <InfoCard title="每日劑量調整計算">
+        <div style={S.helpBox}>
+          Basal / bolus 調整看的是「型態」而不是單點血糖：fasting 主要反映 basal；午餐前反映早餐 bolus；晚餐前反映午餐 bolus；睡前大致反映晚餐 bolus。
+        </div>
+        <div style={S.inputGrid}>
+          <label style={S.inputLabel}>
+            <span>目前 basal</span>
+            <div style={S.inputWrap}>
+              <input value={currentBasal} onChange={(e) => setCurrentBasal(e.target.value)} inputMode="decimal" placeholder={`${calc.basal}`} style={S.input} />
+              <span style={S.inputSuffix}>units/day</span>
+            </div>
+          </label>
+          <label style={S.inputLabel}>
+            <span>早餐前 bolus</span>
+            <div style={S.inputWrap}>
+              <input value={breakfastBolus} onChange={(e) => setBreakfastBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
+              <span style={S.inputSuffix}>units</span>
+            </div>
+          </label>
+          <label style={S.inputLabel}>
+            <span>午餐前 bolus</span>
+            <div style={S.inputWrap}>
+              <input value={lunchBolus} onChange={(e) => setLunchBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
+              <span style={S.inputSuffix}>units</span>
+            </div>
+          </label>
+          <label style={S.inputLabel}>
+            <span>晚餐前 bolus</span>
+            <div style={S.inputWrap}>
+              <input value={dinnerBolus} onChange={(e) => setDinnerBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
+              <span style={S.inputSuffix}>units</span>
+            </div>
+          </label>
+        </div>
+
+        <div style={S.inputGrid}>
+          <label style={S.inputLabel}>
+            <span>Fasting / 清晨血糖</span>
+            <div style={S.inputWrap}>
+              <input value={fastingBg} onChange={(e) => setFastingBg(e.target.value)} inputMode="decimal" style={S.input} />
+              <span style={S.inputSuffix}>mg/dL</span>
+            </div>
+          </label>
+          <label style={S.inputLabel}>
+            <span>午餐前血糖</span>
+            <div style={S.inputWrap}>
+              <input value={preLunchBg} onChange={(e) => setPreLunchBg(e.target.value)} inputMode="decimal" style={S.input} />
+              <span style={S.inputSuffix}>mg/dL</span>
+            </div>
+          </label>
+          <label style={S.inputLabel}>
+            <span>晚餐前血糖</span>
+            <div style={S.inputWrap}>
+              <input value={preDinnerBg} onChange={(e) => setPreDinnerBg(e.target.value)} inputMode="decimal" style={S.input} />
+              <span style={S.inputSuffix}>mg/dL</span>
+            </div>
+          </label>
+          <label style={S.inputLabel}>
+            <span>睡前血糖</span>
+            <div style={S.inputWrap}>
+              <input value={bedtimeBg} onChange={(e) => setBedtimeBg(e.target.value)} inputMode="decimal" style={S.input} />
+              <span style={S.inputSuffix}>mg/dL</span>
+            </div>
+          </label>
+        </div>
+
+        <label style={S.checkRow}>
+          <input type="checkbox" checked={hadHypo} onChange={(e) => setHadHypo(e.target.checked)} />
+          <span>過去 24 小時有 BG &lt;70 mg/dL 或有症狀低血糖</span>
+        </label>
+
+        <div style={S.tableWrap}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={S.th}>項目</th>
+                <th style={S.th}>依據</th>
+                <th style={S.th}>目前/基準</th>
+                <th style={S.th}>建議</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Basal", "Fasting / 清晨血糖", dailyAdjustment.basal],
+                ["早餐 bolus", "午餐前血糖", dailyAdjustment.breakfast],
+                ["午餐 bolus", "晚餐前血糖", dailyAdjustment.lunch],
+                ["晚餐 bolus", "睡前血糖", dailyAdjustment.dinner],
+              ].map(([name, basis, item]) => {
+                const row = item as typeof dailyAdjustment.basal;
+                return (
+                  <tr key={name as string}>
+                    <td style={S.tdStrong}>{name as string}</td>
+                    <td style={S.td}>{basis as string}</td>
+                    <td style={S.td}>{row.base} units</td>
+                    <td style={S.td}>{row.next} units（{row.label}）</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={S.source}>
+          此區以常用 10-20% 調整邏輯做 bedside 粗估；若 NPO/吃很少，固定 prandial bolus 通常應暫停或依實際進食比例給。
+        </div>
+      </InfoCard>
 
       <InfoCard title="每日調整邏輯">
         <div style={S.tableWrap}>
@@ -338,6 +486,7 @@ const S: Record<string, CSSProperties> = {
   segment: { flex: "0 0 auto", border: "1.5px solid #DDE7EE", background: "#fff", color: "#475569", borderRadius: 8, padding: "8px 10px", fontSize: 12, fontWeight: 800, cursor: "pointer" },
   segmentActive: { border: `1.5px solid ${ACCENT}`, background: "#F0FDFA", color: "#0F766E" },
   checkRow: { display: "flex", alignItems: "center", gap: 8, color: "#334155", fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.4 },
+  helpBox: { background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: 10, color: "#475569", fontSize: 12, lineHeight: 1.55, marginBottom: 10 },
   targetBox: { background: "#F0FDFA", border: "1px solid #99F6E4", color: "#0F766E", borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, fontWeight: 750, marginBottom: 8 },
   resultRow: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, padding: "10px 0", borderBottom: "1px solid #F1F5F9" },
   resultLabel: { fontSize: 12, fontWeight: 850, color: "#64748B" },

@@ -655,9 +655,7 @@ function HospitalSedationFlowCalculator() {
   return (
     <section style={S.calcCard}>
       <div style={S.cardTitle}>院內 MICU 常用 flow 換算</div>
-      <div style={S.calcNote}>
-        這裡依你提供的 MICU 開法換算；開立劑量只是備藥量，實際劑量看濃度與 pump mL/hr。
-      </div>
+      
 
       <div style={S.presetRow}>
         {micuSedationProtocols.map((item) => (

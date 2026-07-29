@@ -580,7 +580,7 @@ function SedationPumpCalculator() {
 function BundleView() {
   return (
     <div>
-      <SectionHeader title="Septic shock 初始處置" subtitle="把抽檢、抗生素、輸液、升壓劑與 source control 放在同一張臨床地圖上。" />
+      <SectionHeader title="Septic shock 初始處置" />
       {bundleCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
     </div>
   );
@@ -589,7 +589,7 @@ function BundleView() {
 function AntimicrobialView() {
   return (
     <div>
-      <SectionHeader title="抗生素與感染源控制" subtitle="快、準、後續每日降階。這頁先不替代各藥物劑量頁，而是告訴你何時該 cover 什麼。" />
+      <SectionHeader title="抗生素與感染源控制" subtitle="快、準、後續每日降階。" />
       {antimicrobialTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
     </div>
   );
@@ -598,7 +598,7 @@ function AntimicrobialView() {
 function HemodynamicsView() {
   return (
     <div>
-      <SectionHeader title="輸液、升壓劑與灌流目標" subtitle="先分清楚 crystalloid、balanced crystalloid 與 colloid；MAP 只是其中一個目標，真正要看器官灌流是否改善。" />
+      <SectionHeader title="輸液、升壓劑與灌流目標" subtitle="MAP 只是其中一個目標，真正要看器官灌流是否改善。" />
       <FluidCalculator />
       {hemodynamicCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
       {fluidTypeTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
@@ -610,7 +610,7 @@ function HemodynamicsView() {
 function SedationView() {
   return (
     <div>
-      <SectionHeader title="插管病人鎮痛鎮靜" subtitle="Sepsis 頁面先放 bedside safety reminders；完整策略仍以 PADIS / ICU Liberation 為主。" />
+      <SectionHeader title="插管病人鎮痛鎮靜" subtitle="Sepsis部分僅放bedside safety reminders；完整策略仍以 PADIS / ICU Liberation 為主。" />
       {sedationCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
       <SimpleTableCard table={sedationDoseTable} />
       <SedationPumpCalculator />
@@ -621,7 +621,7 @@ function SedationView() {
 function SteroidsView() {
   return (
     <div>
-      <SectionHeader title="類固醇與輔助治療" subtitle="重點是 refractory shock 何時加 hydrocortisone，以及哪些東西不要 routine 做。" />
+      <SectionHeader title="類固醇與輔助治療"/>
       {steroidCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
     </div>
   );
@@ -630,7 +630,7 @@ function SteroidsView() {
 function MonitoringView() {
   return (
     <div>
-      <SectionHeader title="追蹤、降階與停藥" subtitle="Sepsis 不是第一小時做完就結束；後面每日 reassessment 才是抗菌藥 stewardship 的核心。" />
+      <SectionHeader title="追蹤、降階與停藥" />
       {monitoringTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
     </div>
   );

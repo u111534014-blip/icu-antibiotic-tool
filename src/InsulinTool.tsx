@@ -301,28 +301,28 @@ export default function InsulinTool() {
           <div style={S.cardTitle}>建議粗估</div>
           <div style={S.targetBox}>{targetText}</div>
           <Row label="Estimated TDD" value={`${calc.tdd} units/day`} note={calc.sourceNote || "請輸入體重、home TDD 或 drip rate。"} />
-          <Row label="Basal insulin" value={`${calc.basal} units/day`} note="常用 glargine QD 或 NPH 分次；依院內品項調整。" />
+          <Row label="Basal insulin HS" value={`${calc.basal} units HS`} note="院內 basal 多為 HS 給藥；本工具以隔日 fasting BG 作為 HS basal 調整依據。" />
           {nutrition === "eating" && <Row label="Prandial insulin" value={`${calc.mealBolus} units AC each meal`} note="三餐規則進食時使用；未進食不給固定餐前 bolus。" />}
           {nutrition === "tube" && <Row label="Nutritional insulin" value={`${calc.q6hNutrition} units q6h`} note="連續管灌/TPN 可用；營養中斷時要有 hypoglycemia prevention plan。" />}
           {(nutrition === "poor" || nutrition === "npo") && <Row label="Scheduled prandial" value="hold" note={calc.planNote} />}
           <Row label="Correction factor" value={calc.cf ? `1 unit ↓ ~${calc.cf} mg/dL` : "—"} note={`目前依 TDD 分類為 ${calc.scale}；correction 不等於單獨 sliding scale 長期使用。`} />
           <Row label="Current BG correction" value={`${calc.correction} units`} note={`以 BG ${calc.bg || "—"}、target ${calc.target || "—"} mg/dL 粗估；單點血糖只影響 correction，不自動改 basal/bolus。`} />
           <div style={S.warningBox}>
-            若 BG &lt;70 mg/dL、NPO/營養突然中斷、SCr 急升、vasopressor 增加或 steroid taper，優先處理低血糖風險並下修 basal/bolus。
+            若 BG &lt;70 mg/dL、NPO/營養突然中斷、SCr 急升、vasopressor 增加或 steroid taper，優先處理低血糖風險並下修 HS basal/bolus。
           </div>
         </section>
       </div>
 
       <InfoCard title="每日劑量調整計算">
         <div style={S.helpBox}>
-          Basal / bolus 調整看的是「型態」而不是單點血糖：fasting 主要反映 basal；午餐前反映早餐 bolus；晚餐前反映午餐 bolus；睡前大致反映晚餐 bolus。
+          Basal / bolus 調整看的是「型態」而不是單點血糖：院內 basal 多為 HS 給藥，因此隔日 fasting BG 主要用來調 HS basal；午餐前反映早餐 bolus；晚餐前反映午餐 bolus；睡前大致反映晚餐 bolus。
         </div>
         <div style={S.inputGrid}>
           <label style={S.inputLabel}>
-            <span>目前 basal</span>
+            <span>目前 basal HS</span>
             <div style={S.inputWrap}>
               <input value={currentBasal} onChange={(e) => setCurrentBasal(e.target.value)} inputMode="decimal" placeholder={`${calc.basal}`} style={S.input} />
-              <span style={S.inputSuffix}>units/day</span>
+              <span style={S.inputSuffix}>units HS</span>
             </div>
           </label>
           <label style={S.inputLabel}>
@@ -396,7 +396,7 @@ export default function InsulinTool() {
             </thead>
             <tbody>
               {[
-                ["Basal", "Fasting / 清晨血糖", dailyAdjustment.basal],
+                ["Basal HS", "隔日 fasting / 清晨血糖", dailyAdjustment.basal],
                 ["早餐 bolus", "午餐前血糖", dailyAdjustment.breakfast],
                 ["午餐 bolus", "晚餐前血糖", dailyAdjustment.lunch],
                 ["晚餐 bolus", "睡前血糖", dailyAdjustment.dinner],
@@ -431,11 +431,11 @@ export default function InsulinTool() {
             </thead>
             <tbody>
               {[
-                ["Fasting / 清晨血糖高", "調 basal 10-20%", "先確認半夜沒有低血糖反彈、睡前點心或 steroid 影響。"],
+                ["Fasting / 清晨血糖高", "調 HS basal 10-20%", "先確認半夜沒有低血糖反彈、睡前點心或 steroid 影響。"],
                 ["餐前血糖高", "看前一餐 prandial/correction，調餐前 bolus 10-20%", "若上一餐沒吃完，不要只看血糖就硬加。"],
                 ["餐後高", "調同一餐 prandial 或 carb ratio", "steroid 常造成午晚餐前/餐後高。"],
-                ["半夜/清晨低血糖", "降 basal 10-20% 或更多", "腎功能變差、吃少、steroid 減量都會增加風險。"],
-                ["NPO 仍反覆高血糖", "保留 basal + q4-6h correction", "不要給固定餐前 bolus；若 ICU 持續 >=180 可考慮 IV insulin protocol。"],
+                ["半夜/清晨低血糖", "降 HS basal 10-20% 或更多", "腎功能變差、吃少、steroid 減量都會增加風險。"],
+                ["NPO 仍反覆高血糖", "保留 HS basal + q4-6h correction", "不要給固定餐前 bolus；若 ICU 持續 >=180 可考慮 IV insulin protocol。"],
               ].map((row) => (
                 <tr key={row[0]}>
                   <td style={S.tdStrong}>{row[0]}</td>
@@ -451,8 +451,8 @@ export default function InsulinTool() {
       <InfoCard title="臨床參考">
         <Bullets items={[
           "ADA 2026：ICU persistent hyperglycemia >=180 mg/dL 時啟動或加強 insulin；多數 ICU 目標 140-180 mg/dL。",
-          "ADA 2026：非 ICU 多數目標 100-180 mg/dL；進食良好者以 basal + prandial + correction 為偏好架構。",
-          "非 ICU 吃很少/NPO：basal insulin 或 basal + correction 為偏好；避免 prolonged SSI alone。",
+          "ADA 2026：非 ICU 多數目標 100-180 mg/dL；進食良好者以 basal + prandial + correction 為偏好架構。院內若 basal 多為 HS 給藥，隔日 fasting BG 是主要調整依據。",
+          "非 ICU 吃很少/NPO：basal insulin 或 basal + correction 為偏好；若院內採 HS basal，仍需依夜間/清晨低血糖風險調整。避免 prolonged SSI alone。",
           "TDD 常用 0.3-0.6 units/kg/day 起始；低血糖高風險用較低，steroid/感染/肥胖或 insulin resistance 用較高。",
           "IV insulin 轉 SC：可用最近 6-8 小時平均 rate × 24 推估，再取約 60% 作為初始 SC TDD；basal 需在停 drip 前先給，避免 insulin gap。",
         ]} />

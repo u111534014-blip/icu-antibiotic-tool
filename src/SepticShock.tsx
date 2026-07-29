@@ -286,6 +286,48 @@ const pumpPresets = [
   { label: "Dexmedetomidine 200 mcg/50 mL", amount: "200", amountUnit: "mcg", volume: "50", dose: "0.4", doseUnit: "mcg/kg/hr" },
 ] as const;
 
+const micuSedationProtocols = [
+  {
+    id: "fentanyl",
+    label: "Fentanyl",
+    prep: "1 mg + NS 30 mL，total 50 mL",
+    concentration: "0.02 mg/mL = 20 mcg/mL",
+    concentrationMcgMl: 20,
+    flowMin: 0,
+    flowMax: 5,
+    defaultRate: "2",
+    goal: "Titrate to CPOT <4",
+    note: "無 ETT 不可用；醫囑開立劑量主要為備藥量，計算以濃度與 mL/hr 為準。",
+    doseUnit: "mcg/kg/hr",
+  },
+  {
+    id: "midazolam",
+    label: "Midazolam（Midatin）",
+    prep: "Pure run（5 mg/mL）；150 mg 約 30 mL",
+    concentration: "5 mg/mL",
+    concentrationMcgMl: 5000,
+    flowMin: 0,
+    flowMax: 5,
+    defaultRate: "1",
+    goal: "Titrate to target RASS",
+    note: "無 ETT 不可用；長時間 infusion 易蓄積，需每日評估減量/SAT。",
+    doseUnit: "mg/kg/hr",
+  },
+  {
+    id: "propofol",
+    label: "Propofol（Fresofol）",
+    prep: "Pure run（200 mg/20 mL）；600 mg 約 60 mL",
+    concentration: "10 mg/mL",
+    concentrationMcgMl: 10000,
+    flowMin: 0,
+    flowMax: 10,
+    defaultRate: "3",
+    goal: "Titrate to target RASS",
+    note: "無 ETT 不可用；shock/低血壓時需特別小心，監測 TG、乳酸、酸中毒與 PRIS 風險。",
+    doseUnit: "mcg/kg/min",
+  },
+] as const;
+
 const steroidCards: KeyCard[] = [
   {
     title: "何時考慮 hydrocortisone",
@@ -574,6 +616,107 @@ function SedationPumpCalculator() {
   );
 }
 
+function HospitalSedationFlowCalculator() {
+  const [weight, setWeight] = useState("60");
+  const [protocolId, setProtocolId] = useState<typeof micuSedationProtocols[number]["id"]>("fentanyl");
+  const protocol = micuSedationProtocols.find((item) => item.id === protocolId) ?? micuSedationProtocols[0];
+  const [rate, setRate] = useState<string>(protocol.defaultRate);
+
+  const weightNum = Number(weight);
+  const rateNum = Number(rate);
+  const mcgHr = protocol.concentrationMcgMl * Math.max(rateNum || 0, 0);
+  const mgHr = mcgHr / 1000;
+
+  const formatDose = (mcgPerHr: number) => {
+    if (!weightNum || weightNum <= 0) return "請輸入體重";
+    if (protocol.doseUnit === "mcg/kg/hr") {
+      return `${round(mcgPerHr / weightNum, 2)} mcg/kg/hr`;
+    }
+    if (protocol.doseUnit === "mg/kg/hr") {
+      return `${round((mcgPerHr / 1000) / weightNum, 3)} mg/kg/hr`;
+    }
+    return `${round(mcgPerHr / weightNum / 60, 1)} mcg/kg/min`;
+  };
+
+  const rangeMaxMcgHr = protocol.concentrationMcgMl * protocol.flowMax;
+  const totalDoseText = protocol.doseUnit === "mcg/kg/hr"
+    ? `${round(mcgHr, 1)} mcg/hr`
+    : `${round(mgHr, 2)} mg/hr`;
+  const rangeText = weightNum > 0
+    ? `${protocol.flowMin}-${protocol.flowMax} mL/hr ≈ ${formatDose(0)}-${formatDose(rangeMaxMcgHr)}`
+    : `${protocol.flowMin}-${protocol.flowMax} mL/hr`;
+
+  const selectProtocol = (id: typeof protocolId) => {
+    const next = micuSedationProtocols.find((item) => item.id === id) ?? micuSedationProtocols[0];
+    setProtocolId(id);
+    setRate(next.defaultRate);
+  };
+
+  return (
+    <section style={S.calcCard}>
+      <div style={S.cardTitle}>院內 MICU 常用 flow 換算</div>
+      <div style={S.calcNote}>
+        這裡依你提供的 MICU 開法換算；開立劑量只是備藥量，實際劑量看濃度與 pump mL/hr。
+      </div>
+
+      <div style={S.presetRow}>
+        {micuSedationProtocols.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => selectProtocol(item.id)}
+            style={{ ...S.presetButton, ...(protocolId === item.id ? S.presetButtonActive : {}) }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={S.pumpGrid}>
+        <label style={S.inputLabel}>
+          <span>體重</span>
+          <div style={S.inputWrap}>
+            <input value={weight} onChange={(e) => setWeight(e.target.value)} inputMode="decimal" style={S.input} />
+            <span style={S.inputSuffix}>kg</span>
+          </div>
+        </label>
+
+        <label style={S.inputLabel}>
+          <span>目前 pump flow</span>
+          <div style={S.inputWrap}>
+            <input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" style={S.input} />
+            <span style={S.inputSuffix}>mL/hr</span>
+          </div>
+        </label>
+      </div>
+
+      <div style={S.protocolBox}>
+        <div style={S.protocolTitle}>{protocol.label}</div>
+        <div style={S.protocolLine}>配法：{protocol.prep}</div>
+        <div style={S.protocolLine}>濃度：{protocol.concentration}</div>
+        <div style={S.protocolLine}>流速範圍：{protocol.flowMin}-{protocol.flowMax} mL/hr</div>
+        <div style={S.protocolLine}>目標：{protocol.goal}</div>
+      </div>
+
+      <div style={S.resultBox}>
+        {weightNum > 0 && rateNum >= 0 ? (
+          <>
+            <span style={S.resultLabel}>目前換算劑量</span>
+            <strong style={S.resultValue}>{formatDose(mcgHr)}</strong>
+          </>
+        ) : (
+          <span style={S.resultPlaceholder}>輸入體重與 flow 後顯示劑量</span>
+        )}
+      </div>
+
+      <div style={S.calcNote}>
+        目前總量：{totalDoseText}｜院內流速範圍換算：{rangeText}
+        <div style={{ marginTop: 6 }}>{protocol.note}</div>
+      </div>
+    </section>
+  );
+}
+
 function BundleView() {
   return (
     <div>
@@ -610,6 +753,7 @@ function SedationView() {
       <SectionHeader title="插管病人鎮痛鎮靜" subtitle="Sepsis部分僅放bedside safety reminders；完整策略仍以 PADIS / ICU Liberation 為主。" />
       {sedationCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
       <SimpleTableCard table={sedationDoseTable} />
+      <HospitalSedationFlowCalculator />
       <SedationPumpCalculator />
     </div>
   );
@@ -723,6 +867,10 @@ const S: Record<string, CSSProperties> = {
   selectWide: { border: "none", borderLeft: "1px solid #E2E8F0", background: "#F8FAFC", color: "#475569", padding: "10px 8px", fontSize: 12, fontWeight: 800, outline: "none", maxWidth: 116 },
   presetRow: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 },
   presetButton: { border: "1px solid #CFE6E1", background: "#F8FFFD", color: "#0F766E", borderRadius: 8, padding: "7px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" },
+  presetButtonActive: { border: `1.5px solid ${ACCENT}`, background: "#DDFBF4", color: "#0F766E" },
+  protocolBox: { marginTop: 12, borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", padding: 12 },
+  protocolTitle: { fontSize: 13, fontWeight: 900, color: "#0F172A", marginBottom: 5 },
+  protocolLine: { fontSize: 12, color: "#475569", lineHeight: 1.55 },
   toggle: { border: "1.5px solid #DDE7EE", borderRadius: 8, background: "#fff", color: "#475569", padding: "10px 12px", cursor: "pointer", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" },
   toggleActive: { border: `1.5px solid ${ACCENT}`, color: "#0F766E", background: "#F0FDFA" },
   resultBox: { marginTop: 12, borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", padding: 12, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 },

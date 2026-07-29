@@ -569,9 +569,6 @@ function SedationPumpCalculator() {
         <div style={{ marginTop: 6 }}>
           範例：Midazolam 50 mg/100 mL = 0.5 mg/mL；60 kg 給 0.03 mg/kg/hr → 1.8 mg/hr ÷ 0.5 mg/mL = 3.6 mL/hr。
         </div>
-        <div style={{ marginTop: 6 }}>
-          Pump volume 會計入每日 I/O；但通常不當作 septic shock 30 mL/kg 的主要 resuscitation volume，除非院內另有定義。
-        </div>
       </div>
     </section>
   );

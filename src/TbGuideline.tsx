@@ -28,6 +28,81 @@ import {
 
 const ACCENT = "#0D9488";
 
+type ActiveTbCaseType = "new" | "retreatment";
+type ActiveTbRenalStatus = "normal" | "severe" | "hd";
+type ActiveTbSusceptibility = "unknown" | "susceptible" | "inhResistant" | "rmpResistant";
+
+function roundToNearest(value: number, step: number) {
+  return Math.round(value / step) * step;
+}
+
+function formatDose(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "-";
+  return `${Math.round(value)} mg`;
+}
+
+function getPzaDose(weight: number) {
+  if (weight >= 76) return 2000;
+  if (weight >= 56) return 1500;
+  if (weight >= 40) return 1000;
+  return Math.min(roundToNearest(weight * 25, 250), 2000);
+}
+
+function getEmbDose(weight: number) {
+  if (weight >= 76) return 1600;
+  if (weight >= 56) return 1200;
+  if (weight >= 40) return 800;
+  return Math.min(roundToNearest(weight * 15, 100), 1600);
+}
+
+function getFdcDose(weight: number, renal: ActiveTbRenalStatus) {
+  if (!weight) return "請先輸入體重。";
+  if (renal !== "normal") return "建議拆成單方：INH/RMP 通常不調整，PZA/EMB 每次劑量不變、頻率改每週 3 次。";
+  if (weight < 30) return "體重 <30 kg 不建議使用 AKuriT/Trac 複方，建議單方依體重計算。";
+  if (weight <= 37) return "複方參考：每日 2 錠。";
+  if (weight <= 54) return "複方參考：每日 3 錠；50 kg 以上可依肝腎功能考慮每日 4 錠。";
+  if (weight <= 70) return "複方參考：每日 4 錠。";
+  return "複方參考：可考慮每日 5 錠；若超出常用範圍或毒性風險高，建議單方核對。";
+}
+
+function getRegimenAdvice(caseType: ActiveTbCaseType, susceptibility: ActiveTbSusceptibility, higherRisk: boolean) {
+  if (susceptibility === "rmpResistant") {
+    return {
+      title: "RMP 抗藥 / RR-TB 或 MDR-TB 疑慮",
+      body: "不要用一般 HRZE 處方直接處理；建議依抗藥性 TB 章節或轉 TMTC/專家團隊設計處方。",
+      notes: ["避免只加一種新藥補強既有失敗處方。", "需盡快確認完整藥敏與抗藥基因檢測。"],
+    };
+  }
+
+  if (susceptibility === "inhResistant") {
+    return {
+      title: "INH 抗藥疑慮",
+      body: "需依藥敏結果調整，不建議單純照標準 HRZE/HR(E) 流程走完。",
+      notes: ["保留有效藥物並參考抗藥性 TB 章節。", "若仍未取得完整 DST，建議專家討論。"],
+    };
+  }
+
+  if (caseType === "retreatment" && susceptibility === "unknown") {
+    return {
+      title: "再治且 INH/RMP 藥敏未知",
+      body: "再治者 INH/RMP 抗藥風險較高；指引建議 DST 未知前可考慮 HRZE 全程 6-9 個月，並盡早做抗藥基因檢測。",
+      notes: [
+        higherRisk ? "肺部廣泛/空洞或高風險者，加強期可評估加入 streptomycin。" : "若無高風險特徵，仍需等 DST 後再回頭調整。",
+        "若中斷治療少於 2 個月且 RMP 基因檢測敏感，可評估延續原處方待 DST。",
+      ],
+    };
+  }
+
+  return {
+    title: caseType === "retreatment" ? "再治但 INH/RMP 均敏感" : "新病人標準處方",
+    body: "一般方向為加強期 2 個月 HRZE，持續期 4 個月 HR(E)；若 INH/RMP 均敏感且臨床合適，可考慮停用 EMB。",
+    notes: [
+      "若胸部 X 光廣泛侵犯/空洞、治療第 2 個月培養仍陽性，或加強期未全程使用 PZA，常需考慮延長持續期。",
+      higherRisk ? "已勾選高風險特徵：請特別留意是否需延長療程或專家討論。" : "療程長短仍需追蹤培養、影像、服藥順從性與藥敏結果。",
+    ],
+  };
+}
+
 function Source({ text }: { text: string }) {
   return <div style={S.source}>來源：{text}</div>;
 }
@@ -112,10 +187,135 @@ function ActiveRegimenCard({ regimen }: { regimen: TbActiveRegimen }) {
   );
 }
 
+function ActiveTbCalculator() {
+  const [weight, setWeight] = useState("60");
+  const [renal, setRenal] = useState<ActiveTbRenalStatus>("normal");
+  const [caseType, setCaseType] = useState<ActiveTbCaseType>("new");
+  const [susceptibility, setSusceptibility] = useState<ActiveTbSusceptibility>("unknown");
+  const [higherRisk, setHigherRisk] = useState(false);
+
+  const weightKg = Number(weight);
+  const validWeight = Number.isFinite(weightKg) && weightKg > 0;
+  const severeRenal = renal !== "normal";
+  const regimenAdvice = getRegimenAdvice(caseType, susceptibility, higherRisk);
+
+  const doseRows = validWeight
+    ? [
+        ["INH", "5 mg/kg QD", formatDose(Math.min(weightKg * 5, 300)), "Max 300 mg/day；腎功能不全通常不需調整。"],
+        ["RMP", "10 mg/kg QD", formatDose(Math.min(weightKg * 10, 600)), "Max 600 mg/day；注意 rifamycin 重大交互作用。"],
+        [
+          "PZA",
+          severeRenal ? "25 mg/kg，每週 3 次" : "25 mg/kg QD",
+          formatDose(getPzaDose(weightKg)),
+          severeRenal ? "CCr <30 或 HD：每次劑量不變，改每週 3 次；HD 日透析後給。" : "常用級距：40-55 kg 1000 mg；56-75 kg 1500 mg；>=76 kg 2000 mg。",
+        ],
+        [
+          "EMB",
+          severeRenal ? "15 mg/kg，每週 3 次" : "15 mg/kg QD",
+          formatDose(getEmbDose(weightKg)),
+          severeRenal ? "CCr <30 或 HD：每次劑量不變，改每週 3 次；HD 日透析後給。" : "常用級距：40-55 kg 800 mg；56-75 kg 1200 mg；>=76 kg 1600 mg。",
+        ],
+        ["SM", "15 mg/kg QD", formatDose(Math.min(weightKg * 15, 1000)), "再治高風險才評估；腎功能不全改每週 2-3 次並監測耳/腎毒性。"],
+      ]
+    : [];
+
+  return (
+    <section style={S.card}>
+      <div style={S.rowTop}>
+        <div>
+          <div style={S.cardTitle}>活動性 TB 處方計算機</div>
+          <div style={S.muted}>先用體重、腎功能與藥敏狀態抓處方方向；複雜個案仍需回到指引與專家討論。</div>
+        </div>
+      </div>
+
+      <div style={S.formGrid}>
+        <label style={S.fieldLabel}>
+          體重 kg
+          <input
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            inputMode="decimal"
+            style={S.smallInput}
+          />
+        </label>
+        <label style={S.fieldLabel}>
+          腎功能
+          <select value={renal} onChange={(e) => setRenal(e.target.value as ActiveTbRenalStatus)} style={S.selectInput}>
+            <option value="normal">CCr &gt;=30 mL/min</option>
+            <option value="severe">CCr &lt;30 mL/min</option>
+            <option value="hd">Hemodialysis</option>
+          </select>
+        </label>
+        <label style={S.fieldLabel}>
+          病人類型
+          <select value={caseType} onChange={(e) => setCaseType(e.target.value as ActiveTbCaseType)} style={S.selectInput}>
+            <option value="new">新病人 / 初治</option>
+            <option value="retreatment">曾接受治療 / 再治</option>
+          </select>
+        </label>
+        <label style={S.fieldLabel}>
+          INH/RMP 藥敏
+          <select value={susceptibility} onChange={(e) => setSusceptibility(e.target.value as ActiveTbSusceptibility)} style={S.selectInput}>
+            <option value="unknown">未知 / 等待中</option>
+            <option value="susceptible">INH/RMP 均敏感</option>
+            <option value="inhResistant">INH 抗藥</option>
+            <option value="rmpResistant">RMP 抗藥或 MDR 疑慮</option>
+          </select>
+        </label>
+      </div>
+
+      <label style={S.checkRow}>
+        <input type="checkbox" checked={higherRisk} onChange={(e) => setHigherRisk(e.target.checked)} />
+        肺部廣泛侵犯/空洞、第 2 個月培養陽性，或再治高風險
+      </label>
+
+      {!validWeight && <div style={S.noteBox}>請輸入有效體重，才會計算單方劑量。</div>}
+
+      <div style={S.resultBox}>
+        <div style={S.cardTitle}>{regimenAdvice.title}</div>
+        <div style={S.cardBody}>{regimenAdvice.body}</div>
+        <Bullets items={regimenAdvice.notes} />
+        <div style={S.noteBox}>{getFdcDose(validWeight ? weightKg : 0, renal)}</div>
+      </div>
+
+      {validWeight && (
+        <div style={S.tableWrap}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={S.th}>藥物</th>
+                <th style={S.th}>計算基準</th>
+                <th style={S.th}>本次估算</th>
+                <th style={S.th}>提醒</th>
+              </tr>
+            </thead>
+            <tbody>
+              {doseRows.map((row) => (
+                <tr key={row[0]}>
+                  <td style={S.tdStrong}>{row[0]}</td>
+                  <td style={S.td}>{row[1]}</td>
+                  <td style={S.tdStrong}>{row[2]}</td>
+                  <td style={S.td}>{row[3]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div style={S.footnote}>
+        計算以成人常用劑量與指引表格整理；兒童、孕婦、肝毒性、藥物不耐、抗藥性 TB、HIV/ART 交互作用或肺外 TB，需另外個別化。
+      </div>
+      <Source text="第 4 章 4.2、4.3、4.7；第 6 章表 6-1、表 6-2、表 6-3" />
+    </section>
+  );
+}
+
 function ActiveTbView() {
   return (
     <div>
       <SectionHeader title="活動性 TB 治療" subtitle="新病人與再治處方直接列在這裡，不用再跳到藥物速查。" />
+      <ActiveTbCalculator />
       <div style={S.subhead}>新病人標準處方</div>
       {activeTbNewPatientRegimens.map((regimen) => <ActiveRegimenCard key={regimen.id} regimen={regimen} />)}
       <div style={S.subhead}>曾接受治療病人（再治）</div>
@@ -416,6 +616,12 @@ const S: Record<string, React.CSSProperties> = {
   rowTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
   badge: { flexShrink: 0, display: "inline-flex", alignItems: "center", borderRadius: 999, padding: "4px 8px", background: "#E0F2FE", color: "#0369A1", fontSize: 11, fontWeight: 750, lineHeight: 1.2 },
   noteBox: { marginTop: 9, padding: 10, borderRadius: 8, background: "#FFF7ED", color: "#9A3412", fontSize: 12, lineHeight: 1.5 },
+  resultBox: { marginTop: 12, padding: 12, borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0" },
+  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: 10, marginTop: 12 },
+  fieldLabel: { display: "grid", gap: 5, color: "#475569", fontSize: 12, fontWeight: 800, lineHeight: 1.3 },
+  smallInput: { width: "100%", padding: "10px 10px", borderRadius: 8, border: "1.5px solid #DDE7EE", background: "#fff", color: "#0F172A", fontSize: 14, outline: "none", boxSizing: "border-box" },
+  selectInput: { width: "100%", padding: "10px 10px", borderRadius: 8, border: "1.5px solid #DDE7EE", background: "#fff", color: "#0F172A", fontSize: 13, outline: "none", boxSizing: "border-box" },
+  checkRow: { display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, color: "#334155", fontSize: 13, lineHeight: 1.45, cursor: "pointer" },
   stepList: { margin: "10px 0 0", paddingLeft: 18, color: "#334155", fontSize: 13, lineHeight: 1.55 },
   stepItem: { marginBottom: 5 },
   tableWrap: { overflowX: "auto", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, marginBottom: 8 },

@@ -6,6 +6,7 @@ import {
   adverseReactionRules,
   diagnosisCards,
   drugResistantTbTables,
+  ltbiDoseTables,
   ltbiPrinciples,
   ltbiRegimens,
   monitoringTimeline,
@@ -289,6 +290,9 @@ function LtbiView() {
       </div>
 
       {shown.map((regimen) => <LtbiRegimenCard key={regimen.id} regimen={regimen} />)}
+
+      <div style={S.subhead}>LTBI 劑量級距與常用顆數</div>
+      {ltbiDoseTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
     </div>
   );
 }

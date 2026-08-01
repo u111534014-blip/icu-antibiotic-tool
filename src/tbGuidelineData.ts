@@ -66,7 +66,7 @@ export type TbSimpleTable = {
 export const tbGuidelineMeta = {
   title: "結核病診治指引",
   subtitle: "Taiwan TB Diagnosis & Treatment",
-  source: "衛生福利部疾病管制署，結核病診治指引第七版，2022 年 3 月；本 PDF 第十章標示 2025/7/09 修訂",
+  source: "衛生福利部疾病管制署，結核病診治指引第七版，2022 年 3 月；本 PDF 第十章標示 2025/7/09 修訂；潛伏結核感染治療處方一覽表 112 年印製",
   notice: "內容以提供之PDF為基底整理；臨床使用前仍建議核對疾管署全球資訊網最新版公告。",
 };
 
@@ -427,6 +427,21 @@ export const tbDrugCards: TbDrugCard[] = [
     source: "第 6 章 6.1.2、表 6-1、表 6-4",
   },
   {
+    name: "Rifapentine",
+    abbr: "RPT / P",
+    role: "LTBI 短程處方 rifamycin；1HP 與 3HP 核心藥物",
+    adultDose: "1HP：INH 300 mg + RPT 依體重 daily x 28 天；3HP：INH + RPT 依體重 weekly x 12 劑",
+    maxDose: "1HP：RPT 600 mg/day；3HP：RPT 900 mg/week",
+    renal: "腎功能不全通常不需調整；仍需依肝功能、交互作用與耐受性評估。",
+    toxicities: ["皮疹/蕁麻疹", "類流感症狀", "過敏反應", "肝毒性", "體液橘紅色"],
+    notes: [
+      "與 INH 併用於 LTBI：1HP 為每日 28 天，3HP 為每週 12 劑。",
+      "Rifamycin 類會誘導 CYP/UGT/P-gp；ART、azole、warfarin/DOAC、免疫抑制劑、荷爾蒙避孕等需逐項核對。",
+      "1HP/3HP 使用之 INH 300 mg 與 HP 複方為專案進口藥品時，需簽立藥品使用同意書。",
+    ],
+    source: "潛伏結核感染治療處方一覽表(112年印製)；第 10 章 10.4.3",
+  },
+  {
     name: "Pyrazinamide",
     abbr: "PZA / Z",
     role: "加強期 sterilizing drug",
@@ -506,8 +521,12 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     adultDose: "INH 15 mg/kg + RPT 依體重級距；兩者 max 900 mg weekly。",
     pediatricDose: "2-11 歲 INH 25 mg/kg weekly；RPT 依體重級距。",
     completionWindow: "120 天",
-    cautions: ["Rifamycin 交互作用需審慎評估。", "體重 >=50 kg 可用 HP FDC：INH 300/RPT 300 mg，每次 3 顆。"],
-    source: "第 10 章 10.4.3、表 10-5",
+    cautions: [
+      "RPT 體重級距：10.0-14.0 kg 300 mg；14.1-25.0 kg 450 mg；25.1-32.0 kg 600 mg；32.1-49.9 kg 750 mg；>=50 kg 900 mg。",
+      "體重 >=50 kg 可用 HP FDC：INH 300/RPT 300 mg，每次 3 顆。",
+      "Rifamycin 交互作用需審慎評估。",
+    ],
+    source: "第 10 章 10.4.3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",
   },
   {
     id: "3HR",
@@ -562,8 +581,13 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     adultDose: "INH 300 mg daily + RPT 依體重級距 daily，RPT max 600 mg。",
     pediatricDose: "目前建議年齡 13 歲(含)以上。",
     completionWindow: "40 天",
-    cautions: ["<35 kg：RPT 300 mg；35-45 kg：450 mg；>=45 kg：600 mg。", "Rifamycin 交互作用需審慎評估。"],
-    source: "第 10 章 10.4.3、表 10-5",
+    cautions: [
+      "<35 kg：RPT 300 mg；35-45 kg：RPT 450 mg；>45 kg：RPT 600 mg。",
+      "複方用法：INH/RPT 300/300 mg 固定 1 顆，再依體重加 RPT 150 mg 1-2 顆。",
+      "單方用法：INH 300 mg 1 顆，再依體重給 RPT 150 mg 2-4 顆。",
+      "Rifamycin 交互作用需審慎評估。",
+    ],
+    source: "第 10 章 10.4.3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",
   },
   {
     id: "6FQ9FQ",
@@ -578,6 +602,106 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     completionWindow: "240 / 365 天",
     cautions: ["治療前需確認無主動脈瘤病史/病灶並做 ECG。", "治療 1 個月與完成前建議 ECG；QTc >500 msec 通常應停藥評估。", "需評估 FQ 血中濃度以調整劑量。"],
     source: "第 10 章 10.4.3、10.2.6、表 10-3、表 10-5",
+  },
+];
+
+export const ltbiDoseTables: TbSimpleTable[] = [
+  {
+    title: "LTBI 處方一覽",
+    source: "疾管署潛伏結核感染治療處方一覽表(112年印製)",
+    columns: ["處方", "總劑數/療程頻率", "劑量重點", "常見副作用", "使用限制", "DOPT", "推薦順序"],
+    rows: [
+      [
+        "1HP",
+        "28 天；每日服用",
+        "INH max 300 mg/day；RPT max 600 mg/day。13 歲(含)以上使用。",
+        "皮疹(蕁麻疹)為主、肝毒性。",
+        "指標個案 INH 或 RMP 抗藥之接觸者、<13 歲兒童、孕婦不建議使用。",
+        "必須",
+        "推薦處方",
+      ],
+      [
+        "3HP",
+        "12 個劑量；3 個月；每週服用",
+        "INH max 900 mg/week；RPT max 900 mg/week。2-11 歲 INH 25 mg/kg；12 歲(含)以上 INH 15 mg/kg。",
+        "皮疹、類流感症狀、過敏反應、少數肝毒性。",
+        "指標個案 INH 或 RMP 抗藥之接觸者、<2 歲兒童、孕婦不建議使用。",
+        "必須",
+        "推薦處方",
+      ],
+      [
+        "4R",
+        "120 天；4 個月；每日服用",
+        "成人 RMP 10 mg/kg/day，max 600 mg/day；兒童 15 (10-20) mg/kg/day。",
+        "皮疹、腸胃不適/腸胃障礙、少數肝毒性。",
+        "指標個案 RMP 抗藥之接觸者不建議使用。",
+        "必須",
+        "推薦處方",
+      ],
+      [
+        "3HR",
+        "90 天；3 個月；每日服用",
+        "成人 INH 5 mg/kg/day max 300 mg + RMP 10 mg/kg/day max 600 mg；兒童 INH 10 (7-15) mg/kg + RMP 15 (10-20) mg/kg。",
+        "過敏反應、少數肝毒性。",
+        "指標個案 INH 或 RMP 抗藥之接觸者不建議使用。",
+        "必須",
+        "推薦處方",
+      ],
+      [
+        "6H / 9H",
+        "180 天/270 天；6 個月/9 個月；每日服用",
+        "成人 INH 5 mg/kg/day，max 300 mg/day；兒童 INH 10 (7-15) mg/kg/day。",
+        "皮疹、周邊神經病變、肝毒性。",
+        "指標個案 INH 抗藥之接觸者不建議使用。",
+        "建議",
+        "替代處方",
+      ],
+    ],
+    notes: [
+      "處方選擇仍需依指標個案藥敏、使用限制、交互作用與病人狀況決定。",
+      "1HP、3HP、3HR、4R 為短程處方；疾管署公告建議優先使用短程處方以提高完治率。",
+      "孕婦使用 1HP/3HP 目前尚未有足夠臨床安全性試驗資料。",
+    ],
+  },
+  {
+    title: "Rifapentine (RPT) 劑量級距",
+    source: "疾管署潛伏結核感染治療處方一覽表(112年印製)",
+    columns: ["處方", "年齡/體重", "INH", "RPT"],
+    rows: [
+      ["1HP", "<35 kg", "300 mg daily", "300 mg daily"],
+      ["1HP", "35-45 kg", "300 mg daily", "450 mg daily"],
+      ["1HP", ">45 kg", "300 mg daily", "600 mg daily"],
+      ["3HP", "2-11 歲", "25 mg/kg weekly，max 900 mg", "依體重級距 weekly"],
+      ["3HP", "12 歲(含)以上", "15 mg/kg weekly，max 900 mg", "依體重級距 weekly"],
+      ["3HP", "10.0-14.0 kg", "依年齡劑量", "300 mg weekly"],
+      ["3HP", "14.1-25.0 kg", "依年齡劑量", "450 mg weekly"],
+      ["3HP", "25.1-32.0 kg", "依年齡劑量", "600 mg weekly"],
+      ["3HP", "32.1-49.9 kg", "依年齡劑量", "750 mg weekly"],
+      ["3HP", ">=50.0 kg", "依年齡劑量", "900 mg weekly"],
+    ],
+    notes: [
+      "RPT 150 mg 錠可用於 1HP/3HP 單方組合；HP 複方為 INH 300 mg/RPT 300 mg。",
+      "1HP 及 3HP 使用之 INH 300 mg 與 HP 複方為專案進口藥品時，須簽立藥品使用同意書。",
+    ],
+  },
+  {
+    title: "成人最大劑量常用顆數",
+    source: "疾管署潛伏結核感染治療處方一覽表(112年印製)",
+    columns: ["處方", "用法", "每日/每週最大劑量", "常用顆數"],
+    rows: [
+      ["1HP", "複方", "INH 300 mg、RPT 600 mg daily", "RPT 150 mg 2 顆 + INH/RPT 300/300 mg 1 顆，共 3 顆"],
+      ["1HP", "單方", "INH 300 mg、RPT 600 mg daily", "INH 300 mg 1 顆 + RPT 150 mg 4 顆，共 5 顆"],
+      ["3HP", "複方", "INH 900 mg、RPT 900 mg weekly", "INH/RPT 300/300 mg 3 顆，共 3 顆"],
+      ["3HP", "單方", "INH 900 mg、RPT 900 mg weekly", "INH 300 mg 3 顆 + RPT 150 mg 6 顆，共 9 顆"],
+      ["3HR", "複方", "INH 300 mg、RMP 600 mg daily", "RINA 或 RIFINAH 300 mg 2 顆，共 2 顆；各家廠牌可能不同"],
+      ["3HR", "單方", "INH 300 mg、RMP 600 mg daily", "INH 100 mg 3 顆 + RMP 300 mg 2 顆，共 5 顆"],
+      ["4R", "單方", "RMP 600 mg daily", "RMP 300 mg 2 顆，共 2 顆"],
+      ["6H / 9H", "單方", "INH 300 mg daily", "INH 100 mg 3 顆，共 3 顆"],
+    ],
+    notes: [
+      "此表整理 PDF 圖卡中成人最大劑量的常用顆數，實際開立仍需依體重、年齡、劑型供應與院內品項核對。",
+      "3HR 可依體重使用 INH + RMP 二合一劑型。",
+    ],
   },
 ];
 

@@ -3,6 +3,7 @@ import {
   activeTbCards,
   activeTbNewPatientRegimens,
   activeTbRetreatmentRegimens,
+  activeTbSingleDrugDoseTables,
   adverseReactionRules,
   diagnosisCards,
   drugResistantTbTables,
@@ -119,6 +120,8 @@ function ActiveTbView() {
       {activeTbNewPatientRegimens.map((regimen) => <ActiveRegimenCard key={regimen.id} regimen={regimen} />)}
       <div style={S.subhead}>曾接受治療病人（再治）</div>
       {activeTbRetreatmentRegimens.map((regimen) => <ActiveRegimenCard key={regimen.id} regimen={regimen} />)}
+      <div style={S.subhead}>單方標準治療劑量</div>
+      {activeTbSingleDrugDoseTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <div style={S.subhead}>治療原則與延長療程</div>
       {activeTbCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
     </div>

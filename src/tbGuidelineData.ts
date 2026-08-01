@@ -230,6 +230,55 @@ export const activeTbRetreatmentRegimens: TbActiveRegimen[] = [
   },
 ];
 
+export const activeTbSingleDrugDoseTables: TbSimpleTable[] = [
+  {
+    title: "活動性 TB 單方標準劑量",
+    source: "第 4 章 4.7；第 6 章表 6-1、表 6-3",
+    columns: ["藥物", "成人每日劑量", "最大劑量", "常用拆方參考", "腎功能提醒"],
+    rows: [
+      [
+        "Isoniazid (INH / H)",
+        "5 mg/kg PO QD",
+        "300 mg/day",
+        "成人常用 300 mg QD；糖尿病、尿毒症、營養不良、懷孕、酗酒等可加 pyridoxine。",
+        "腎功能不全通常不需調整；HD 日建議透析後給藥。",
+      ],
+      [
+        "Rifampin (RMP / R)",
+        "10 mg/kg PO QD",
+        "600 mg/day",
+        "成人常用 600 mg QD；交互作用多，拆方時仍需核對 ART、azole、warfarin/DOAC、免疫抑制劑等。",
+        "腎功能不全通常不需調整；HD 日可透析後給藥。",
+      ],
+      [
+        "Pyrazinamide (PZA / Z)",
+        "25 mg/kg PO QD",
+        "2000 mg/day",
+        "常用體重級距：40-55 kg 1000 mg；56-75 kg 1500 mg；>=76 kg 2000 mg。",
+        "CCr <30 mL/min 或 HD：每次劑量不變，頻率改每週 3 次；HD 日透析後給藥。",
+      ],
+      [
+        "Ethambutol (EMB / E)",
+        "15 mg/kg PO QD",
+        "1600 mg/day",
+        "常用體重級距：40-55 kg 800 mg；56-75 kg 1200 mg；76-90 kg 1600 mg。",
+        "CCr <30 mL/min 或 HD：每次劑量不變，頻率改每週 3 次；HD 日透析後給藥。",
+      ],
+      [
+        "Streptomycin (SM / S)",
+        "15 mg/kg IM/IV QD",
+        "1000 mg/day；累積總量建議 <120 g",
+        "高齡或 <50 kg 可考慮 500-750 mg/day 或 10 mg/kg；再治高風險情境才評估加入。",
+        "腎功能不全：每次劑量維持，頻率每週 2-3 次；HD 後使用，需監測耳毒性與腎毒性。",
+      ],
+    ],
+    notes: [
+      "這張表是為了需要拆成單方時快速估算；若使用固定成分複方，仍以複方體重級距表與臨床狀況核對。",
+      "CCr <30 mL/min 時，AKT-4/Trac4 等含 PZA/EMB 複方通常不適合直接照顆數開立，建議改單方調整 PZA/EMB 頻率。",
+    ],
+  },
+];
+
 export const tbTermCards: TbKeyPoint[] = [
   {
     title: "AFB smear 是什麼？",
@@ -518,12 +567,14 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     doses: "12 劑",
     dot: "必須",
     candidates: "2 歲(含)以上接觸者與風險族群；不建議孕婦及未滿 2 歲幼童。",
-    adultDose: "INH 15 mg/kg + RPT 依體重級距；兩者 max 900 mg weekly。",
+    adultDose: "12 歲(含)以上：INH 15 mg/kg weekly (max 900 mg) + RPT 依體重級距 weekly；RPT max 900 mg。",
     pediatricDose: "2-11 歲 INH 25 mg/kg weekly；RPT 依體重級距。",
     completionWindow: "120 天",
     cautions: [
       "RPT 體重級距：10.0-14.0 kg 300 mg；14.1-25.0 kg 450 mg；25.1-32.0 kg 600 mg；32.1-49.9 kg 750 mg；>=50 kg 900 mg。",
       "體重 >=50 kg 可用 HP FDC：INH 300/RPT 300 mg，每次 3 顆。",
+      "常見副作用：皮疹、類流感症狀、過敏反應，少數肝毒性。",
+      "使用限制：指標個案 INH 或 RMP 抗藥之接觸者、<2 歲兒童、孕婦不建議使用。",
       "Rifamycin 交互作用需審慎評估。",
     ],
     source: "第 10 章 10.4.3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",
@@ -539,8 +590,13 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     adultDose: "INH 5 mg/kg max 300 mg + RMP 10 mg/kg max 600 mg daily。",
     pediatricDose: "INH 10 mg/kg (7-15) + RMP 15 mg/kg (10-20) daily。",
     completionWindow: "120 天",
-    cautions: ["RMP 交互作用需審慎評估。", "可依體重使用 INH/RMP 二合一劑型。"],
-    source: "第 10 章 10.4.3、表 10-5",
+    cautions: [
+      "常見副作用：過敏反應，少數肝毒性。",
+      "使用限制：指標個案 INH 或 RMP 抗藥之接觸者不建議使用。",
+      "RMP 交互作用需審慎評估。",
+      "可依體重使用 INH/RMP 二合一劑型；成人最大劑量常用顆數可見下方詳細表。",
+    ],
+    source: "第 10 章 10.4.3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",
   },
   {
     id: "4R",
@@ -553,8 +609,13 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     adultDose: "RMP 10 mg/kg daily，max 600 mg。",
     pediatricDose: "RMP 15 mg/kg (10-20) daily。",
     completionWindow: "160 天",
-    cautions: ["Rifamycin 交互作用需審慎評估。"],
-    source: "第 10 章 10.4.3、表 10-3、表 10-5",
+    cautions: [
+      "常見副作用：皮疹、腸胃不適/腸胃障礙，少數肝毒性。",
+      "使用限制：指標個案 RMP 抗藥之接觸者不建議使用。",
+      "Rifamycin 交互作用需審慎評估。",
+      "成人最大劑量常用顆數：RMP 300 mg 2 顆 QD。",
+    ],
+    source: "第 10 章 10.4.3、表 10-3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",
   },
   {
     id: "6H9H",
@@ -567,8 +628,14 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     adultDose: "INH 5 mg/kg daily，max 300 mg。",
     pediatricDose: "INH 10 mg/kg (7-15) daily。",
     completionWindow: "240 / 365 天",
-    cautions: ["慢性肝炎者使用需謹慎。", "指標單一 RMP 抗藥時可用 6H/9H。"],
-    source: "第 10 章 10.4.3、表 10-3、表 10-5",
+    cautions: [
+      "常見副作用：皮疹、周邊神經病變、肝毒性。",
+      "使用限制：指標個案 INH 抗藥之接觸者不建議使用。",
+      "慢性肝炎者使用需謹慎；可依風險評估 pyridoxine。",
+      "指標單一 RMP 抗藥時可用 6H/9H。",
+      "成人最大劑量常用顆數：INH 100 mg 3 顆 QD。",
+    ],
+    source: "第 10 章 10.4.3、表 10-3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",
   },
   {
     id: "1HP",
@@ -578,13 +645,14 @@ export const ltbiRegimens: TbLtbiRegimen[] = [
     doses: "28 劑",
     dot: "必須",
     candidates: "13 歲(含)以上接觸者與風險族群；不建議孕婦。",
-    adultDose: "INH 300 mg daily + RPT 依體重級距 daily，RPT max 600 mg。",
+    adultDose: "INH 300 mg daily + RPT daily：<35 kg 300 mg；35-45 kg 450 mg；>45 kg 600 mg。",
     pediatricDose: "目前建議年齡 13 歲(含)以上。",
     completionWindow: "40 天",
     cautions: [
-      "<35 kg：RPT 300 mg；35-45 kg：RPT 450 mg；>45 kg：RPT 600 mg。",
       "複方用法：INH/RPT 300/300 mg 固定 1 顆，再依體重加 RPT 150 mg 1-2 顆。",
       "單方用法：INH 300 mg 1 顆，再依體重給 RPT 150 mg 2-4 顆。",
+      "常見副作用：皮疹(蕁麻疹)為主、肝毒性。",
+      "使用限制：指標個案 INH 或 RMP 抗藥之接觸者、<13 歲兒童、孕婦不建議使用。",
       "Rifamycin 交互作用需審慎評估。",
     ],
     source: "第 10 章 10.4.3、表 10-5；潛伏結核感染治療處方一覽表(112年印製)",

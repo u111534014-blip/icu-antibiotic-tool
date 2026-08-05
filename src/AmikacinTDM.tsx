@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 const ACCENT = "#0D9488";
+const NOMOGRAM_BASE = "/icu-antibiotic-tool/nomograms/";
 
 type Method = "auc" | "nomogram" | "traditional" | "ntm";
 type Sex = "M" | "F";
@@ -118,7 +119,35 @@ function nomogramImagePath(type: NomogramType): string {
   const file = type === "hartford"
     ? "amikacin-hartford-nomogram.png"
     : "amikacin-urban-craig-nomogram.png";
-  return `${import.meta.env.BASE_URL}nomograms/${file}`;
+  return `${NOMOGRAM_BASE}${file}`;
+}
+
+function dtToDate(value: string): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function hoursBetween(from: Date, to: Date): number {
+  return (to.getTime() - from.getTime()) / (1000 * 60 * 60);
+}
+
+function formatDT(value: string): string {
+  const date = dtToDate(value);
+  if (!date) return "";
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd} ${hh}:${mi}`;
+}
+
+function formatDate(date: Date): string {
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd} ${hh}:${mi}`;
 }
 
 export default function AmikacinTDM() {
@@ -133,20 +162,22 @@ export default function AmikacinTDM() {
 
   const [nomogramType, setNomogramType] = useState<NomogramType>("hartford");
   const [randomLevel, setRandomLevel] = useState("");
-  const [randomHour, setRandomHour] = useState("");
+  const [randomLevelDatetime, setRandomLevelDatetime] = useState("");
 
   const [aucDose, setAucDose] = useState("");
   const [aucInterval, setAucInterval] = useState("24");
   const [infusionHours, setInfusionHours] = useState("0.5");
+  const [doseStartDatetime, setDoseStartDatetime] = useState("");
   const [level1, setLevel1] = useState("");
-  const [level1Hour, setLevel1Hour] = useState("");
+  const [level1Datetime, setLevel1Datetime] = useState("");
   const [level2, setLevel2] = useState("");
-  const [level2Hour, setLevel2Hour] = useState("");
+  const [level2Datetime, setLevel2Datetime] = useState("");
 
   const [tradTarget, setTradTarget] = useState<TraditionalTarget>("serious");
   const [tradPeak, setTradPeak] = useState("");
   const [tradTrough, setTradTrough] = useState("");
-  const [tradDelta, setTradDelta] = useState("");
+  const [tradPeakDatetime, setTradPeakDatetime] = useState("");
+  const [tradTroughDatetime, setTradTroughDatetime] = useState("");
 
   const [ntmSchedule, setNtmSchedule] = useState<NtmSchedule>("daily");
   const [copied, setCopied] = useState(false);
@@ -223,14 +254,42 @@ export default function AmikacinTDM() {
     };
   }, [method, nomogramType, ntmSchedule, patient, tradTarget]);
 
+  const aucTiming = useMemo(() => {
+    const start = dtToDate(doseStartDatetime);
+    const lev1 = dtToDate(level1Datetime);
+    const lev2 = dtToDate(level2Datetime);
+    const tinf = Math.max(0.25, n(infusionHours));
+    if (!start || !lev1 || !lev2) return null;
+    const infusionEnd = new Date(start.getTime() + tinf * 60 * 60 * 1000);
+    return {
+      infusionEnd,
+      t1: round2(hoursBetween(infusionEnd, lev1)),
+      t2: round2(hoursBetween(infusionEnd, lev2)),
+    };
+  }, [doseStartDatetime, infusionHours, level1Datetime, level2Datetime]);
+
+  const randomHour = useMemo(() => {
+    const start = dtToDate(doseStartDatetime);
+    const random = dtToDate(randomLevelDatetime);
+    if (!start || !random) return null;
+    return round2(hoursBetween(start, random));
+  }, [doseStartDatetime, randomLevelDatetime]);
+
+  const tradDelta = useMemo(() => {
+    const peakDate = dtToDate(tradPeakDatetime);
+    const troughDate = dtToDate(tradTroughDatetime);
+    if (!peakDate || !troughDate) return null;
+    return round2(hoursBetween(peakDate, troughDate));
+  }, [tradPeakDatetime, tradTroughDatetime]);
+
   const aucResult = useMemo(() => {
     const dose = n(aucDose);
     const tau = Math.max(6, n(aucInterval));
     const tinf = Math.max(0.25, n(infusionHours));
     const c1 = n(level1);
-    const t1 = n(level1Hour);
     const c2 = n(level2);
-    const t2 = n(level2Hour);
+    const t1 = aucTiming?.t1 ?? 0;
+    const t2 = aucTiming?.t2 ?? 0;
     if (!dose || !c1 || !c2 || !t2 || t2 <= t1 || c1 <= c2) return null;
 
     const ke = Math.log(c1 / c2) / (t2 - t1);
@@ -257,11 +316,11 @@ export default function AmikacinTDM() {
       troughSs,
       tone,
     };
-  }, [aucDose, aucInterval, infusionHours, level1, level1Hour, level2, level2Hour]);
+  }, [aucDose, aucInterval, aucTiming, infusionHours, level1, level2]);
 
   const nomogramResult = useMemo(() => {
     const level = n(randomLevel);
-    const hour = n(randomHour);
+    const hour = randomHour ?? 0;
     if (!level || !hour) return null;
     const divisor = nomogramType === "hartford" ? 2 : 3;
     const converted = round2(level / divisor);
@@ -276,7 +335,7 @@ export default function AmikacinTDM() {
   const tradResult = useMemo(() => {
     const peak = n(tradPeak);
     const trough = n(tradTrough);
-    const delta = n(tradDelta);
+    const delta = tradDelta ?? 0;
     if (!peak || !trough || !delta || peak <= trough) return null;
     const ke = Math.log(peak / trough) / delta;
     const halfLife = 0.693 / ke;
@@ -296,22 +355,28 @@ export default function AmikacinTDM() {
     ];
     if (initialDose) lines.push(`Initial recommendation: ${initialDose.dose}`);
     if (aucResult) {
+      if (doseStartDatetime) lines.push(`Dose start: ${formatDT(doseStartDatetime)}; infusion time ${infusionHours} h${aucTiming ? `; infusion end ${formatDate(aucTiming.infusionEnd)}` : ""}.`);
+      if (level1Datetime) lines.push(`Level #1: ${level1} mcg/mL drawn ${formatDT(level1Datetime)}${aucTiming ? ` (${aucTiming.t1} h after infusion end)` : ""}.`);
+      if (level2Datetime) lines.push(`Level #2: ${level2} mcg/mL drawn ${formatDT(level2Datetime)}${aucTiming ? ` (${aucTiming.t2} h after infusion end)` : ""}.`);
       lines.push(`AUC0-24: ${round1(aucResult.auc24)} mg*h/L (target 200-300)`);
       lines.push(`Estimated trough at current interval: ${round1(aucResult.troughSs)} mcg/mL (preferred <5)`);
       lines.push(`Suggested same-interval dose for AUC ~250: ${aucResult.suggestedPerDose} mg q${aucInterval}h`);
     }
     if (nomogramResult) {
-      lines.push(`Random level: ${randomLevel} mcg/mL at ${randomHour}h after start of infusion; convert by /${nomogramResult.divisor} = ${nomogramResult.converted} for nomogram plotting.`);
+      if (doseStartDatetime) lines.push(`Dose start: ${formatDT(doseStartDatetime)}.`);
+      lines.push(`Random level: ${randomLevel} mcg/mL drawn ${randomLevelDatetime ? formatDT(randomLevelDatetime) : ""}${randomHour !== null ? ` (${randomHour} h after start of infusion)` : ""}; convert by /${nomogramResult.divisor} = ${nomogramResult.converted} for nomogram plotting.`);
       lines.push(`CrCl-based initial interval: ${nomogramResult.interval}`);
     }
     if (tradResult) {
+      if (tradPeakDatetime) lines.push(`Peak: ${tradPeak} mcg/mL drawn ${formatDT(tradPeakDatetime)}.`);
+      if (tradTroughDatetime) lines.push(`Trough/later level: ${tradTrough} mcg/mL drawn ${formatDT(tradTroughDatetime)}${tradDelta !== null ? ` (${tradDelta} h after peak)` : ""}.`);
       lines.push(`Calculated half-life: ${round1(tradResult.halfLife)} h; target peak ${tradResult.target.peak}, trough ${tradResult.target.trough}.`);
       if (tradResult.hoursToSafeTrough > 0) lines.push(`Estimated time to trough near goal: ${Math.ceil(tradResult.hoursToSafeTrough)} h.`);
     }
     if (method === "ntm") lines.push(`NTM target: peak ${ntmTargets.peak}; trough ${ntmTargets.trough}.`);
     lines.push("Monitor: SCr/urine output, hearing, vestibular symptoms; reassess need daily.");
     return lines.join("\n");
-  }, [aucInterval, aucResult, initialDose, method, nomogramResult, nomogramType, ntmTargets.peak, ntmTargets.trough, patient, randomHour, randomLevel, tradResult]);
+  }, [aucInterval, aucResult, aucTiming, doseStartDatetime, infusionHours, initialDose, level1, level1Datetime, level2, level2Datetime, method, nomogramResult, nomogramType, ntmTargets.peak, ntmTargets.trough, patient, randomHour, randomLevel, randomLevelDatetime, tradDelta, tradPeak, tradPeakDatetime, tradResult, tradTrough, tradTroughDatetime]);
 
   const copyNote = async () => {
     await navigator.clipboard.writeText(note);
@@ -379,12 +444,17 @@ export default function AmikacinTDM() {
             <Input label="目前/首劑 dose" value={aucDose} onChange={setAucDose} suffix="mg" />
             <Input label="給藥間隔" value={aucInterval} onChange={setAucInterval} suffix="hr" />
             <Input label="輸注時間" value={infusionHours} onChange={setInfusionHours} suffix="hr" />
-            <div />
+            <DateTimeInput label="給藥開始時間" value={doseStartDatetime} onChange={setDoseStartDatetime} />
             <Input label="Level 1" value={level1} onChange={setLevel1} suffix="mcg/mL" />
-            <Input label="Level 1 時間" value={level1Hour} onChange={setLevel1Hour} suffix="hr after infusion end" />
+            <DateTimeInput label="Level 1 抽血時間" value={level1Datetime} onChange={setLevel1Datetime} />
             <Input label="Level 2" value={level2} onChange={setLevel2} suffix="mcg/mL" />
-            <Input label="Level 2 時間" value={level2Hour} onChange={setLevel2Hour} suffix="hr after infusion end" />
+            <DateTimeInput label="Level 2 抽血時間" value={level2Datetime} onChange={setLevel2Datetime} />
           </div>
+          {aucTiming && (
+            <div style={S.timingBox}>
+              Level 1：infusion end 後 {aucTiming.t1} hr；Level 2：infusion end 後 {aucTiming.t2} hr
+            </div>
+          )}
           <div style={S.helpText}>建議使用分布完成後的兩點濃度；Level 2 需晚於 Level 1，且濃度較低。</div>
         </div>
       )}
@@ -409,10 +479,12 @@ export default function AmikacinTDM() {
             <option value="urban">Urban/Craig：amikacin level / 3 後畫圖</option>
           </select>
           <div style={{ ...S.grid2, marginTop: 12 }}>
+            <DateTimeInput label="首劑開始輸注時間" value={doseStartDatetime} onChange={setDoseStartDatetime} />
             <Input label="Random level" value={randomLevel} onChange={setRandomLevel} suffix="mcg/mL" />
-            <Input label="抽血時間" value={randomHour} onChange={setRandomHour} suffix="hr after start of infusion" />
+            <DateTimeInput label="Random level 抽血時間" value={randomLevelDatetime} onChange={setRandomLevelDatetime} />
           </div>
-          <div style={S.helpText}>此頁先幫你做 amikacin 專用轉換與 CrCl 起始間隔；正式判讀仍需對照 Stanford 原 nomogram 的分界線。</div>
+          {randomHour !== null && <div style={S.timingBox}>Random level：開始輸注後 {randomHour} hr</div>}
+          <div style={S.helpText}>此頁做 amikacin 專用轉換與 CrCl 起始間隔；正式判讀仍需對照 Stanford 原 nomogram 的分界線。</div>
           <div style={S.nomogramBox}>
             <div style={S.nomogramHeader}>
               {nomogramType === "hartford" ? "Hartford nomogram" : "Urban/Craig nomogram"}
@@ -448,9 +520,11 @@ export default function AmikacinTDM() {
           </select>
           <div style={{ ...S.grid2, marginTop: 12 }}>
             <Input label="Peak" value={tradPeak} onChange={setTradPeak} suffix="mcg/mL" />
+            <DateTimeInput label="Peak 抽血時間" value={tradPeakDatetime} onChange={setTradPeakDatetime} />
             <Input label="Trough / later level" value={tradTrough} onChange={setTradTrough} suffix="mcg/mL" />
-            <Input label="兩濃度間隔" value={tradDelta} onChange={setTradDelta} suffix="hr" />
+            <DateTimeInput label="Trough / later level 抽血時間" value={tradTroughDatetime} onChange={setTradTroughDatetime} />
           </div>
+          {tradDelta !== null && <div style={S.timingBox}>兩濃度間隔：{tradDelta} hr</div>}
           <div style={S.helpText}>Peak 通常於輸注結束後 30 分鐘抽；若抽血時間不同，請以實際兩點濃度間隔估算半衰期。</div>
           <div style={{ marginTop: 12 }}>
             <Row label="目標 peak" value={targetText(tradTarget).peak} highlight />
@@ -500,6 +574,15 @@ function Input({ label, value, onChange, suffix }: { label: string; value: strin
         <input style={S.input} value={value} inputMode="decimal" onChange={(e) => onChange(e.target.value)} />
         {suffix && <span style={S.suffix}>{suffix}</span>}
       </div>
+    </label>
+  );
+}
+
+function DateTimeInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label>
+      <span style={S.label}>{label}</span>
+      <input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)} style={S.dateTimeInput} />
     </label>
   );
 }
@@ -613,6 +696,7 @@ const S: Record<string, CSSProperties> = {
   grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 },
   label: { display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 },
   select: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", boxSizing: "border-box" },
+  dateTimeInput: { width: "100%", minHeight: 46, padding: "10px 12px", borderRadius: 12, border: "1.5px solid #DDE5F0", fontSize: 15, fontWeight: 600, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box", boxShadow: "0 1px 0 rgba(15,23,42,0.02)" },
   inputWrap: { display: "flex", alignItems: "center", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", overflow: "hidden" },
   input: { flex: 1, minWidth: 0, padding: "10px 12px", border: "none", fontSize: 15, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box", width: "100%" },
   suffix: { padding: "0 10px", color: "#64748B", fontSize: 12, whiteSpace: "nowrap" },
@@ -625,6 +709,7 @@ const S: Record<string, CSSProperties> = {
   rowValue: { color: "#0F172A", fontSize: 14, lineHeight: 1.5, wordBreak: "break-word" },
   muted: { color: "#475569", fontSize: 13, lineHeight: 1.55, marginTop: 8 },
   helpText: { color: "#64748B", fontSize: 12, lineHeight: 1.5, marginTop: 8 },
+  timingBox: { background: "#F0FDFA", border: "1px solid #99F6E4", color: "#115E59", borderRadius: 8, padding: "10px 12px", fontSize: 13, lineHeight: 1.55, marginTop: 12 },
   warning: { background: "#FFFBEB", border: "1px solid #FDE68A", color: "#92400E", borderRadius: 8, padding: "10px 12px", fontSize: 13, lineHeight: 1.5, marginTop: 10 },
   note: { whiteSpace: "pre-wrap", background: "#0F172A", color: "#E2E8F0", borderRadius: 8, padding: 12, fontSize: 12, lineHeight: 1.55, overflowX: "auto" },
   copyBtn: { width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 10, border: "none", background: ACCENT, color: "#fff", fontWeight: 800, cursor: "pointer" },

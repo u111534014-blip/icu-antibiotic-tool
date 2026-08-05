@@ -155,7 +155,7 @@ export const tygacil: Drug = {
           "【涵蓋】\n" +
           "• MRSA\n" +
           "• MDR Acinetobacter baumannii（CRAB）\n" +
-          "• MDR Stenotrophomonas maltophilia\n" +
+          "• MDR Stenotrophomonas maltophilia（替代；IDSA 2026 若 tetracycline derivative 可選，較偏 minocycline）\n" +
           "• CRE（Carbapenem-resistant Enterobacterales）\n" +
           "• Anaerobes\n" +
           "• Rapidly growing NTM\n\n" +

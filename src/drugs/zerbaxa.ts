@@ -316,7 +316,7 @@ export const zerbaxa: Drug = {
         heading: "臨床定位（不建議常規經驗使用）",
         body:
           "保留給有或有風險之 MDR GNB：\n" +
-          "• DTR-Pseudomonas aeruginosa（首選之一）\n" +
+          "• DTR-Pseudomonas aeruginosa（IDSA 2026：cUTI 與尿路外感染 preferred option；尿路外感染若藥敏可用，常優先考慮 ceftolozane/tazobactam）\n" +
           "• 其他治療選擇有限的 MDR GNB\n\n" +
           "DTR-PsA 定義：對以下所有類別都「非敏感」（I 或 R）：\n" +
           "  Pip/tazo、Ceftazidime、Cefepime、Aztreonam、\n" +

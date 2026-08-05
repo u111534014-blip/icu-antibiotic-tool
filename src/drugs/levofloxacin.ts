@@ -686,8 +686,10 @@ export const levofloxacin: Drug = {
           "• P. aeruginosa（中等活性，不如 ciprofloxacin）\n\n" +
           "【不涵蓋】\n" +
           "• MRSA\n" +
-          "• Anaerobes（需合併 metronidazole）\n" +
-          "• ESBL（部分有效但不首選）",
+          "• Anaerobes（需合併 metronidazole）\n\n" +
+          "【抗藥 GNB 定位】\n" +
+          "• ESBL-E pyelonephritis/cUTI：若藥敏 susceptible，IDSA 2026 列為 preferred oral/IV option\n" +
+          "• ESBL-E 尿路外感染：可作 step-down（需藥敏、血流動力穩定、已 source control、吸收良好）",
       },
       {
         heading: "Levofloxacin vs Ciprofloxacin",

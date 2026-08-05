@@ -367,7 +367,7 @@ export const unasyn: Drug = {
           "方案 A：9 g（= 6 支）Q8H over 4hr\n" +
           "方案 B：27 g/day 連續滴注\n" +
           "方案 C：3 g Q4H（不耐受高劑量時）\n\n" +
-          "需合併用藥。首選 Unasyn 而非 Brosym",
+          "需合併用藥。IDSA 2026：CRAB invasive infection 首選 sulbactam-durlobactam + imipenem 或 meropenem；若 sulbactam-durlobactam 不可得，可用高劑量 ampicillin/sulbactam + 第二個有效藥物作 bridge。首選 Unasyn 而非 Brosym",
       },
     ],
   },

@@ -253,6 +253,7 @@ export const polymyxinB: Drug = {
           "• Acinetobacter baumannii（MDR/XDR/CRAB）\n" +
           "• Pseudomonas aeruginosa（DTR-PsA/CRPA）\n" +
           "• CRE（E. coli、K. pneumoniae 等）\n\n" +
+          "IDSA 2026 定位：若已有 active newer β-lactam，不建議常規合併 polymyxin；CRAB 可作替代合併藥之一，但需注意腎毒性、神經毒性與肺部濃度不足。\n\n" +
           "【天然抗藥（不涵蓋）】\n" +
           "• Serratia spp.\n" +
           "• Proteus spp.\n" +
@@ -305,8 +306,10 @@ export const polymyxinB: Drug = {
           "• 建議可行時 TDM（尤其 ARC、ECMO、重症）",
       },
       {
-        heading: "協同作用",
-        body: "可與 carbapenem 產生協同作用（增加細胞膜通透性）→ 提高 carbapenem 對 CRAB、CRPA、CRE 的活性（熱病）",
+        heading: "合併治療定位",
+        body:
+          "體外可與 carbapenem 產生協同作用，但 IDSA 2026 不建議在 CRE 或 DTR-PsA 已有有效 β-lactam 時 routine combination。\n" +
+          "CRAB 若無 sulbactam-durlobactam 或 cefiderocol 等可行選擇，polymyxin B 可作合併治療替代之一；療程中需每日評估是否能 de-escalation，並密切監測 SCr、尿量與神經毒性。",
       },
     ],
   },

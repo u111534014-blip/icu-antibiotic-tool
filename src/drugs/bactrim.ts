@@ -667,8 +667,8 @@ export const bactrim: Drug = {
         heading: "抗菌譜重點",
         body:
           "【涵蓋】\n" +
-          "• MRSA（PO 口服首選之一！）\n" +
-          "• Stenotrophomonas maltophilia（首選！）\n" +
+          "• MRSA（PO 口服首選之一）\n" +
+          "• Stenotrophomonas maltophilia（傳統常用藥；IDSA 2026 對 invasive infection 將 TMP-SMX 定位為 combination alternative，cefiderocol monotherapy 為 preferred）\n" +
           "• Elizabethkingia spp.（少數有效藥物之一）\n" +
           "• Nocardia spp.\n" +
           "• Pneumocystis jirovecii（PJP）\n" +

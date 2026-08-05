@@ -397,7 +397,7 @@ export const tazocin: Drug = {
         body:
           "【涵蓋】\n" +
           "• Pseudomonas aeruginosa（首選 anti-pseudomonal β-lactam 之一）\n" +
-          "• ESBL-producing Enterobacterales（部分，但 carbapenem 仍為首選）\n" +
+          "• ESBL-producing Enterobacterales：若藥敏可用，可作 pyelonephritis/cUTI 替代；IDSA 2026 不建議用於 ESBL bacteremia 或尿路外感染\n" +
           "• Anaerobes（含 B. fragilis）\n" +
           "• Streptococci / MSSA\n" +
           "• Enterococcus faecalis（非 VRE）\n\n" +

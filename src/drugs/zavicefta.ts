@@ -249,9 +249,9 @@ export const zavicefta: Drug = {
           "保留給有或有風險之高度抗藥 GNB：\n" +
           "• Carbapenem-resistant Enterobacterales (CRE)，特別是 KPC 型\n" +
           "• Pseudomonas aeruginosa with difficult-to-treat resistance (DTR-PsA)\n" +
-          "• MBL-producing Enterobacterales（需合併 aztreonam，見下）\n" +
-          "• MDR Stenotrophomonas maltophilia（需合併 aztreonam）\n\n" +
-          "⚠️ 對 MBL（NDM、VIM、IMP 型）的 CRE 單獨無效 → 必須合併 aztreonam\n" +
+          "• MBL-producing Enterobacterales：若 aztreonam/avibactam 不可得，可用 ceftazidime/avibactam + aztreonam\n" +
+          "• MDR Stenotrophomonas maltophilia：若 aztreonam/avibactam 不可得，ceftazidime/avibactam + aztreonam 是替代選擇之一\n\n" +
+          "⚠️ 對 MBL（NDM、VIM、IMP 型）的 CRE 單獨無效 → 需合併 aztreonam\n" +
           "（Avibactam 保護 aztreonam 不被 serine β-lactamases 破壞 → synergy）",
       },
       {
@@ -276,7 +276,7 @@ export const zavicefta: Drug = {
           "【涵蓋】\n" +
           "• Enterobacterales（含 KPC-producing CRE、ESBL）\n" +
           "• Pseudomonas aeruginosa（含 DTR-PsA）\n" +
-          "• S. maltophilia（MDR，需合併 aztreonam）\n\n" +
+          "• S. maltophilia（MDR，需合併 aztreonam；通常作替代而非首選）\n\n" +
           "【不涵蓋】\n" +
           "• MBL-producing organisms（NDM、VIM、IMP）→ 單獨無效，需合併 aztreonam\n" +
           "• MRSA\n" +

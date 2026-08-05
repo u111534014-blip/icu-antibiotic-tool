@@ -469,7 +469,7 @@ export const cefepime: Drug = {
           "• 能避免部分 chromosomal β-lactamases 破壞\n" +
           "• 體外活性涵蓋：MSSA、Neisseria spp.、H. influenzae、廣泛 GNB（含 Pseudomonas aeruginosa）\n" +
           "• 抗 MSSA 活性比三代 cephalosporin 強\n" +
-          "• ESBL-producing GNB：高劑量（2 g Q8H）可能有效，但首選仍是 carbapenem\n" +
+          "• ESBL-producing Enterobacterales：IDSA 2026 不建議用於 pyelonephritis/cUTI 或尿路外感染；若經驗治療單純膀胱炎已改善，通常不需延長或改藥\n" +
           "• 替代藥物，用於抗藥菌基因型",
       },
       {
@@ -485,7 +485,7 @@ export const cefepime: Drug = {
           "• MRSA\n" +
           "• Enterococcus\n" +
           "• Anaerobes（需合併 metronidazole）\n" +
-          "• ESBL（高劑量可能有效但不首選 → 用 carbapenem）\n" +
+          "• ESBL（IDSA 2026：pyelonephritis/cUTI 與尿路外感染避免使用；單純膀胱炎若已改善可不必延長療程）\n" +
           "• Acinetobacter（大部分抗藥）\n" +
           "• Stenotrophomonas maltophilia",
       },

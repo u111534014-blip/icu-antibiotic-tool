@@ -1,4 +1,4 @@
-export type TbSectionId = "diagnosis" | "active" | "monitoring" | "drugs" | "ltbi" | "special";
+export type TbSectionId = "diagnosis" | "active" | "monitoring" | "extrapulmonary" | "drugs" | "ltbi" | "special";
 
 export type TbKeyPoint = {
   title: string;
@@ -74,9 +74,10 @@ export const tbSections: { id: TbSectionId; label: string; short: string }[] = [
   { id: "diagnosis", label: "診斷流程", short: "疑似 TB" },
   { id: "active", label: "活動性 TB 治療", short: "HRZE" },
   { id: "monitoring", label: "監測與副作用", short: "第五章" },
+  { id: "extrapulmonary", label: "肺外結核", short: "第七章" },
   { id: "drugs", label: "藥物速查", short: "劑量" },
   { id: "ltbi", label: "LTBI", short: "預防治療" },
-  { id: "special", label: "特殊族群", short: "HIV/兒童/抗藥" },
+  { id: "special", label: "特殊族群", short: "HIV/兒童/MDR" },
 ];
 
 export const diagnosisCards: TbKeyPoint[] = [
@@ -802,9 +803,9 @@ export const ltbiPrinciples: TbKeyPoint[] = [
 export const specialPopulationCards: TbKeyPoint[] = [
   {
     title: "HIV 感染者",
-    body: "需特別處理 rifamycin 與抗病毒藥物交互作用；RFB 常作為 RMP 替代選項，詳細搭配需參考第 9 章表格。",
-    bullets: ["TB 與 HIV 治療時序、IRIS、LTBI 治療均需個別化。", "建議與感染科/結核病專家共同評估。"],
-    source: "第 9 章、表 9-1、表 9-2",
+    body: "HIV 合併 TB 時，診斷、抗結核療程、ART 開始時機、rifamycin 交互作用與 IRIS 都需要一起評估。",
+    bullets: ["CD4 越低越容易同時有肺外結核或散播性結核。", "建議與感染科/HIV 個管與 TB 團隊共同管理。", "詳細整理見下方 HIV 合併 TB 小節。"],
+    source: "第 9 章",
   },
   {
     title: "兒童 TB",
@@ -813,15 +814,226 @@ export const specialPopulationCards: TbKeyPoint[] = [
     source: "第 8 章、第 13 章、第 10 章 10.3.2",
   },
   {
-    title: "肺外結核",
-    body: "肺外 TB 治療期間依部位不同；中樞神經、骨關節等情境常需較長療程。",
-    source: "第 7 章、表 7-1",
-  },
-  {
     title: "MDR/RR-TB",
     body: "建議與專家諮詢會診；處方涉及 FQ、bedaquiline、linezolid 等核心藥物，應由抗藥性 TB 團隊管理。",
     bullets: ["RMP 抗藥通常依 MDR-TB 治療處方思考。", "MDR-TB 接觸者 LTBI 治療需轉 TMTC 或約定院所評估。"],
     source: "第 12 章、第 10 章表 10-3",
+  },
+];
+
+export const hivTbCards: TbKeyPoint[] = [
+  {
+    title: "臨床表現與診斷",
+    body: "HIV 感染者發生 TB 時，表現與 CD4 數值有關；CD4 越低，越常見肺外結核、散播性結核或非典型影像。",
+    bullets: [
+      "常見症狀：咳嗽超過 2-3 週、發燒、有痰、體重減輕；相較非 HIV 感染者，咳血較少，體重減輕與不明原因發燒較常見。",
+      "CD4 低時，CXR 可能以下葉浸潤、縱膈腔淋巴結腫大為主，典型上葉空洞/纖維化反而較不常見。",
+      "臨床懷疑 TB 時，仍應做至少 3 次痰塗片與培養，並加做 NAAT；若有肋膜積液、淋巴結腫大等肺外表現，盡量取組織做病理與培養。",
+      "HIV 晚期較容易有結核菌血症，可考慮利用黴菌培養試管做結核菌血液培養；疑似 disseminated TB 可考慮血液快速分子檢測。",
+    ],
+    source: "第 9 章 9.2",
+  },
+  {
+    title: "抗結核療程",
+    body: "HIV 感染者 TB 治療藥物原則與非 HIV 感染者相同，仍以含 RMP 或 RFB 的處方為主，但治療期程常需延長。",
+    bullets: [
+      "若結核菌並非 MDR-TB，指引建議 HIV 感染者發生 TB 時抗結核療程為 9 個月。",
+      "神經系統 TB 則建議抗結核療程 12 個月。",
+      "若已接受 ART 6 個月以上但 HIV viral load 仍可測得，需儘快確認遵囑性與 HIV 抗藥基因突變，並選擇能與抗結核藥併用的有效 ART。",
+    ],
+    source: "第 9 章 9.3.2、9.7",
+  },
+  {
+    title: "IRIS 判斷與處理",
+    body: "TB-IRIS 是加入 ART 後常見的早期併發症，診斷前需先排除服藥不規則、其他感染、腫瘤、藥物過敏與抗藥 TB。",
+    bullets: [
+      "Paradoxical TB-IRIS：ART 前已診斷活動性 TB，抗 TB 治療後原本改善，加入 ART 一週或更久後 TB 相關症狀反而加劇。",
+      "常見表現：發燒、淋巴結腫大、新的或惡化的影像變化；典型約在 ART 後 1-4 週發生，可持續 2-3 個月或更久。",
+      "危險因子：CD4 <100 cells/uL、較高 HIV viral load、瀰漫性/肺外結核、抗 TB 與 ART 開始間隔較短。",
+      "多數可自行緩解；嚴重時可考慮類固醇。CD4 <100 且近期開始 ART 的高風險者，排除 Kaposi sarcoma 與活動性 HBV 後，可考慮預防性類固醇，但需審慎評估副作用。",
+    ],
+    source: "第 9 章 9.5",
+  },
+  {
+    title: "LTBI in HIV",
+    body: "WHO 建議 HIV 感染者不論 CD4 高低、是否已使用 ART，都應接受 LTBI 預防性治療；懷孕不應成為排除 LTBI 治療的理由。",
+    bullets: [
+      "TST 硬結 >=5 mm、IGRA 陽性，或 IGRA 不確定且排除活動性 TB 後，建議治療 LTBI。",
+      "若 CD4 <200 且初次 TST/IGRA 陰性，接受 ART 後 CD4 回升至 >200 時，建議再驗一次。",
+      "3HP 或 1HP 相較 9H 有較高完治率；但 RPT 與 ART 交互作用需逐項核對。",
+      "若無法使用 rifamycin 類，2023 年起可使用 6H；病毒量控制不佳或免疫不全者，可考慮較長的 9H。",
+    ],
+    source: "第 9 章 9.6、第 10 章",
+  },
+];
+
+export const hivTbTables: TbSimpleTable[] = [
+  {
+    title: "HIV 合併 TB：ART 開始時機",
+    source: "第 9 章 9.4",
+    columns: ["情境", "ART 建議時機", "臨床提醒"],
+    rows: [
+      ["CD4 <50 cells/uL，且非 TB meningitis", "抗結核藥開始後 2 週內", "研究顯示可降低死亡率；需密切監測副作用與 IRIS。"],
+      ["CD4 >50 cells/uL，但體質耗弱、貧血、營養不佳或 disseminated TB", "抗結核藥開始後 2-4 週", "先觀察抗結核藥副作用，再加入 ART；仍需避免延誤。"],
+      ["CD4 >=50 cells/uL，營養與身體狀況不差", "可考慮 2-4 週；若延後，最好不超過 8-12 週", "較晚開始 ART 可降低初期 IRIS 風險，但需平衡 HIV 進展與 TB 死亡風險。"],
+      ["已在使用 ART 後才診斷 TB", "通常同時投予抗結核藥與 ART", "需核對 ART 與 rifamycin 交互作用，並追蹤 viral load。"],
+      ["HIV 合併 TB meningitis", "抗結核藥開始後 2-8 週再加 ART", "為減少嚴重副作用與 CNS 不良反應；CD4 <50 時可在嚴密監測下考慮第 2 週加入。"],
+    ],
+  },
+  {
+    title: "HIV 合併 TB：常見 ART 與 rifamycin 搭配",
+    source: "第 9 章表 9-1、表 9-2",
+    columns: ["抗結核藥", "可考慮 ART", "調整/避免", "監測"],
+    rows: [
+      [
+        "RMP + INH + EMB + PZA",
+        "ABC/3TC/DTG + 額外 DTG 50 mg；TDF/FTC + DTG 50 mg BID；TDF/FTC 或 ABC/3TC + RAL 800 mg BID。",
+        "DTG 通常由 50 mg QD 改 50 mg BID；RAL 由 400 mg BID 改 800 mg BID。BIC、RPV、DOR、EVG/c、boosted PI 通常不建議與 RMP 併用。",
+        "HIV viral load、LFT、TB 治療反應；rifamycin 停用後記得回調 ART 劑量。",
+      ],
+      [
+        "RFB 300 mg QD + INH + EMB + PZA",
+        "ABC/3TC/DTG；TDF/FTC + DTG 50 mg QD；TDF/FTC 或 ABC/3TC + RAL 400 mg BID。",
+        "DTG/RAL 併 RFB 通常不需調整。若需 boosted PI，RMP 應改 RFB；但 DRV/c + RFB 不建議同時使用。",
+        "RFB 相關 CBC、皮疹、uveitis；ART viral load。",
+      ],
+      [
+        "3HP (weekly RPT/INH) for LTBI",
+        "可與部分 NRTI backbone + DTG 50 mg QD、RAL 400 mg BID 或 EFV 600 mg 併用；台灣觀察資料顯示穩定 BIC/DTG-based ART 併 3HP 後多可維持病毒控制。",
+        "RPV、DOR、ETR、EVG/c、boosted PI 不建議與 RPT 併用；仍需依完整交互作用資料庫核對。",
+        "HIV viral load；RPT hypersensitivity、肝毒性；LTBI 完治率。",
+      ],
+      [
+        "1HP (daily RPT/INH) for LTBI",
+        "EFV-based ART 有較多資料；1HP + double-dose DTG 可考慮。台灣資料顯示穩定 BIC/DTG-based ART 併 1HP 後多可維持病毒控制。",
+        "Daily RPT 誘導效應較強；BIC 濃度會下降，雖台灣觀察資料未見明顯病毒失敗，仍建議謹慎選案與追蹤。",
+        "HIV viral load 治療中與治療後 6-12 個月；皮疹/過敏與肝毒性。",
+      ],
+    ],
+    notes: [
+      "表格是第 9 章的臨床速查整理；實際處方仍需依 HIV 抗藥史、目前 ART、可取得藥品與完整交互作用資料庫核對。",
+      "若 HIV viral load 控制不佳或曾有 ART failure，選 ART 前需考慮 HIV 抗藥檢測。",
+    ],
+  },
+];
+
+export const extrapulmonaryTbCards: TbKeyPoint[] = [
+  {
+    title: "診斷原則",
+    body: "肺外結核較難診斷，因病灶較少見、部位不易取得、病灶菌量較少；主要仍以細菌學證據為核心，病理與影像可作為臨床診斷依據。",
+    bullets: [
+      "盡量收集病灶檢體：肋膜液、腹水、心包膜液、淋巴腺組織、尿、CSF、血、膿汁等，送 AFB stain、mycobacterial culture，並可加做 NAAT。",
+      "切片組織除了病理，也應送 AFB stain 與 mycobacterial culture；培養陽性須做鑑定與藥敏。",
+      "肺外結核常合併肺結核，診斷時一定要照 CXR；CXR 異常或有呼吸道症狀時要積極驗痰。",
+    ],
+    source: "第 7 章前言",
+  },
+  {
+    title: "NAAT 在肺外結核的用法",
+    body: "指引不反對肺外檢體做 NAAT；其高特異性有助於提早確診與治療，但陰性不能排除肺外結核。",
+    bullets: [
+      "肋膜積液 NAAT 敏感性約 50.9%，特異性約 99.2%。",
+      "CSF NAAT 敏感性約 71.1%，特異性約 98%。",
+      "因此 NAAT 陽性很有幫助；NAAT 陰性仍需看培養、病理、影像與臨床判斷。",
+    ],
+    source: "第 7 章 7.10",
+  },
+  {
+    title: "治療總原則",
+    body: "肺外結核治療基本上與肺結核相同，差別主要在療程是否延長。",
+    bullets: [
+      "通常使用 2 個月 INH + RMP + PZA + EMB，之後改 INH + RMP。",
+      "本指引建議：結核性腦膜炎 12-18 個月、骨結核 9-12 個月，其餘肺外結核同肺結核或 6-9 個月。",
+      "早期有加用 2 個月 PZA 者可採 6 個月療程；若無法使用 PZA，療程為 9 個月；主治醫師可視臨床狀況延長。",
+    ],
+    source: "第 7 章 7.9、表 7-1",
+  },
+  {
+    title: "類固醇與外科處置",
+    body: "第 7 章明確提到結核性腦膜炎與心包膜炎的類固醇角色，也列出需外科處置的情境。",
+    bullets: [
+      "結核性腦膜炎：表 7-1 強烈建議類固醇，早期使用可降低死亡率。",
+      "結核性心包膜炎：表 7-1 為部分建議類固醇；HIV 或惡性腫瘤風險需個別評估。",
+      "外科手術常見目的：取得切片、窄縮性心包膜炎、脊椎結核造成脊髓壓迫；結核性膿胸需合併外科引流與抗結核藥物。",
+    ],
+    source: "第 7 章 7.9、表 7-1",
+  },
+];
+
+export const extrapulmonaryTbTables: TbSimpleTable[] = [
+  {
+    title: "肺外結核部位別診斷速查",
+    source: "第 7 章 7.1-7.8",
+    columns: ["部位", "常見表現/診斷線索", "建議檢體與檢查", "特別提醒"],
+    rows: [
+      [
+        "粟粒性結核",
+        "發燒、體重減輕、夜間盜汗、食慾不振、疲倦；CXR 可見粟粒性小點，也可有肺上葉浸潤、空洞、肋膜或心包膜積水。",
+        "依受侵犯器官取檢體；懷疑時最好做 CSF 檢查以確認有無腦膜炎。",
+        "常侵犯多器官，死亡率高；延遲診斷、延遲治療或合併腦膜炎是高死亡率主因。",
+      ],
+      [
+        "結核性淋巴腺炎",
+        "無痛性淋巴結腫大，常見下頸部；晚期可融合、皮膚紅腫、破出形成廔管。",
+        "淋巴腺切除或切片做病理、AFB stain、mycobacterial culture，必要時 NAAT。",
+        "曾有報告高達 70% 合併肺部結核病變，需照 CXR 並依症狀驗痰。",
+      ],
+      [
+        "結核性肋膜炎",
+        "發燒、胸痛；大量肋膜液可呼吸困難。大量菌侵犯可形成結核性膿胸。",
+        "胸腔穿刺取肋膜液鑑別診斷、NAAT；肋膜切片可取得病理或細菌學證據；若 CXR 有肺實質病變可送痰。",
+        "肋膜液 NAAT 陰性不能排除；結核性膿胸需合併外科引流。",
+      ],
+      [
+        "生殖泌尿道結核",
+        "排尿疼痛、血尿、頻尿、腰痛；女性可下腹痛、月經不順、不孕；男性可無痛性陰囊腫塊。",
+        "尿液 AFB stain、mycobacterial culture，可加 NAAT；組織病理切片。",
+        "尿化膿但一般細菌培養陰性時要懷疑；尿液檢查多有白血球/紅血球增加。",
+      ],
+      [
+        "骨結核",
+        "最常見疼痛，偶有關節腫大；脊椎結核延遲診斷可造成嚴重且不可逆神經損傷。",
+        "X 光可見骨腐蝕、無新骨形成、冷膿瘍；CT/MRI 敏感度較高；骨/關節膜/關節液送 AFB stain、culture、NAAT。",
+        "脊椎結核若化療失敗、脊髓壓迫或脊柱不穩，需評估手術。",
+      ],
+      [
+        "中樞神經系統結核",
+        "頭痛、神智不清、頸部僵硬；可有腦膜增厚、腦梗塞、水腦症或結核瘤。",
+        "有腦膜炎病徵時抽 CSF；若疑腦壓上升，LP 前先做腦部 CT；CSF 可做 NAAT、AFB stain、culture。",
+        "死亡率高；治療需延長，並強烈建議類固醇。",
+      ],
+      [
+        "腹部結核",
+        "可侵犯腹膜或腹部器官；腸結核常在 terminal ileum/cecum，造成腹痛與腸阻塞；腹膜炎可腹痛、腹脹、腹水、發燒、體重減輕。",
+        "腹水檢查常難確診；常需腹腔鏡切片；糞便 mycobacterial culture 也是診斷方式之一。",
+        "不易與闌尾炎、腸腫瘤或其他腹部感染區分；多數病人 CXR 可有肺結核變化。",
+      ],
+      [
+        "結核性心包膜炎",
+        "發燒、體重減輕、夜間盜汗；呼吸困難、咳嗽、端坐呼吸、水腫、胸痛；可有 cardiac tamponade 或 constrictive pericarditis。",
+        "心包膜穿刺取心包液或心包膜切片，以取得細菌學或病理證據。",
+        "部分建議類固醇；嚴重窄縮性心包膜炎需評估外科處置。",
+      ],
+    ],
+  },
+  {
+    title: "表 7-1 肺外結核治療期間",
+    source: "第 7 章表 7-1",
+    columns: ["部位", "治療期間", "類固醇", "備註"],
+    rows: [
+      ["粟粒性結核", "6-9 個月", "-", "早期有加用 2 個月 PZA 可採 6 個月；無法使用 PZA 則療程 9 個月。"],
+      ["結核性淋巴腺炎", "6-9 個月", "-", "研究顯示 6 個月治療可與 9 個月相當；仍可依臨床狀況延長。"],
+      ["結核性肋膜炎", "6-9 個月", "-", "類固醇可加速症狀與積液消退，但對殘餘肋膜肥厚無助益；膿胸需引流。"],
+      ["生殖泌尿道結核", "6-9 個月", "-", "尿液或組織檢體取得細菌學/病理證據。"],
+      ["骨結核", "9-12 個月", "-", "脊椎結核若化療失敗、脊髓壓迫或脊柱不穩需評估手術。"],
+      ["中樞神經系統結核", "12-18 個月", "強烈建議", "早期使用類固醇可降低死亡率；治療評估需追蹤神經學與影像。"],
+      ["腹部結核", "6-9 個月", "-", "常需腹腔鏡或手術切片協助確診。"],
+      ["結核性心包膜炎", "6-9 個月", "部分建議", "類固醇需依 HIV、惡性腫瘤風險與臨床嚴重度個別評估。"],
+    ],
+    notes: [
+      "肺外結核藥物組合原則同肺結核：通常 2HRZE 後接 HR。",
+      "表 7-1 註記：主治醫師亦可視病人的臨床狀況延長治療。",
+    ],
   },
 ];
 

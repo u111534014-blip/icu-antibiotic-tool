@@ -7,6 +7,10 @@ import {
   adverseReactionRules,
   diagnosisCards,
   drugResistantTbTables,
+  extrapulmonaryTbCards,
+  extrapulmonaryTbTables,
+  hivTbCards,
+  hivTbTables,
   ltbiDoseTables,
   ltbiPrinciples,
   ltbiRegimens,
@@ -500,6 +504,16 @@ function LtbiView() {
   );
 }
 
+function ExtrapulmonaryView() {
+  return (
+    <div>
+      <SectionHeader title="肺外結核" subtitle="第七章整理：診斷檢體、NAAT 限制、部位別表現與治療期間。" />
+      {extrapulmonaryTbCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      {extrapulmonaryTbTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
+    </div>
+  );
+}
+
 function SimpleTableCard({ table }: { table: TbSimpleTable }) {
   return (
     <section style={S.card}>
@@ -535,8 +549,11 @@ function SimpleTableCard({ table }: { table: TbSimpleTable }) {
 function SpecialView() {
   return (
     <div>
-      <SectionHeader title="特殊族群與抗藥性 TB" subtitle="包含第 12 章 MDR/RR-TB 表格與特殊族群入口。" />
+      <SectionHeader title="特殊族群與抗藥性 TB" subtitle="HIV、兒童、重大交互作用與 MDR/RR-TB 入口。" />
       {specialPopulationCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>HIV 合併 TB</div>
+      {hivTbCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      {hivTbTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <div style={S.subhead}>Rifamycin 重大交互作用</div>
       {rifamycinInteractionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <div style={S.subhead}>第 12 章抗藥性 TB 表格</div>
@@ -549,6 +566,7 @@ function CurrentView({ active }: { active: TbSectionId }) {
   if (active === "diagnosis") return <DiagnosisView />;
   if (active === "active") return <ActiveTbView />;
   if (active === "monitoring") return <MonitoringView />;
+  if (active === "extrapulmonary") return <ExtrapulmonaryView />;
   if (active === "drugs") return <DrugsView />;
   if (active === "ltbi") return <LtbiView />;
   return <SpecialView />;

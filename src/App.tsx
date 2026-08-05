@@ -12,6 +12,7 @@ import DepakineTDM from './DepakineTDM';
 import AidsGuideline from './AidsGuideline';
 import SepticShock from './SepticShock';
 import InsulinTool from './InsulinTool';
+import HeparinTool from './HeparinTool';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -615,7 +616,7 @@ function PrepQuickRef() {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const viewportWidth = useViewportWidth();
   const [drugId, setDrugId] = useState("");
@@ -767,7 +768,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM"].includes(page);
+  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -825,6 +826,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "insulinTool" ? S.menuItemActive : {}) }}>
                 🩸 血糖 / Insulin 調整
               </button>
+              <button onClick={() => { setPage("heparinTool"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "heparinTool" ? S.menuItemActive : {}) }}>
+                🧷 Heparin 抗凝血工具
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -850,6 +855,8 @@ export default function App() {
           <SepticShock />
         ) : page === "insulinTool" ? (
           <InsulinTool />
+        ) : page === "heparinTool" ? (
+          <HeparinTool />
         ) : page === "prepRef" ? (
           <PrepQuickRef />
         ) : (

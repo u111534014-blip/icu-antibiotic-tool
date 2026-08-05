@@ -176,7 +176,11 @@ export default function AmikacinTDM() {
       weightNote: adjBw
         ? `TBW ≥125% IBW，使用 AdjBW ${adjBw} kg`
         : weight
-          ? `使用 TBW ${round1(weight)} kg`
+          ? ibw && weight < ibw
+            ? `TBW < IBW，使用實際體重 ${round1(weight)} kg`
+            : ibw
+              ? `TBW <125% IBW，使用實際體重 ${round1(weight)} kg`
+              : `使用 TBW ${round1(weight)} kg`
           : "尚未輸入體重",
     };
   }, [age, directCrCl, height, scr, sex, tbw, useDirectCrCl]);
@@ -189,8 +193,8 @@ export default function AmikacinTDM() {
       const dose = roundDose(15 * dw);
       return {
         title: "IDSA 2026 AMR GNB AUC 方案",
-        dose: `${dose} mg x1；後續依 AUC / trough 調整`,
-        detail: "cUTI multi-dose 目標 AUC0-24 200-300 mg*h/L。單次 uUTI dose 通常不需 TDM。",
+        dose: `15 mg/kg = ${dose} mg x1；後續依 AUC / trough 調整`,
+        detail: "IDSA 2026 dosing table 僅列 uUTI/cUTI；cUTI multi-dose 目標 AUC0-24 200-300 mg*h/L。單次 uUTI dose 通常不需 TDM。",
       };
     }
 
@@ -198,7 +202,7 @@ export default function AmikacinTDM() {
       const dose = roundDose(15 * dw);
       return {
         title: nomogramType === "hartford" ? "Stanford Hartford nomogram" : "Stanford Urban/Craig nomogram",
-        dose: `${dose} mg ${intervalByCrCl(nomogramType, patient.crcl)}（15 mg/kg）`,
+        dose: `15 mg/kg = ${dose} mg ${intervalByCrCl(nomogramType, patient.crcl)}`,
         detail: "首劑後 8-12 小時抽 random level；amikacin 需先轉換濃度再對照 nomogram。",
       };
     }
@@ -536,6 +540,7 @@ function ClinicalReference() {
           <h3 style={S.refHeading}>IDSA 2026 AMR GNB</h3>
           <p>Main guidance Table 1 建議 amikacin：uUTI 15 mg/kg IV x1；cUTI 15 mg/kg IV once，後續劑量與間隔依 pharmacokinetic evaluation 調整。Supplemental material 則補充 multi-dose TDM 目標 AUC0-24 200-300 mg*h/L。</p>
           <p>若 AUC 監測不可行，較次選但可接受的方式是 peak ≥40 mcg/mL 且 trough &lt;5 mcg/mL，或使用 nomogram。若療程預期 &lt;72 小時或 TDM 資源有限，可把 trough &lt;5 mcg/mL 當主要安全目標。</p>
+          <p>UTI 以外：IDSA 2026 沒有提供 systemic amikacin 用於肺炎的建議劑量或 AUC 目標。DTR Pseudomonas 肺炎段落偏好 newer β-lactam（如 ceftolozane/tazobactam）；nebulized amikacin/aminoglycoside 也不建議 routine 使用，只有在沒有可用 newer β-lactam 且 systemic therapy 反應不佳時才可能 selective adjunctive use。</p>
 
           <h3 style={S.refHeading}>Stanford nomogram</h3>
           <p>Amikacin extended-interval 常用 15 mg/kg。Hartford nomogram 將 amikacin random level 除以 2 後畫圖；Urban/Craig 則除以 3。兩者皆建議首劑後 8-12 小時抽 random level。</p>
@@ -544,7 +549,8 @@ function ClinicalReference() {
           <p>2020 ATS/ERS/ESCMID/IDSA NTM guideline 提到 amikacin 或 streptomycin 治療期間，可考慮 TDM 以降低耳毒性與腎毒性風險。Stanford guide 對 NTM 常用 10-15 mg/kg Q24H 或 10-25 mg/kg TIW；年齡 &gt;50 歲常用 10 mg/kg，max 500 mg/dose。</p>
 
           <h3 style={S.refHeading}>體重與監測</h3>
-          <p>IDSA 2026 supplemental material 建議 TBW ≥125% IBW 時使用 adjusted body weight。監測包含 SCr、尿量、聽力、耳鳴、眩暈/平衡感與其他 nephrotoxin。</p>
+          <p>Amikacin 屬 aminoglycoside，偏水溶性，脂肪組織分布有限，但不是直接用 IBW 算所有病人。體重規則：若 TBW &lt; IBW，用實際體重；若 TBW 未達 125% IBW，用實際體重；若 TBW ≥125% IBW，IDSA 2026 supplemental material 與 Stanford guide 建議用 adjusted body weight。</p>
+          <p>AdjBW = IBW + 0.4 × (TBW - IBW)。監測包含 SCr、尿量、聽力、耳鳴、眩暈/平衡感與其他 nephrotoxin。</p>
         </div>
       )}
     </div>
@@ -559,7 +565,7 @@ function MonitoringMethodGuide() {
         <MethodTile
           title="AUC"
           badge="IDSA 2026 preferred"
-          body="適合 AMR GNB 的 cUTI 多劑治療，且院內能及時抽兩點濃度、回報並調整劑量時。目標 AUC0-24 200-300 mg*h/L。"
+          body="適合 AMR GNB 的 cUTI 多劑治療，且院內能及時抽兩點濃度、回報並調整劑量時。目標 AUC0-24 200-300 mg*h/L；IDSA 2026 未提供肺炎的 systemic amikacin AUC dosing 建議。"
         />
         <MethodTile
           title="Nomogram"
@@ -569,7 +575,7 @@ function MonitoringMethodGuide() {
         <MethodTile
           title="Peak / trough"
           badge="個別化"
-          body="適合 traditional dosing、腎功能不穩、CrCl 低、RRT、特殊族群，或需要用 peak 目標調整療效、trough 目標控制毒性的病人。"
+          body="適合 traditional dosing、腎功能不穩、CrCl 低、RRT、特殊族群，或肺炎等 UTI 以外情境需要用 peak 目標調整療效、trough 目標控制毒性的病人。"
         />
         <MethodTile
           title="Trough only"

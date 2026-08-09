@@ -7,6 +7,10 @@ const STOCK_UNITS_PER_ML = 5000;
 type Indication = "vte" | "acs" | "bridge" | "lowIntensity";
 type Monitor = "antiXa" | "aptt" | "act";
 type ProtamineWindow = "2" | "3";
+type PccInr = "2to39" | "4to6" | "gt6";
+type XaAgent = "apixaban" | "rivaroxaban" | "edoxaban" | "enoxaparin" | "unknown";
+type XaTiming = "lt8" | "ge8" | "unknown";
+type ToolTab = "heparin" | "transition" | "reversal" | "reference";
 
 function n(value: string): number {
   return parseFloat(value) || 0;
@@ -98,25 +102,25 @@ const DOAC_ROWS = [
   {
     drug: "Apixaban",
     regimen: "10 mg PO BID x 7 days，之後 5 mg PO BID；完成至少 6 個月後若需 extended prevention，可考慮 2.5 mg PO BID。",
-    overlap: "不需要先用 heparin/LMWH。若正在 run UFH，停 heparin 後即可開始 apixaban。",
+    overlap: "不需 overlap。LMWH：下一次原本該給 LMWH 的時間開始；UFH infusion：停 infusion 後開始。",
     caveat: "若前面已先用 UFH 數天，lead-in 7 天是否折抵需依院內/醫師判斷；嚴重腎功能差、APS、吸收問題或極端體重需個別評估。",
   },
   {
     drug: "Rivaroxaban",
     regimen: "15 mg PO BID x 21 days with food，之後 20 mg PO QD with food；完成至少 6 個月後若需 extended prevention，可考慮 10 mg PO QD。",
-    overlap: "不需要先用 heparin/LMWH。若正在 run UFH，停 heparin 後即可開始 rivaroxaban。",
-    caveat: "VTE 治療不可把 AF 劑量 15 mg QD 拿來替代；CrCl <30 mL/min、APS、吸收問題或極端體重需個別評估。",
+    overlap: "不需 overlap。LMWH：下一次原本該給 LMWH 前 0-2 hr 開始；UFH infusion：停 infusion 同時開始。",
+    caveat: "若前面已先用 UFH/LMWH 數天，lead-in 21 天是否折抵需依院內/醫師判斷；CrCl <30 mL/min、APS、吸收問題或極端體重需個別評估。",
   },
   {
     drug: "Dabigatran",
     regimen: "先 UFH/LMWH/fondaparinux 至少 5 days，之後 150 mg PO BID。",
-    overlap: "完成 parenteral anticoagulation 後停 heparin，再開始 dabigatran；不需同時 overlap。",
+    overlap: "不需 overlap。LMWH：下一次原本該給 LMWH 前 0-2 hr 開始；UFH infusion：停 infusion 時開始。",
     caveat: "CrCl <30 mL/min 通常避免；P-gp inhibitor、GI bleeding risk 或吞嚥/吸收問題需注意。",
   },
   {
     drug: "Edoxaban",
-    regimen: "先 UFH/LMWH/fondaparinux 至少 5 days，之後 60 mg PO QD；CrCl 15-50 mL/min、體重 <=60 kg 或特定 P-gp inhibitor 時 30 mg PO QD。",
-    overlap: "完成 parenteral anticoagulation 後停 heparin，再開始 edoxaban；不需同時 overlap。",
+    regimen: "先 UFH/LMWH/fondaparinux 至少 5 days，之後 60 mg PO QD；CrCl 15-50 mL/min、體重 <=60 kg 或特定 P-gp inhibitor 任一條件符合時 30 mg PO QD。",
+    overlap: "不需 overlap。LMWH：下一次原本該給 LMWH 的時間開始；UFH infusion → edoxaban：依 US Savaysa label 為停 infusion 4 hr 後開始。",
     caveat: "CrCl <15 mL/min 通常避免；劑量下降條件要逐項確認。",
   },
   {
@@ -124,6 +128,63 @@ const DOAC_ROWS = [
     regimen: "與 UFH/LMWH 同時開始；常見 VTE 目標 INR 2-3。",
     overlap: "Heparin overlap 至少 5 days，且 INR therapeutic 後才停 heparin。",
     caveat: "Mechanical valve、APS、嚴重腎功能不全或 DOAC 不適合時常需考慮 warfarin。",
+  },
+];
+
+const WARFARIN_TO_DOAC_ROWS = [
+  { drug: "Apixaban", start: "Stop warfarin；INR <2.0 時開始 apixaban", note: "不需 overlap。" },
+  { drug: "Rivaroxaban", start: "Stop warfarin；INR <3.0 時開始 rivaroxaban", note: "避免 INR 降太低造成抗凝空窗。" },
+  { drug: "Dabigatran", start: "Stop warfarin；INR <2.0 時開始 dabigatran", note: "DVT/PE 治療需已完成至少 5 days parenteral anticoagulant。" },
+  { drug: "Edoxaban", start: "Stop warfarin；INR <=2.5 時開始 edoxaban", note: "DVT/PE 治療需已完成 5-10 days parenteral anticoagulant。" },
+];
+
+const DOAC_TO_WARFARIN_ROWS = [
+  {
+    drug: "Apixaban",
+    method: "常用方式：停 apixaban，在下一次原本該給 apixaban 的時間，同時開始 parenteral anticoagulant + warfarin；INR therapeutic 後停 parenteral anticoagulant。",
+    note: "Apixaban 會影響 INR，transition 期間 INR 不完全代表 warfarin effect。",
+  },
+  {
+    drug: "Rivaroxaban",
+    method: "常用方式：停 rivaroxaban，在下一次原本該給 rivaroxaban 的時間，同時開始 parenteral anticoagulant + warfarin；INR therapeutic 後停 parenteral anticoagulant。",
+    note: "Rivaroxaban 會影響 INR；停藥後約 24 hr 的 INR 較能反映 warfarin。",
+  },
+  {
+    drug: "Dabigatran",
+    method: "依 CrCl 決定 warfarin 開始時間：CrCl >50：停 dabigatran 前 3 days 開始 warfarin；CrCl 31-50：前 2 days；CrCl 15-30：前 1 day。",
+    note: "Dabigatran 會影響 INR；停 dabigatran 至少 2 days 後 INR 較能反映 warfarin。",
+  },
+  {
+    drug: "Edoxaban",
+    method: "可改成 parenteral anticoagulant + warfarin；或將 edoxaban 劑量減半並與 warfarin 併用，至少每週、且在下一次 edoxaban dose 前測 INR，INR >=2 後停 edoxaban。",
+    note: "實務上若病人高風險或腎功能差，常用 parenteral bridge 較直觀。",
+  },
+];
+
+const DOAC_RENAL_ROWS = [
+  {
+    drug: "Apixaban",
+    acute: "10 mg BID x 7 days，之後 5 mg BID",
+    renal: "VTE treatment 不因 renal impairment 單獨降成 2.5 mg BID；CrCl <15 或 dialysis 的 VTE outcome data 有限，需個別評估。",
+    extended: "完成至少 6 個月治療後，extended prevention 可 2.5 mg BID。",
+  },
+  {
+    drug: "Rivaroxaban",
+    acute: "15 mg BID x 21 days with food，之後 20 mg QD with food",
+    renal: "CrCl 15-30 exposure 增加但 VTE 劑量通常不降；需密切觀察出血。CrCl <15 或 dialysis 避免使用。",
+    extended: "完成至少 6 個月治療後，extended prevention 可 10 mg QD。",
+  },
+  {
+    drug: "Dabigatran",
+    acute: "先 parenteral anticoagulant 至少 5 days，之後 150 mg BID",
+    renal: "DVT/PE 治療通常 CrCl <=30 避免；CrCl <15 無建議。",
+    extended: "仍需依腎功能與出血風險評估，不常作為腎功能差病人的首選。",
+  },
+  {
+    drug: "Edoxaban",
+    acute: "先 parenteral anticoagulant 5-10 days，之後 60 mg QD",
+    renal: "CrCl 15-50、體重 <=60 kg、或特定 P-gp inhibitor 任一條件符合：30 mg QD；CrCl <15 避免。",
+    extended: "VTE 治療劑量依上述條件調整。",
   },
 ];
 
@@ -208,11 +269,40 @@ const MICU_PREP_ROWS = [
   { order: "Heparin 25ku in N/S 250 mL IVD as titration", concentration: "100 U/mL", note: "CV-Heparin pump / IABP 常見泡法" },
 ];
 
+const PCC_INR_OPTIONS: Record<PccInr, { label: string; dosePerKg: number; max: number }> = {
+  "2to39": { label: "INR 2.0-3.9", dosePerKg: 25, max: 2500 },
+  "4to6": { label: "INR 4.0-6.0", dosePerKg: 35, max: 3500 },
+  "gt6": { label: "INR >6.0", dosePerKg: 50, max: 5000 },
+};
+
+const XA_AGENT_LABELS: Record<XaAgent, string> = {
+  apixaban: "Apixaban",
+  rivaroxaban: "Rivaroxaban",
+  edoxaban: "Edoxaban",
+  enoxaparin: "Enoxaparin",
+  unknown: "Unknown Xa inhibitor",
+};
+
 function pumpRate(unitsPerHr: number, totalUnits: number, totalMl: number): number | null {
   if (!unitsPerHr || !totalUnits || !totalMl) return null;
   const concentration = totalUnits / totalMl;
   if (!concentration) return null;
   return round(unitsPerHr / concentration, 1);
+}
+
+function andexanetDose(agent: XaAgent, dose: number, timing: XaTiming): "low" | "high" {
+  if (agent === "unknown" || timing === "unknown") return "high";
+  if (timing === "ge8" && (agent === "apixaban" || agent === "rivaroxaban")) return "low";
+  if (agent === "apixaban") return dose > 0 && dose <= 5 ? "low" : "high";
+  if (agent === "rivaroxaban") return dose > 0 && dose <= 10 ? "low" : "high";
+  if (agent === "enoxaparin") return dose > 0 && dose <= 40 ? "low" : "high";
+  if (agent === "edoxaban") return dose > 0 && dose < 30 ? "low" : "high";
+  return "high";
+}
+
+function pccAlternativeDose(weight: number, dosePerKg = 50): number {
+  if (!weight) return 0;
+  return roundUnits(Math.min(weight, 100) * dosePerKg);
 }
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
@@ -335,7 +425,15 @@ export default function HeparinTool() {
   const [protamineWindow, setProtamineWindow] = useState<ProtamineWindow>("3");
   const [recentBolusUnits, setRecentBolusUnits] = useState("");
   const [manualInfusionUnitsHr, setManualInfusionUnitsHr] = useState("");
+  const [reversalWeight, setReversalWeight] = useState("");
+  const [pccInr, setPccInr] = useState<PccInr>("2to39");
+  const [fibrinogenLevel, setFibrinogenLevel] = useState("");
+  const [fibrinogenTarget, setFibrinogenTarget] = useState("1.5");
+  const [xaAgent, setXaAgent] = useState<XaAgent>("apixaban");
+  const [xaDose, setXaDose] = useState("");
+  const [xaTiming, setXaTiming] = useState<XaTiming>("lt8");
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<ToolTab>("heparin");
 
   const protocol = INDICATIONS[indication];
   const selectedAlgorithm = ALGORITHMS.find((item) => {
@@ -374,6 +472,52 @@ export default function HeparinTool() {
     };
   }, [dose.infusion, manualInfusionUnitsHr, protamineWindow, recentBolusUnits]);
 
+  const pcc = useMemo(() => {
+    const w = n(reversalWeight) || n(weight);
+    const option = PCC_INR_OPTIONS[pccInr];
+    const cappedWeight = Math.min(w, 100);
+    const units = roundUnits(Math.min(cappedWeight * option.dosePerKg, option.max));
+    return {
+      weight: w,
+      cappedWeight,
+      option,
+      units,
+      vials: units ? Math.ceil(units / 500) : 0,
+    };
+  }, [pccInr, reversalWeight, weight]);
+
+  const fibrinogen = useMemo(() => {
+    const w = n(reversalWeight) || n(weight);
+    const current = n(fibrinogenLevel);
+    const target = n(fibrinogenTarget);
+    const increase = Math.max(0, target - current);
+    const mgPerKg = increase ? increase / 0.017 : 0;
+    const grams = mgPerKg && w ? round((mgPerKg * w) / 1000, 1) : 0;
+    return {
+      weight: w,
+      current,
+      target,
+      increase: round(increase, 2),
+      mgPerKg: round(mgPerKg, 1),
+      grams,
+      vials: grams ? Math.ceil(grams) : 0,
+    };
+  }, [fibrinogenLevel, fibrinogenTarget, reversalWeight, weight]);
+
+  const andexanet = useMemo(() => {
+    const regimen = andexanetDose(xaAgent, n(xaDose), xaTiming);
+    const pcc50 = pccAlternativeDose(n(reversalWeight) || n(weight), 50);
+    return {
+      regimen,
+      bolus: regimen === "low" ? 400 : 800,
+      infusionRate: regimen === "low" ? 4 : 8,
+      infusionTotal: regimen === "low" ? 480 : 960,
+      total: regimen === "low" ? 880 : 1760,
+      pcc50,
+      pccVials: pcc50 ? Math.ceil(pcc50 / 500) : 0,
+    };
+  }, [reversalWeight, weight, xaAgent, xaDose, xaTiming]);
+
   const tdmNote = [
     "Heparin dosing note",
     `Indication: ${protocol.label}`,
@@ -396,10 +540,28 @@ export default function HeparinTool() {
   return (
     <div>
       <div style={S.header}>
-        <div style={S.title}>Heparin 抗凝血工具</div>
-        <div style={S.subtitle}>UFH bolus / infusion / pump rate、DVT/PE 轉藥、protamine reversal 速查</div>
+        <div style={S.title}>抗凝血 / 逆轉工具</div>
+        <div style={S.subtitle}>UFH pump、DVT/PE 轉藥、PCC / fibrinogen / DOAC reversal 速查</div>
       </div>
 
+      <div style={S.tabBar}>
+        {[
+          { id: "heparin", label: "Heparin" },
+          { id: "transition", label: "轉藥" },
+          { id: "reversal", label: "逆轉" },
+          { id: "reference", label: "參考" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as ToolTab)}
+            style={{ ...S.tabButton, ...(activeTab === tab.id ? S.tabButtonActive : {}) }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "heparin" && (<>
       <section style={S.section}>
         <div style={S.sectionTitle}>病人與適應症</div>
         <div style={S.grid2}>
@@ -650,7 +812,9 @@ export default function HeparinTool() {
           {copied ? "已複製" : "複製 Heparin Note"}
         </button>
       </section>
+      </>)}
 
+      {activeTab === "transition" && (<>
       <Accordion title="DVT / PE 轉口服抗凝血劑" defaultOpen>
         <div style={S.tableWrap}>
           <table style={S.table}>
@@ -678,6 +842,173 @@ export default function HeparinTool() {
           Apixaban / rivaroxaban 可直接作為 acute VTE 初始治療，不一定需要先用 heparin 或 LMWH；dabigatran / edoxaban 則需先完成至少 5 天 parenteral anticoagulation。
         </div>
       </Accordion>
+
+      <Accordion title="Warfarin 轉 DOAC" defaultOpen>
+        <div style={S.tableWrap}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={S.th}>DOAC</th>
+                <th style={S.th}>何時開始</th>
+                <th style={S.th}>注意</th>
+              </tr>
+            </thead>
+            <tbody>
+              {WARFARIN_TO_DOAC_ROWS.map((row) => (
+                <tr key={row.drug}>
+                  <td style={S.tdStrong}>{row.drug}</td>
+                  <td style={S.td}>{row.start}</td>
+                  <td style={S.td}>{row.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Accordion>
+
+      <Accordion title="DOAC 轉 Warfarin" defaultOpen>
+        <div style={S.tableWrap}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={S.th}>原本 DOAC</th>
+                <th style={S.th}>轉換方式</th>
+                <th style={S.th}>注意</th>
+              </tr>
+            </thead>
+            <tbody>
+              {DOAC_TO_WARFARIN_ROWS.map((row) => (
+                <tr key={row.drug}>
+                  <td style={S.tdStrong}>{row.drug}</td>
+                  <td style={S.td}>{row.method}</td>
+                  <td style={S.td}>{row.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={S.warning}>
+          DOAC 轉 warfarin 時最怕抗凝空窗。Apixaban/rivaroxaban 會干擾 INR，單看 transition 期間 INR 容易誤判；高血栓風險病人通常要有 parenteral anticoagulant cover。
+        </div>
+      </Accordion>
+
+      <Accordion title="DOAC 的 VTE 劑量與腎功能" defaultOpen>
+        <div style={S.tableWrap}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={S.th}>DOAC</th>
+                <th style={S.th}>急性 DVT/PE 治療</th>
+                <th style={S.th}>腎功能重點</th>
+                <th style={S.th}>Extended prevention</th>
+              </tr>
+            </thead>
+            <tbody>
+              {DOAC_RENAL_ROWS.map((row) => (
+                <tr key={row.drug}>
+                  <td style={S.tdStrong}>{row.drug}</td>
+                  <td style={S.td}>{row.acute}</td>
+                  <td style={S.td}>{row.renal}</td>
+                  <td style={S.td}>{row.extended}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Accordion>
+      </>)}
+
+      {activeTab === "reversal" && (<>
+      <section style={S.section}>
+        <div style={S.sectionTitle}>抗凝血逆轉 / Hemostatic agents</div>
+        <div style={S.productBox}>
+          院內品項：Beriplex P/N 500、Haemocomplettan P 1 g、Idarucizumab。Andexanet 目前院內沒有，但保留劑量速查；若無 andexanet，Xa inhibitor life-threatening bleeding 常見替代為 4F-PCC 25-50 units/kg，需依醫師與院內流程。
+        </div>
+
+        <div style={S.subsectionTitle}>Warfarin / VKA major bleeding：Beriplex P/N + Vitamin K</div>
+        <div style={S.grid2}>
+          <Field label="體重">
+            <NumberInput value={reversalWeight} onChange={setReversalWeight} suffix="kg" placeholder={weight || ""} />
+          </Field>
+          <Field label="INR">
+            <select value={pccInr} onChange={(e) => setPccInr(e.target.value as PccInr)} style={S.select}>
+              {Object.entries(PCC_INR_OPTIONS).map(([id, item]) => (
+                <option key={id} value={id}>{item.label}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div style={S.resultCard}>
+          <div style={S.cardTitle}>Beriplex 估算</div>
+          <ResultRow label="Dose" value={pcc.units ? `${pcc.option.dosePerKg} units/kg（以 Factor IX units 計）` : "請輸入體重"} />
+          <ResultRow label="建議總量" value={pcc.units ? `${pcc.units} units（體重計算上限 100 kg；max ${pcc.option.max} units）` : "請輸入體重"} highlight />
+          <ResultRow label="約需瓶數" value={pcc.units ? `約 ${pcc.vials} 瓶 Beriplex P/N 500` : "請輸入體重"} highlight />
+          <ResultRow label="合併處置" value="Major/life-threatening bleeding 需同時給 Vitamin K 5-10 mg slow IV；PCC 作用快，但 Vitamin K 才能維持後續凝血因子生成。" />
+        </div>
+        <div style={S.warning}>
+          Beriplex 每瓶標示為 500 IU，但各凝血因子實際 potency 有範圍，請依瓶身/批號確認。PCC 有血栓風險，通常只用於 major 或 life-threatening bleeding、critical site bleeding 或 urgent surgery/procedure。
+        </div>
+
+        <div style={S.subsectionTitle}>Dabigatran：Idarucizumab</div>
+        <div style={S.resultCard}>
+          <div style={S.cardTitle}>院內可用：Idarucizumab</div>
+          <ResultRow label="適用情境" value="Dabigatran 使用者需要緊急手術/urgent procedure，或 life-threatening / uncontrolled bleeding。" />
+          <ResultRow label="Dose" value="5 g IV = 2.5 g/50 mL x 2 vials，兩瓶連續給予" highlight />
+          <ResultRow label="監測" value="可參考 thrombin time、dilute thrombin time、ECT、aPTT 與臨床止血；12-24 hr 可能 rebound，若再出血或需第二次 procedure，需重新評估。" />
+        </div>
+
+        <div style={S.subsectionTitle}>Factor Xa inhibitor：Andexanet / PCC 替代</div>
+        <div style={S.grid2}>
+          <Field label="藥物">
+            <select value={xaAgent} onChange={(e) => setXaAgent(e.target.value as XaAgent)} style={S.select}>
+              {Object.entries(XA_AGENT_LABELS).map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="最後一次劑量">
+            <NumberInput value={xaDose} onChange={setXaDose} suffix="mg" />
+          </Field>
+          <Field label="距離最後一次給藥">
+            <select value={xaTiming} onChange={(e) => setXaTiming(e.target.value as XaTiming)} style={S.select}>
+              <option value="lt8">&lt;8 hr</option>
+              <option value="ge8">≥8 hr</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </Field>
+        </div>
+        <div style={S.resultCard}>
+          <div style={S.cardTitle}>Andexanet alfa 速查（院內目前無）</div>
+          <ResultRow label="Regimen" value={andexanet.regimen === "low" ? "Low dose" : "High dose"} highlight />
+          <ResultRow label="Bolus" value={`${andexanet.bolus} mg IV bolus（30 mg/min）`} />
+          <ResultRow label="Infusion" value={`${andexanet.infusionRate} mg/min x 120 min（infusion total ${andexanet.infusionTotal} mg；total ${andexanet.total} mg）`} />
+          <ResultRow label="若無 Andexanet" value={andexanet.pcc50 ? `可考慮 4F-PCC 50 units/kg：${andexanet.pcc50} units，約 ${andexanet.pccVials} 瓶 Beriplex P/N 500（需醫師評估）` : "輸入體重後可估 4F-PCC 50 units/kg"} highlight />
+        </div>
+        <div style={S.infoNote}>
+          Andexanet 主要用於 apixaban/rivaroxaban 相關 life-threatening 或 uncontrolled bleeding；edoxaban/enoxaparin 的劑量表多來自研究/仿單延伸。若只是不嚴重出血，多數情境先 hold anticoagulant、局部止血與支持治療，不一定需要 reversal agent。
+        </div>
+
+        <div style={S.subsectionTitle}>低 fibrinogen / 大出血：Haemocomplettan P</div>
+        <div style={S.grid2}>
+          <Field label="目前 fibrinogen">
+            <NumberInput value={fibrinogenLevel} onChange={setFibrinogenLevel} suffix="g/L" />
+          </Field>
+          <Field label="目標 fibrinogen">
+            <NumberInput value={fibrinogenTarget} onChange={setFibrinogenTarget} suffix="g/L" />
+          </Field>
+        </div>
+        <div style={S.resultCard}>
+          <div style={S.cardTitle}>Haemocomplettan P 估算</div>
+          <ResultRow label="院內規格" value="Haemocomplettan P 1 g/Vial" />
+          <ResultRow label="需提升" value={fibrinogen.current ? `${fibrinogen.increase} g/L` : "請輸入目前 fibrinogen"} />
+          <ResultRow label="估算劑量" value={fibrinogen.grams ? `${fibrinogen.grams} g（${fibrinogen.mgPerKg} mg/kg）` : "輸入體重、目前值與目標值後估算"} highlight />
+          <ResultRow label="約需瓶數" value={fibrinogen.vials ? `約 ${fibrinogen.vials} 瓶` : "尚無法估算"} highlight />
+          <ResultRow label="經驗起始" value="重大出血且 fibrinogen ≤1.5 g/L 時，常見初始 fibrinogen concentrate 3-4 g，之後依 fibrinogen / VEM 與臨床止血重評。" />
+        </div>
+        <div style={S.warning}>
+          Haemocomplettan 公式採 dose (mg/kg) = [target - measured fibrinogen (g/L)] / 0.017。實際仍需依出血位置、VEM/TEG、輸血策略與後續 fibrinogen 濃度調整。
+        </div>
+      </section>
 
       <section style={S.section}>
         <div style={S.sectionTitle}>Protamine 逆轉 UFH</div>
@@ -712,22 +1043,35 @@ export default function HeparinTool() {
           Protamine 1 mg 約中和 UFH 100 units；因 UFH 半衰期短，通常只計算過去 2-3 小時內的 heparin。若是 life-threatening bleeding，請同步處理出血來源、輸血/凝血因子與醫師評估。
         </div>
       </section>
+      </>)}
 
-      <Accordion title="臨床參考">
+      {activeTab === "reference" && (<>
+      <section style={S.section}>
+        <div style={S.sectionTitle}>臨床參考</div>
+        <div style={S.referenceBody}>
         <h3 style={S.refHeading}>監測</h3>
         <p>Baseline 建議看 CBC/platelet、PT/INR、aPTT、SCr、肝功能、出血史與是否併用 antiplatelet/NSAID/其他抗凝血藥。UFH 開始後約 6 小時抽 anti-Xa 或 aPTT；每次調整後約 6 小時再抽。</p>
         <p>anti-Xa 常見 therapeutic range：standard intensity 0.3-0.7 IU/mL；low intensity 0.3-0.5 IU/mL。若使用 aPTT，目標應由院內 reagent/coagulometer 校正到 anti-Xa 0.3-0.7 IU/mL；若院內未建立，可暫以約 control 1.5-2.5 倍作粗略參考，但不建議用固定秒數硬判讀。</p>
         <p>不同試劑差異可能很大，文獻中 anti-Xa 0.3 IU/mL 對應的 aPTT 可落在約 48-108 秒。因此若 aPTT 與臨床狀況不一致，或病人有 lupus anticoagulant、factor deficiency、DIC、嚴重發炎、肝病等干擾，建議優先改用 anti-Xa 判讀。</p>
 
-        <h3 style={S.refHeading}>HIT</h3>
-        <p>UFH 使用第 5-10 天若 platelet 下降、出現新血栓或皮膚壞死，需考慮 HIT。可用 4Ts score 初步評估；若中高機率，應停 heparin 並改非 heparin anticoagulant。</p>
+        <h3 style={S.refHeading}>逆轉劑使用原則</h3>
+        <p>逆轉劑通常保留給 life-threatening bleeding、critical site bleeding、持續 major bleeding，或不能延後的 urgent surgery/procedure。非重大出血多先 hold anticoagulant、局部止血、補充輸液/血品並處理出血來源。</p>
+        <p>Warfarin / VKA major bleeding：優先使用 4-factor PCC（院內 Beriplex P/N）合併 Vitamin K slow IV；PCC 起效快，但仍需 Vitamin K 維持後續凝血因子生成。使用後需追蹤 INR 與血栓風險。</p>
+        <p>UFH 相關嚴重出血：protamine 依過去 2-3 小時 heparin 暴露量估算，常用 1 mg protamine 中和 UFH 100 units，slow IV 給藥並留意 hypotension、bradycardia 與 anaphylactoid reaction。</p>
+        <p>Dabigatran：特異性逆轉劑為 idarucizumab 5 g IV。Factor Xa inhibitors（apixaban / rivaroxaban 等）：若有 andexanet alfa 可作為特異性逆轉；若無，重大出血常以 4F-PCC 25-50 units/kg 作替代選項，需依醫師與院內流程評估。</p>
+        <p>大量出血合併低 fibrinogen 時，可考慮 fibrinogen concentrate（院內 Haemocomplettan P）或其他血品策略；給藥後應回頭追蹤 fibrinogen、凝血數據與臨床止血狀況。</p>
+
+        <h3 style={S.refHeading}>Heparin-induced thrombocytopenia（HIT，肝素誘發性血小板低下）</h3>
+        <p>UFH 使用第 5-10 天若 platelet 下降、出現新血栓或皮膚壞死，需考慮 heparin-induced thrombocytopenia（HIT）。可用 4Ts score 初步評估；若中高機率，應停 heparin 並改非 heparin anticoagulant。</p>
 
         <h3 style={S.refHeading}>ACS 與 PCI</h3>
         <p>ACS 起始常見 UFH 60 units/kg bolus（max 4000 units）後 12 units/kg/hr（max 1000 units/hr）。PCI 期間多依 ACT 與 cath lab protocol 調整，app 只提供初始治療參考。</p>
 
         <h3 style={S.refHeading}>VTE 療程</h3>
         <p>急性 DVT/PE 通常至少治療 3 個月。若是暫時危險因子造成，常以 3 個月為主；若 unprovoked、active cancer、APS 或持續危險因子，需評估延長治療與出血風險。</p>
-      </Accordion>
+        </div>
+      </section>
+      </>)}
     </div>
   );
 }
@@ -736,6 +1080,9 @@ const S: Record<string, CSSProperties> = {
   header: { textAlign: "center", padding: "16px 0 24px" },
   title: { fontSize: 26, fontWeight: 800, color: "#0F172A", letterSpacing: 0 },
   subtitle: { fontSize: 14, color: "#64748B", marginTop: 4, lineHeight: 1.5 },
+  tabBar: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, background: "#E2E8F0", padding: 4, borderRadius: 12, marginBottom: 16 },
+  tabButton: { border: "none", borderRadius: 9, background: "transparent", color: "#475569", padding: "10px 6px", fontSize: 13, fontWeight: 900, cursor: "pointer" },
+  tabButtonActive: { background: "#FFFFFF", color: "#0F766E", boxShadow: "0 1px 3px rgba(15,23,42,0.12)" },
   section: { background: "#fff", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", boxSizing: "border-box", overflow: "hidden" },
   sectionTitle: { fontSize: 13, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0, marginBottom: 14 },
   subsectionTitle: { fontSize: 14, fontWeight: 900, color: "#0F172A", margin: "18px 0 10px" },
@@ -764,6 +1111,7 @@ const S: Record<string, CSSProperties> = {
   copyBtn: { width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 10, border: "none", background: ACCENT, color: "#fff", fontWeight: 800, cursor: "pointer" },
   accordionBtn: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", border: "none", background: "transparent", padding: 0, fontSize: 16, color: "#0F172A", fontWeight: 800, cursor: "pointer" },
   accordionBody: { marginTop: 12, color: "#334155", fontSize: 13, lineHeight: 1.65 },
+  referenceBody: { color: "#334155", fontSize: 13, lineHeight: 1.65 },
   bulletList: { margin: "0 0 0 18px", padding: 0, color: "#334155", fontSize: 13, lineHeight: 1.65 },
   bulletItem: { marginBottom: 4 },
   algorithmGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 },

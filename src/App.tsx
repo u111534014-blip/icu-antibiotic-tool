@@ -828,7 +828,7 @@ export default function App() {
               </button>
               <button onClick={() => { setPage("heparinTool"); setMenuOpen(false); }}
                 style={{ ...S.menuItem, ...(page === "heparinTool" ? S.menuItemActive : {}) }}>
-                🧷 Heparin 抗凝血工具
+                🧷 抗凝血 / 逆轉工具
               </button>
             </div>
           )}

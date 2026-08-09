@@ -5,10 +5,19 @@ const ACCENT = "#0D9488";
 const KCL_MEQ_PER_AMP = 20;
 const KCL_ML_PER_AMP = 10;
 const KCL_MEQ_PER_ML = 2;
+const MGSO4_G_PER_ML = 0.1;
+const MGSO4_G_PER_AMP = 2;
+const MGSO4_ML_PER_AMP = 20;
+const MGSO4_MEQ_PER_AMP = 16.2;
+const MG_MGDL_PER_MMOLL = 2.43;
+const MGSO4_MMOL_PER_G = 4.06;
+const MGSO4_MEQ_PER_G = MGSO4_MEQ_PER_AMP / MGSO4_G_PER_AMP;
 
 type KAccess = "peripheral" | "central" | "crrt";
 type RenalRisk = "normal" | "impaired" | "oliguria" | "crrt";
 type KSeverity = "mild" | "moderate" | "severe" | "critical" | "none";
+type MgUnit = "mgdl" | "mmoll";
+type MgSeverity = "none" | "mild" | "moderate" | "severe";
 
 function n(value: string) {
   return parseFloat(value) || 0;
@@ -48,12 +57,35 @@ function severityFromK(k: number): KSeverity {
   return "none";
 }
 
+function severityFromMg(mgDl: number): MgSeverity {
+  if (!mgDl) return "none";
+  if (mgDl < 1.2) return "severe";
+  if (mgDl < 1.6) return "moderate";
+  if (mgDl < 1.8) return "mild";
+  return "none";
+}
+
+function baseMgDose(mgDl: number, symptoms: boolean, torsades: boolean, refractoryK: boolean) {
+  if (torsades) return 2;
+  if (symptoms || mgDl < 1.2) return 4;
+  if (mgDl < 1.6) return 2;
+  if (mgDl < 1.8) return refractoryK ? 2 : 1;
+  return refractoryK ? 1 : 0;
+}
+
 const severityText: Record<KSeverity, string> = {
   none: "目前未達低血鉀範圍",
   mild: "Mild hypokalemia",
   moderate: "Moderate hypokalemia",
   severe: "Severe hypokalemia",
   critical: "Critical hypokalemia",
+};
+
+const mgSeverityText: Record<MgSeverity, string> = {
+  none: "未達低血鎂或未輸入",
+  mild: "Mild hypomagnesemia",
+  moderate: "Moderate hypomagnesemia",
+  severe: "Severe hypomagnesemia",
 };
 
 const renalText: Record<RenalRisk, string> = {
@@ -108,6 +140,15 @@ export default function ElectrolyteTool() {
   const [crrtBaseK, setCrrtBaseK] = useState("0");
   const [crrtTargetFluidK, setCrrtTargetFluidK] = useState("4");
   const [crrtFluidRate, setCrrtFluidRate] = useState("2000");
+  const [serumMg, setSerumMg] = useState("1.5");
+  const [targetMg, setTargetMg] = useState("2.0");
+  const [mgUnit, setMgUnit] = useState<MgUnit>("mgdl");
+  const [mgRenalRisk, setMgRenalRisk] = useState<RenalRisk>("normal");
+  const [mgSymptoms, setMgSymptoms] = useState(false);
+  const [mgTorsades, setMgTorsades] = useState(false);
+  const [mgCustomDose, setMgCustomDose] = useState("");
+  const [mgDiluentVolume, setMgDiluentVolume] = useState("100");
+  const [mgInfusionHours, setMgInfusionHours] = useState("1");
 
   const calc = useMemo(() => {
     const k = n(currentK);
@@ -176,6 +217,37 @@ export default function ElectrolyteTool() {
     return "CVVH 調鉀請依 replacement fluid 總量計算；KCl 原汁只可加入 CVVH solution 並充分混合，不可直接 IV push。";
   }, [calc.dose, access]);
 
+  const mgCalc = useMemo(() => {
+    const enteredMg = n(serumMg);
+    const enteredTarget = n(targetMg);
+    const mgDl = mgUnit === "mmoll" ? enteredMg * MG_MGDL_PER_MMOLL : enteredMg;
+    const targetMgDl = mgUnit === "mmoll" ? enteredTarget * MG_MGDL_PER_MMOLL : enteredTarget;
+    const targetGap = enteredMg && targetMgDl > mgDl ? targetMgDl - mgDl : 0;
+    const severity = severityFromMg(mgDl);
+    const rawDose = baseMgDose(mgDl, mgSymptoms, mgTorsades, magLow);
+    const renalAdjustedDose = (mgRenalRisk === "impaired" || mgRenalRisk === "oliguria") && rawDose > 0
+      ? Math.max(1, rawDose / 2)
+      : rawDose;
+    const custom = n(mgCustomDose);
+    const doseG = custom || renalAdjustedDose;
+    const stockMl = doseG / MGSO4_G_PER_ML;
+    const ampules = doseG / MGSO4_G_PER_AMP;
+    const mmol = doseG * MGSO4_MMOL_PER_G;
+    const meq = doseG * MGSO4_MEQ_PER_G;
+    const volume = n(mgDiluentVolume);
+    const hours = n(mgInfusionHours);
+    const concentration = volume > 0 ? doseG / volume : 0;
+    const rateGhr = hours > 0 ? doseG / hours : 0;
+    const pumpRate = volume > 0 && hours > 0 ? volume / hours : 0;
+    const usualRate = mgTorsades ? "1-2 g over 5-15 min，之後再依 Mg/K/ECG 慢速補足" : "一般 IV 補鎂常用 1-2 g/hr；非緊急大量補鎂可 4-8 g over 12-24 hr。";
+    const overRate = !mgTorsades && rateGhr > 2;
+    const highConcentration = concentration > 0.1;
+    return {
+      enteredMg, enteredTarget, mgDl, targetMgDl, targetGap, severity, rawDose, renalAdjustedDose, custom, doseG, stockMl, ampules,
+      mmol, meq, volume, hours, concentration, rateGhr, pumpRate, usualRate, overRate, highConcentration,
+    };
+  }, [serumMg, targetMg, mgUnit, mgRenalRisk, mgSymptoms, mgTorsades, mgCustomDose, mgDiluentVolume, mgInfusionHours, magLow]);
+
   return (
     <div>
       <header style={S.header}>
@@ -199,6 +271,14 @@ export default function ElectrolyteTool() {
           <div style={S.productBox}>
             <strong>KCl 10 mEq 瓶 500 mL</strong>
             <span>KCl 0.149% in 0.9% NaCl 500 mL；商業配方，約 0.02 mEq/mL，輸液量較大。</span>
+          </div>
+          <div style={S.productBox}>
+            <strong>MgSO4 針【紅標】10% 20 mL</strong>
+            <span>2 g/amp；16.2 mEq Mg/amp；10% = 0.1 g/mL。常用於 IV 補鎂。</span>
+          </div>
+          <div style={S.productBox}>
+            <strong>MgSO4 瓶 10% 200 mL/Bot</strong>
+            <span>20 g/bottle；較少見於一般補鎂醫囑，需依院內流程確認用途。</span>
           </div>
         </div>
       </section>
@@ -369,6 +449,116 @@ export default function ElectrolyteTool() {
           )}
         </section>
       </div>
+
+      <section style={S.section}>
+        <div style={S.sectionTitle}>MgSO4 補鎂速查</div>
+        <div style={S.layoutGrid}>
+          <div>
+            <div style={S.grid2}>
+              <Field label="目前 Mg">
+                <input value={serumMg} onChange={(e) => setSerumMg(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+              <Field label="目標 Mg" hint="只作參考目標；補鎂劑量仍以濃度分級、症狀與腎功能決定。">
+                <input value={targetMg} onChange={(e) => setTargetMg(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+              <Field label="Mg 單位">
+                <select value={mgUnit} onChange={(e) => setMgUnit(e.target.value as MgUnit)} style={S.select}>
+                  <option value="mgdl">mg/dL</option>
+                  <option value="mmoll">mmol/L</option>
+                </select>
+              </Field>
+              <Field label="腎功能 / 尿量">
+                <select value={mgRenalRisk} onChange={(e) => setMgRenalRisk(e.target.value as RenalRisk)} style={S.select}>
+                  {Object.entries(renalText).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </Field>
+              <Field label="自訂 MgSO4 劑量" hint="留空則依 Mg 值與症狀粗估。">
+                <input value={mgCustomDose} onChange={(e) => setMgCustomDose(e.target.value)} inputMode="decimal" placeholder={`${mgCalc.renalAdjustedDose || 0}`} style={S.input} />
+              </Field>
+            </div>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={mgSymptoms} onChange={(e) => setMgSymptoms(e.target.checked)} />
+              <span>有症狀：arrhythmia、tetany、seizure、明顯 neuromuscular irritability</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={mgTorsades} onChange={(e) => setMgTorsades(e.target.checked)} />
+              <span>Torsades / severe arrhythmia 急救情境</span>
+            </label>
+
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>補鎂估算</div>
+              <ResultRow label="換算 Mg" value={mgCalc.enteredMg ? `${round(mgCalc.mgDl, 2)} mg/dL` : "請輸入 Mg"} />
+              <ResultRow label="低血鎂分級" value={mgSeverityText[mgCalc.severity]} highlight={mgCalc.severity !== "none"} />
+              <ResultRow
+                label="本次建議補充量"
+                value={mgCalc.doseG ? `MgSO4 ${mgCalc.doseG} g` : "可觀察、口服補充，或依低血鉀/臨床情境評估"}
+                note={mgRenalRisk === "impaired" || mgRenalRisk === "oliguria" ? "腎功能差或少尿時先保守減量，並追蹤 Mg、K、Ca、DTR/呼吸與血壓。" : "需同時評估 K、Ca、腎功能、症狀與持續流失原因。"}
+                highlight
+              />
+              {mgCalc.doseG > 0 && (
+                <div style={S.sourceNote}>
+                  {mgCalc.custom > 0
+                    ? `目前使用自訂 MgSO4 ${mgCalc.custom} g，會覆蓋分級建議。`
+                    : (mgRenalRisk === "impaired" || mgRenalRisk === "oliguria")
+                      ? `原始建議 MgSO4 ${mgCalc.rawDose} g；因腎功能/尿量風險，先保守調整為 ${mgCalc.renalAdjustedDose} g。`
+                      : `依目前 Mg 值與症狀，粗估 MgSO4 ${mgCalc.renalAdjustedDose} g。`}
+                </div>
+              )}
+              <div style={S.formulaBox}>
+                <div style={S.formulaHeader}>
+                  <span style={S.formulaTitle}>補鎂算法依據</span>
+                  <span style={S.formulaBadge}>serum Mg guided</span>
+                </div>
+                <div style={S.formulaLine}>
+                  <span>目標 Mg</span>
+                  <strong>{mgCalc.enteredTarget ? `${round(mgCalc.targetMgDl, 2)} mg/dL` : "常用 1.8-2.0 mg/dL"}</strong>
+                </div>
+                <div style={S.formulaLine}>
+                  <span>距離目標</span>
+                  <strong>{mgCalc.targetGap ? `約差 ${round(mgCalc.targetGap, 2)} mg/dL` : "已達目標或未輸入"}</strong>
+                </div>
+                <div style={S.formulaHint}>Mg 多在細胞內與骨骼中，血清 Mg 不像 K 那樣能用簡單 deficit 公式換算總缺口；本工具以目前 Mg 分級、症狀、torsades 與腎功能決定本次先補多少。</div>
+                <div style={S.doseScale}>
+                  <div style={S.scaleRow}><span>Mg 1.6-1.7</span><strong>1 g</strong></div>
+                  <div style={S.scaleRow}><span>Mg 1.2-1.5</span><strong>2 g</strong></div>
+                  <div style={S.scaleRow}><span>Mg &lt;1.2 或有症狀</span><strong>4 g</strong></div>
+                  <div style={S.scaleRow}><span>Torsades</span><strong>1-2 g stat</strong></div>
+                </div>
+                <div style={S.formulaHint}>若合併 refractory hypokalemia，即使 Mg 只是低正常或輕度偏低，也可考慮先補 1-2 g；腎功能差或少尿時通常先保守減量並提早複查。</div>
+              </div>
+              <ResultRow label="院內 10% MgSO4 原液量" value={mgCalc.doseG ? `${round(mgCalc.stockMl)} mL，約 ${round(mgCalc.ampules, 1)} amp` : "-"} note="10% MgSO4：0.1 g/mL；紅標 20 mL = 2 g/amp = 16.2 mEq Mg/amp。" />
+              <ResultRow label="mmol / mEq 換算" value={mgCalc.doseG ? `約 ${round(mgCalc.mmol)} mmol Mg，${round(mgCalc.meq, 1)} mEq Mg` : "-"} note="依院內標示：MgSO4 2 g/amp = 16.2 mEq Mg；1 g 約 8.1 mEq Mg。" />
+            </div>
+          </div>
+
+          <div>
+            <div style={S.grid2}>
+              <Field label="預計稀釋體積" hint="例如 50-100 mL NS/D5W；依院內流程。">
+                <input value={mgDiluentVolume} onChange={(e) => setMgDiluentVolume(e.target.value)} inputMode="numeric" style={S.input} />
+              </Field>
+              <Field label="預計輸注時間" hint="小時；急救情境可用分鐘換算成小數。">
+                <input value={mgInfusionHours} onChange={(e) => setMgInfusionHours(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+            </div>
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>泡製 / 流速檢查</div>
+              <ResultRow label="常用速率" value={mgCalc.usualRate} highlight />
+              <ResultRow label="目前速率" value={mgCalc.hours ? `${round(mgCalc.rateGhr, 2)} g/hr` : "請輸入輸注時間"} note="非急救情境通常避免太快，以免 flushing、低血壓。" highlight={mgCalc.overRate} />
+              <ResultRow label="濃度" value={mgCalc.volume ? `${round(mgCalc.concentration, 3)} g/mL` : "請輸入稀釋體積"} note="周邊 IV 建議不要太濃；10% MgSO4 原液為 0.1 g/mL。" highlight={mgCalc.highConcentration} />
+              <ResultRow label="Pump rate" value={mgCalc.volume && mgCalc.hours ? `${round(mgCalc.pumpRate)} mL/hr` : "請輸入體積與時間"} />
+            </div>
+            {(mgCalc.overRate || mgCalc.highConcentration || mgTorsades || mgSymptoms || mgRenalRisk !== "normal") && (
+              <div style={S.warning}>
+                {mgCalc.overRate && <p>目前 MgSO4 速率高於一般非急救補鎂常用速率；若不是 torsades/seizure 等急救情境，建議放慢或拆次。</p>}
+                {mgCalc.highConcentration && <p>目前濃度偏高；周邊 IV 建議增加稀釋體積或依院內高警訊藥品流程。</p>}
+                {mgTorsades && <p>Torsades/severe arrhythmia 可先 MgSO4 1-2 g 快速給予，之後仍需追蹤 Mg/K/Ca 與 ECG，並處理誘因。</p>}
+                {mgSymptoms && <p>有症狀低血鎂需 ECG/血壓監測，並同步矯正 K、Ca。</p>}
+                {mgRenalRisk !== "normal" && <p>腎功能差、少尿或 CRRT 中，Mg 可能累積或被 CRRT 清除，請依趨勢調整並提早複查。</p>}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <section style={S.section}>
         <div style={S.sectionTitle}>常用速查</div>

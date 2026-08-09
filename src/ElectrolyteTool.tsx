@@ -145,7 +145,7 @@ export default function ElectrolyteTool() {
     }
     if (access === "crrt") {
       maxRate = 10;
-      concentrationGuide = "若是加到 CRRT/CVVH replacement 或 dialysate，屬於調整機器液體濃度，不是直接 IV 給病人。";
+      concentrationGuide = "若是加到 CVVH solution / replacement fluid，屬於調整機器液體濃度，不是直接 IV 給病人。";
     }
     const overRate = rateMeqHr > maxRate && access !== "crrt";
     const overPeripheralConc = access === "peripheral" && concentration > 0.1;
@@ -153,7 +153,7 @@ export default function ElectrolyteTool() {
     const suggestedRate = access === "central" ? 20 : 10;
     const suggestedHours = suggestedRate > 0 && prepDose > 0 ? prepDose / suggestedRate : 0;
     const suggestedText = access === "crrt"
-      ? "CVVH/CRRT 是調整 replacement/dialysate 濃度，請依機器處方，不用一般 IV 補鉀速率判讀。"
+      ? "CVVH 是調整 replacement fluid 濃度，請依 CVVH replacement order，不用一般 IV 補鉀速率判讀。"
       : `${suggestedRate} mEq/hr → 約 ${round(suggestedHours, 1)} hr${access === "central" && urgent ? "；若嚴重低血鉀且需更快，須 ICU/中心靜脈/連續 ECG monitoring 及醫囑確認。" : ""}`;
 
     return {
@@ -173,7 +173,7 @@ export default function ElectrolyteTool() {
       const bags = Math.ceil(calc.dose / 20);
       return `可拆成 ${bags} 袋：每袋 KCl 20 mEq 加入 NS 100 mL，常見 run 1 hr/袋；需心電監測與醫囑確認。`;
     }
-    return "CVVH/CRRT 調鉀請依機器處方與 replacement/dialysate 總量計算；KCl 原汁只可加入透析/置換液並充分混合，不可直接 IV push。";
+    return "CVVH 調鉀請依 replacement fluid 總量計算；KCl 原汁只可加入 CVVH solution 並充分混合，不可直接 IV push。";
   }, [calc.dose, access]);
 
   return (
@@ -304,7 +304,7 @@ export default function ElectrolyteTool() {
                   <span>If serum K &gt;= 4.5 mEq/L</span>
                   <strong>不加 KCl</strong>
                 </div>
-                <div style={S.protocolHint}>醫囑頻率：Q8H PRN。此處的「每袋」請依實際 CVVH solution bag；截圖顯示 Prismasol B0 Solution 用於 CRRT。</div>
+                <div style={S.protocolHint}>醫囑頻率：Q8H PRN。套餐中的 Prismasol B0 Solution 15000 mL 可視為 3 袋 5000 mL；KCl 30 mL 剛好是三袋各加 20 mEq。</div>
               </div>
               <div style={S.resultCard}>
                 <ResultRow
@@ -313,18 +313,28 @@ export default function ElectrolyteTool() {
                   note="此為院內 CVVH KCl supplement：K <4.5 每袋加 20 mEq；K >=4.5 不加。"
                   highlight
                 />
+                <ResultRow
+                  label="若開 Prismasol B0 15000 mL"
+                  value={calc.k && calc.k < 4.5 ? "KCl 30 mL（60 mEq = 3 amp）加入 15000 mL；等於每 5000 mL 加 20 mEq" : calc.k >= 4.5 ? "不加 KCl" : "請輸入目前 K"}
+                  note="依提供的院內套餐換算；實際仍依當次醫囑與護理/CRRT流程。"
+                />
+                <ResultRow
+                  label="Prismasol B0 / B4 怎麼看"
+                  value="B0 是 0K solution；B4 是 4K solution。若同時接在不同 replacement line，病人看到的 K 暴露會取決於各自流速比例；若只是擇一使用，就不應把兩者濃度相加。"
+                  note="套餐同時列品項不一定代表每位病人兩種都同時跑，需看實際機器設定與醫囑。"
+                />
               </div>
               <div style={S.grid2}>
-                <Field label="每袋液體體積" hint="常見 5000 mL，請依實際 replacement/dialysate bag。">
+                <Field label="每袋液體體積" hint="Prismasol 常見 5000 mL；若用 B0 15000 mL 套餐，可視為 3 袋。">
                   <input value={crrtBagVolume} onChange={(e) => setCrrtBagVolume(e.target.value)} inputMode="numeric" style={S.input} />
                 </Field>
                 <Field label="原液 K 濃度" hint="看袋身標示，常見 0、2、4 mEq/L。">
                   <input value={crrtBaseK} onChange={(e) => setCrrtBaseK(e.target.value)} inputMode="decimal" style={S.input} />
                 </Field>
-                <Field label="目標液體 K 濃度" hint="這是 CRRT 液體濃度，不是血清 K 目標。">
+                <Field label="目標液體 K 濃度" hint="這是 CVVH solution 濃度，不是血清 K 目標。">
                   <input value={crrtTargetFluidK} onChange={(e) => setCrrtTargetFluidK(e.target.value)} inputMode="decimal" style={S.input} />
                 </Field>
-                <Field label="機器液體流速" hint="replacement + dialysate；用來估這袋約跑多久。">
+                <Field label="CVVH replacement flow" hint="對應套餐的 replacement order，例如 2000、2500、3000 mL/hr。">
                   <input value={crrtFluidRate} onChange={(e) => setCrrtFluidRate(e.target.value)} inputMode="numeric" style={S.input} />
                 </Field>
               </div>
@@ -334,7 +344,7 @@ export default function ElectrolyteTool() {
                 <ResultRow label="這袋約可跑多久" value={calc.crrtBagHours ? `約 ${round(calc.crrtBagHours, 1)} hr` : "請輸入液體流速"} note={calc.crrtExtraMeqHr ? `相較原液，等於額外提供約 ${calc.crrtExtraMeqHr} mEq/hr 的 K。` : "若原液 K 已達目標，沒有額外補鉀量。"} />
               </div>
               <div style={S.warning}>
-                KCl 加入 CVVH/CRRT 液體後要充分混合並清楚標示。這是調整機器液體濃度，不是把 KCl 直接給病人；若血清 K 快速變化、少尿/無尿或有 arrhythmia risk，需依醫囑提早複查。
+                KCl 加入 CVVH solution 後要充分混合並清楚標示。這是調整 replacement fluid 濃度，不是把 KCl 直接給病人；若血清 K 快速變化、少尿/無尿或有 arrhythmia risk，需依醫囑提早複查。
               </div>
             </div>
           )}
@@ -354,7 +364,7 @@ export default function ElectrolyteTool() {
               {calc.overRate && <p>目前設定的 mEq/hr 高於此情境常用速率，請改慢、拆袋，或確認是否為中心靜脈與心電監測下的 urgent replacement。</p>}
               {calc.urgent && <p>嚴重低血鉀或有症狀時，需連續心電監測、提早複查 K/Mg，並同步找出持續流失原因。</p>}
               {magLow && <p>低 Mg 會讓低血鉀難以矯正；若 Mg 偏低，通常需同步補 Mg。</p>}
-              {access === "crrt" && <p>CVVH/CRRT 使用 KCl 原汁時，是加入 replacement/dialysate 並充分混合；不可把原汁 KCl 直接接給病人。</p>}
+              {access === "crrt" && <p>CVVH 使用 KCl 原汁時，是加入 CVVH solution / replacement fluid 並充分混合；不可把原汁 KCl 直接接給病人。</p>}
             </div>
           )}
         </section>

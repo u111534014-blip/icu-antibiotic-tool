@@ -13,6 +13,7 @@ import AidsGuideline from './AidsGuideline';
 import SepticShock from './SepticShock';
 import InsulinTool from './InsulinTool';
 import HeparinTool from './HeparinTool';
+import ElectrolyteTool from './ElectrolyteTool';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -616,7 +617,7 @@ function PrepQuickRef() {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const viewportWidth = useViewportWidth();
   const [drugId, setDrugId] = useState("");
@@ -768,7 +769,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool"].includes(page);
+  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -830,6 +831,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "heparinTool" ? S.menuItemActive : {}) }}>
                 🧷 抗凝血 / 逆轉工具
               </button>
+              <button onClick={() => { setPage("electrolyteTool"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "electrolyteTool" ? S.menuItemActive : {}) }}>
+                ⚡ 電解質補充工具
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -857,6 +862,8 @@ export default function App() {
           <InsulinTool />
         ) : page === "heparinTool" ? (
           <HeparinTool />
+        ) : page === "electrolyteTool" ? (
+          <ElectrolyteTool />
         ) : page === "prepRef" ? (
           <PrepQuickRef />
         ) : (

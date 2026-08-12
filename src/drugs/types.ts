@@ -124,6 +124,7 @@ export type ExtraField = {
   label: string;
   default?: boolean | string;
   options?: { id: string; label: string }[];
+  showWhenRrt?: string[];
 };
 
 // ── calculate 函數的輸入 ──────────────────────────────────────

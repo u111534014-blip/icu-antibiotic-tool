@@ -1046,9 +1046,14 @@ export default function App() {
             <Select label="適應症"
               value={indication} onChange={setIndication} options={drugConfig.indications} />
             {drugConfig.extraFields?.map((f: ExtraField) => {
+              if (f.showWhenRrt && !f.showWhenRrt.includes(rrt)) return null;
               if (f.type === "toggle") {
                 return <Toggle key={f.key} label={f.label} value={!!extras[f.key]}
                   onChange={v => setExtras(prev => ({ ...prev, [f.key]: v }))} />;
+              }
+              if (f.type === "select") {
+                return <Select key={f.key} label={f.label} value={String(extras[f.key] ?? "")}
+                  onChange={v => setExtras(prev => ({ ...prev, [f.key]: v }))} options={f.options || []} />;
               }
               return null;
             })}
@@ -1104,8 +1109,6 @@ export default function App() {
                     }
                     return <Row key={i} label={r.label} value={r.value} highlight={r.highlight} />;
                   })}
-                  {sc.warnings?.map((w: any, i: number) => <Warning key={i} text={w} />)}
-
                   {/* 複雜情境：有多個路徑 subResults */}
                   {sc.subResults && (() => {
                     // 只有當同時存在 PO 和 IV 時才顯示「UpToDate 首選」標籤
@@ -1148,6 +1151,7 @@ export default function App() {
                       );
                     });
                   })()}
+                  {sc.warnings?.map((w: any, i: number) => <Warning key={i} text={w} />)}
                 </div>
               ))}
 

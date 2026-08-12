@@ -1,4 +1,10 @@
 import { TAZO_3375_TABLE, TAZO_45_TABLE } from './shared/crclTables';
+import {
+  PIPTAZO_URINE_OPTIONS,
+  SMARRT_RRT_INTENSITY_OPTIONS,
+  SMARRT_TARGET_OPTIONS,
+  getPipTazoSmarrtRows,
+} from './shared/smarrtRrtNomogram';
 import type { Drug } from './types';
 
 // ═══════════════════════════════════════════════════════════════
@@ -260,9 +266,13 @@ export const tazocin: Drug = {
     },
   ],
 
-  extraFields: [],
+  extraFields: [
+    { key: "smarrtIntensity", type: "select", label: "SMARRT RRT intensity", default: "1.5", options: SMARRT_RRT_INTENSITY_OPTIONS, showWhenRrt: ["cvvh"] },
+    { key: "smarrtPipTazoUrine", type: "select", label: "SMARRT urine output", default: "anuria", options: PIPTAZO_URINE_OPTIONS, showWhenRrt: ["cvvh"] },
+    { key: "smarrtTarget", type: "select", label: "SMARRT target", default: "high", options: SMARRT_TARGET_OPTIONS, showWhenRrt: ["cvvh"] },
+  ],
 
-  calculate({ crcl, rrt, indicationData }) {
+  calculate({ crcl, rrt, indicationData, extras }) {
     // ── 熱病通則（不分適應症）──
     // Normal / CrCl ≥20: 4.5 g Q8H over 4hr
     // CrCl <20: 4.5 g Q12H over 4hr
@@ -348,26 +358,45 @@ export const tazocin: Drug = {
         ];
       }
 
+      const subResults: any[] = [
+        {
+          customLabel: "📘 UpToDate 常規劑量",
+          customLabelBg: "#FEF3C7",
+          customLabelColor: "#92400E",
+          rows,
+        },
+        {
+          customLabel: "🔥 熱病建議（延長滴注）",
+          customLabelBg: "#FEE2E2",
+          customLabelColor: "#991B1B",
+          rows: hotlineRows,
+          warnings: [
+            "熱病通則：不分適應症一律採延長滴注。急重症傾向積極抗生素給予",
+          ],
+        },
+      ];
+
+      if (rrt === "cvvh") {
+        subResults.push({
+          customLabel: "SMARRT 2025（進階 CI nomogram）",
+          customLabelBg: "#DCFCE7",
+          customLabelColor: "#166534",
+          rows: getPipTazoSmarrtRows({
+            intensity: extras?.smarrtIntensity,
+            urine: extras?.smarrtPipTazoUrine,
+            target: extras?.smarrtTarget,
+          }),
+          warnings: [
+            "此為 continuous infusion nomogram。文獻建議若為新開始治療，先給 4 g/0.5 g loading dose over 30 min，再立即接每日 CI 劑量。",
+            "SMARRT 2025 higher target 高劑量可增加達標機率，但也可能增加超過 piperacillin toxicity threshold >160 mg/L 的風險。",
+          ],
+        });
+      }
+
       return {
         title: sc.title || sc.label,
         note: sc.note,
-        subResults: [
-          {
-            customLabel: "📘 UpToDate 常規劑量",
-            customLabelBg: "#FEF3C7",
-            customLabelColor: "#92400E",
-            rows,
-          },
-          {
-            customLabel: "🔥 熱病建議（延長滴注）",
-            customLabelBg: "#FEE2E2",
-            customLabelColor: "#991B1B",
-            rows: hotlineRows,
-            warnings: [
-              "熱病通則：不分適應症一律採延長滴注。急重症傾向積極抗生素給予",
-            ],
-          },
-        ],
+        subResults,
       };
     });
 
@@ -441,6 +470,14 @@ export const tazocin: Drug = {
           "CAPD：無資料\n" +
           "CRRT：3.375-4.5 g Q8H over 4hr\n\n" +
           "熱病不分適應症一律採延長滴注",
+      },
+      {
+        heading: "CRRT：SMARRT 2025 進階 nomogram",
+        body:
+          "來源：Roberts JA et al. Meropenem and piperacillin/tazobactam optimised dosing regimens for critically ill patients receiving renal replacement therapy. Intensive Care Medicine 2025;51:1628-1640。\n\n" +
+          "Table 3 依 RRT intensity、尿量與 target 建議 continuous infusion。若開始治療，先給 piperacillin/tazobactam 4 g/0.5 g loading dose over 30 min，再立即接 CI。\n\n" +
+          "Continuous RRT：standard target 多為 6 g/0.75 g-8 g/1 g per day CI；higher target 依尿量與 RRT intensity 約 6 g/0.75 g-16 g/2 g per day CI。\n\n" +
+          "文獻註腳：higher target 的較高劑量可增加達到 steady-state >=64 mg/L 的機率，但可能增加超過 piperacillin toxicity threshold >160 mg/L 的風險。建議依感染嚴重度、Pseudomonas/MIC、RRT intensity、尿量與神經毒性風險判斷。",
       },
       {
         heading: "給藥方法",

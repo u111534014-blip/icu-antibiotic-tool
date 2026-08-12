@@ -1,4 +1,10 @@
 import { STANDARD_1G_TABLE, STANDARD_2G_TABLE } from './shared/crclTables';
+import {
+  MEROPENEM_URINE_OPTIONS,
+  SMARRT_RRT_INTENSITY_OPTIONS,
+  SMARRT_TARGET_OPTIONS,
+  getMeropenemSmarrtRows,
+} from './shared/smarrtRrtNomogram';
 import type { Drug } from './types';
 
 // ═══════════════════════════════════════════════════════════════
@@ -41,6 +47,16 @@ function lookupEscalation(crcl: number, rrt: string): { dose_mg: number; freq: s
   if (rrt === "cvvh") return { dose_mg: 1000, freq: "Q8H", note: "CRRT" };
   const match = STANDARD_2G_TABLE.find((row: any) => crcl >= row.min);
   return { dose_mg: match!.dose_mg, freq: match!.freq, note: `CrCl ${Math.round(crcl)} → 升級劑量` };
+}
+
+function getSanfordCrrtRows() {
+  return [
+    { label: "CRRT 建議劑量", value: "0.75 g IV Q8H", highlight: true },
+    { label: "每次取藥", value: "2 支麥羅（每支 500 mg；實際給 750 mg）" },
+    { label: "註腳條件", value: "CVVH / CVVHDF，effluent flow rate 35 mL/kg/hr，MIC = 2" },
+    { label: "PK/PD target", value: "40% fT>4MIC" },
+    { label: "來源", value: "Sanford Guide / 熱病：CRRT dosing footnote（Blood Purif 2023;52:503）" },
+  ];
 }
 
 export const mepem: Drug = {
@@ -166,7 +182,13 @@ export const mepem: Drug = {
     },
   ],
 
-  calculate({ crcl, rrt, indicationData }) {
+  extraFields: [
+    { key: "smarrtIntensity", type: "select", label: "SMARRT RRT intensity", default: "1.5", options: SMARRT_RRT_INTENSITY_OPTIONS, showWhenRrt: ["cvvh"] },
+    { key: "smarrtMeropenemUrine", type: "select", label: "SMARRT urine output", default: "oligoanuria", options: MEROPENEM_URINE_OPTIONS, showWhenRrt: ["cvvh"] },
+    { key: "smarrtTarget", type: "select", label: "SMARRT target", default: "high", options: SMARRT_TARGET_OPTIONS, showWhenRrt: ["cvvh"] },
+  ],
+
+  calculate({ crcl, rrt, indicationData, extras }) {
     const scenarioResults = indicationData.scenarios.map((sc: any) => {
       const rows: any[] = [];
       const warnings: string[] = [];
@@ -198,6 +220,39 @@ export const mepem: Drug = {
       warnings.push("🕒 重症建議延長滴注（Extended Infusion）3 小時，PK/PD 更佳");
 
       if (sc.note) rows.push({ label: "療程與備註", value: sc.note });
+
+      if (rrt === "cvvh") {
+        return {
+          title: sc.label,
+          rows,
+          subResults: [
+            {
+              customLabel: "熱病 / Sanford CRRT",
+              customLabelBg: "#FEE2E2",
+              customLabelColor: "#991B1B",
+              rows: getSanfordCrrtRows(),
+              warnings: [
+                "熱病此建議是 CRRT 通則，不分適應症；若 MIC 偏高、CNS infection、septic shock 或 RRT intensity/殘餘尿量不同，仍需依臨床狀況調整。",
+              ],
+            },
+            {
+              customLabel: "SMARRT 2025（進階 CI nomogram）",
+              customLabelBg: "#DCFCE7",
+              customLabelColor: "#166534",
+              rows: getMeropenemSmarrtRows({
+                intensity: extras?.smarrtIntensity,
+                urine: extras?.smarrtMeropenemUrine,
+                target: extras?.smarrtTarget,
+              }),
+              warnings: [
+                "此為 continuous infusion nomogram。文獻建議若為新開始治療，先給 1 g loading dose over 30 min，再立即接每日 CI 劑量。",
+                "SMARRT 2025 劑量依 RRT intensity、尿量與 target 分層；不能直接等同於傳統 Q8H 間歇輸注。",
+              ],
+            },
+          ],
+          warnings,
+        };
+      }
 
       return { title: sc.label, rows, warnings };
     });
@@ -249,6 +304,15 @@ export const mepem: Drug = {
           "HD：500 mg Q24H（透析後）\n" +
           "CRRT：1 g Q8H\n" +
           "ARC (≥130)：考慮 2 g Q8H over 3hr",
+      },
+      {
+        heading: "CRRT：UpToDate / Sanford / SMARRT 2025",
+        body:
+          "【UpToDate】CRRT：1 g Q8H（目前主計算採用此建議）\n\n" +
+          "【Sanford / 熱病】CRRT：0.75 g IV Q8H。註腳條件為 CVVH/CVVHDF、effluent flow rate 35 mL/kg/hr、MIC 2，目標 40% fT>4MIC。\n\n" +
+          "【SMARRT 2025】Roberts JA et al. Intensive Care Medicine 2025;51:1628-1640。大型多國 RRT ICU PK study，Table 2 依 RRT intensity、尿量與 target 建議 continuous infusion。若開始治療，先 1 g loading dose over 30 min，再立即接 CI。\n" +
+          "Continuous RRT：standard target 多為 1-1.5 g/day CI；higher target 依尿量與 RRT intensity 約 1.5-3 g/day CI。\n\n" +
+          "建議解讀：日常可先看 UpToDate；若病人正在 CVVH/CVVHDF 且想採 continuous infusion，或擔心傳統 Q8H 過量/不足，再看 SMARRT 2025 nomogram。",
       },
       {
         heading: "給藥方法",

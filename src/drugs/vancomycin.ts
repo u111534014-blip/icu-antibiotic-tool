@@ -29,6 +29,10 @@ function toVials(mg: number): string {
   return `${rounded} mg（${vials} 支）`;
 }
 
+function toCappedLoadingVials(mg: number): string {
+  return toVials(Math.min(mg, 3000));
+}
+
 // Helper：四捨五入
 function r(n: number): number { return Math.round(n); }
 
@@ -71,12 +75,57 @@ function getContinuousTier(crcl: number): number {
   return 3;
 }
 
+function getSanfordDose(crcl: number, rrt: string, tbw: number): {
+  ld: string; md: string; freq: string; note: string;
+} {
+  if (rrt === "hd") {
+    return {
+      ld: `${toCappedLoadingVials(25 * tbw)}（25 mg/kg，max 3 g）`,
+      md: `${toVials(10 * tbw)}（7.5-10 mg/kg）post-HD`,
+      freq: "每次透析後",
+      note: "熱病/Sanford：HD 以 post-HD 給藥與 TDM 調整；72hr 跨透析期可增加維持劑量。每週至少監測 pre-HD level。",
+    };
+  }
+  if (rrt === "pd") {
+    return {
+      ld: `${toCappedLoadingVials(22.5 * tbw)}（20-25 mg/kg，max 3 g）`,
+      md: `${toVials(12.5 * tbw)}（10-15 mg/kg）依 level`,
+      freq: "依 level 調整",
+      note: "熱病/Sanford：PD IV 給藥需依 serum level 調整；PD-related peritonitis 請參考腹腔內給藥。",
+    };
+  }
+  if (rrt === "cvvh") {
+    return {
+      ld: `${toCappedLoadingVials(22.5 * tbw)}（20-25 mg/kg，max 3 g）`,
+      md: `${toVials(8.75 * tbw)}（7.5-10 mg/kg）Q12H`,
+      freq: "Q12H",
+      note: "熱病/Sanford：CRRT 需依 effluent rate 與 TDM 調整；此處先沿用既有 CRRT 起始建議。",
+    };
+  }
+
+  let range = "";
+  let freq = "";
+  if (crcl > 100) { range = ">100"; freq = "Q8-12H"; }
+  else if (crcl > 50) { range = ">50-100"; freq = "Q12H"; }
+  else if (crcl >= 20) { range = "20-50"; freq = "Q24H"; }
+  else { range = "<20"; freq = "Q48H"; }
+
+  const lo = 15 * tbw;
+  const hi = 20 * tbw;
+  return {
+    ld: `${toCappedLoadingVials(27.5 * tbw)}（25-30 mg/kg，max 3 g）`,
+    md: `${toVials((lo + hi) / 2)}（15-20 mg/kg）${freq}`,
+    freq,
+    note: `熱病/Sanford：usual adult IV dose 為 LD 25-30 mg/kg（max 3 g）→ MD 15-20 mg/kg。CrCl ${r(crcl)}（${range}）時 MD 頻率為 ${freq}。CrCl <50 時與 UpToDate 差異較大：熱病維持 15-20 mg/kg，主要調整頻率，仍需 TDM。`,
+  };
+}
+
 function getIntermittentDose(crcl: number, rrt: string, tbw: number): {
   ld: string; md: string; freq: string; note: string;
 } {
   if (rrt === "hd") {
     return {
-      ld: `LD ${toVials(25 * tbw)}（25 mg/kg）`,
+      ld: `LD ${toCappedLoadingVials(25 * tbw)}（25 mg/kg，max 3 g）`,
       md: `MD ${toVials(10 * tbw)}（7.5-10 mg/kg）post-HD`,
       freq: "每次透析後",
       note: "HD：移除率 25-40%。Post-HD 給藥（high-flux 用 10 mg/kg，low-flux 用 7.5 mg/kg）。72hr 跨透析期增加約 25% 維持劑量。每週至少監測一次 pre-dialysis level，目標 15-20 mg/L",
@@ -84,7 +133,7 @@ function getIntermittentDose(crcl: number, rrt: string, tbw: number): {
   }
   if (rrt === "pd") {
     return {
-      ld: `LD ${toVials(22.5 * tbw)}（20-25 mg/kg）`,
+      ld: `LD ${toCappedLoadingVials(22.5 * tbw)}（20-25 mg/kg，max 3 g）`,
       md: `MD ${toVials(12.5 * tbw)}（10-15 mg/kg）依濃度調整`,
       freq: "依 level 調整",
       note: "PD：LD 後 48-72hr 取血清濃度決定後續維持。若為 PD-related peritonitis 請參考腹腔內給藥",
@@ -92,7 +141,7 @@ function getIntermittentDose(crcl: number, rrt: string, tbw: number): {
   }
   if (rrt === "cvvh") {
     return {
-      ld: `LD ${toVials(22.5 * tbw)}（20-25 mg/kg）`,
+      ld: `LD ${toCappedLoadingVials(22.5 * tbw)}（20-25 mg/kg，max 3 g）`,
       md: `MD ${toVials(8.75 * tbw)}（7.5-10 mg/kg）Q12H`,
       freq: "Q12H",
       note: "CRRT：LD 20-25 mg/kg → 7.5-10 mg/kg Q12H。須 TDM。嚴重 MRSA 應在 24-48hr 內做 AUC 監測",
@@ -112,7 +161,7 @@ function getIntermittentDose(crcl: number, rrt: string, tbw: number): {
   if (tier === 3) note += "。⚠️ 血清濃度 >20 mg/L 時切勿給予維持劑量";
 
   return {
-    ld: `LD ${toVials(ldMg)}（${e.ld_mgPerKg_lo}-${e.ld_mgPerKg_hi} mg/kg）`,
+    ld: `LD ${toCappedLoadingVials(ldMg)}（${e.ld_mgPerKg_lo}-${e.ld_mgPerKg_hi} mg/kg，max 3 g）`,
     md: `MD ${toVials((mdLo + mdHi) / 2)}（${e.md_mgPerKg_lo}-${e.md_mgPerKg_hi} mg/kg）${e.freq}`,
     freq: e.freq,
     note,
@@ -126,14 +175,14 @@ function getContinuousDose(crcl: number, rrt: string, tbw: number): {
 
   if (rrt === "hd" || rrt === "pd") {
     return {
-      ld: `LD ${toVials(ldMg)}（15-20 mg/kg）`,
+      ld: `LD ${toCappedLoadingVials(ldMg)}（15-20 mg/kg，max 3 g）`,
       daily: "不建議連續輸注用於 HD/PD",
       note: "HD/PD：建議改用間歇輸注",
     };
   }
   if (rrt === "cvvh") {
     return {
-      ld: `LD ${toVials(ldMg)}（15-20 mg/kg）`,
+      ld: `LD ${toCappedLoadingVials(ldMg)}（15-20 mg/kg，max 3 g）`,
       daily: `${toVials(14 * tbw)}/day continuous（~14 mg/kg/day）`,
       note: "CRRT CI：LD 15-20 mg/kg → ~14 mg/kg/day continuous。目標 Css 20-25 mg/L。須 TDM",
     };
@@ -145,7 +194,7 @@ function getContinuousDose(crcl: number, rrt: string, tbw: number): {
   const ranges = [">80-119", ">50-80", "25-50", "<25"];
 
   return {
-    ld: `LD ${toVials(ldMg)}（15-20 mg/kg）`,
+    ld: `LD ${toCappedLoadingVials(ldMg)}（15-20 mg/kg，max 3 g）`,
     daily: `${toVials(dailyMg)}/day continuous（${e.mgPerKgPerDay} mg/kg/day）`,
     note: `CrCl ${r(crcl)}（${ranges[tier]}）→ ${e.mgPerKgPerDay} mg/kg/day CI。目標 Css 20-25 mg/L`,
   };
@@ -314,7 +363,7 @@ export const vancomycin: Drug = {
       ],
     },
     { id: "sepsis", label: "Sepsis / Septic shock（敗血症）", desc: "MRSA · 建議 LD · 1hr 內給藥",
-      scenarios: [{ label: "Sepsis / Septic shock, MRSA（敗血症，MRSA）", note: "建議 LD。懷疑或證實敗血症 1hr 內給藥。療程依感染源，優先短療程", route: "IV", doseDisplay: "LD 25-35 mg/kg → 15-20 mg/kg Q8-12H IV" }],
+      scenarios: [{ label: "Sepsis / Septic shock, MRSA（敗血症，MRSA）", note: "建議 LD。懷疑或證實敗血症 1hr 內給藥。療程依感染源，優先短療程", route: "IV", doseDisplay: "LD 20-35 mg/kg（max 3 g）→ 15-20 mg/kg Q8-12H IV" }],
     },
     { id: "septicArthritis", label: "Septic arthritis（化膿性關節炎）", desc: "MRSA · 3-4 週",
       scenarios: [{ label: "Septic arthritis, MRSA（化膿性關節炎，MRSA）", note: "無骨髓炎/菌血症/併發症：3-4 週（含口服降階）。重症可考慮 LD", route: "IV", doseDisplay: "15-20 mg/kg Q8-12H IV" }],
@@ -372,25 +421,35 @@ export const vancomycin: Drug = {
       }
 
       // ── IV 計算 ──
-      // 間歇輸注
+      // UpToDate：間歇輸注 + 連續輸注
       const intD = getIntermittentDose(crcl, rrt, tbw);
-      rows.push({ label: `間歇輸注 LD（${r(tbw)} kg）`, value: intD.ld, highlight: true });
-      rows.push({ label: `間歇輸注 MD（${r(tbw)} kg）`, value: intD.md, highlight: true });
-      rows.push({ label: "間歇輸注腎調", value: intD.note });
-
-      // 連續輸注
       const ciD = getContinuousDose(crcl, rrt, tbw);
-      rows.push({ label: `連續輸注 LD`, value: ciD.ld });
-      rows.push({ label: `連續輸注 MD`, value: ciD.daily });
-      rows.push({ label: "連續輸注腎調", value: ciD.note });
+      const sanfordD = getSanfordDose(crcl, rrt, tbw);
+
+      const upToDateRows: any[] = [
+        { label: `間歇輸注 LD（${r(tbw)} kg）`, value: intD.ld, highlight: true },
+        { label: `間歇輸注 MD（${r(tbw)} kg）`, value: intD.md, highlight: true },
+        { label: "間歇輸注腎調", value: intD.note },
+        { label: "連續輸注 LD", value: ciD.ld },
+        { label: "連續輸注 MD", value: ciD.daily },
+        { label: "連續輸注腎調", value: ciD.note },
+      ];
+
+      const sanfordRows: any[] = [
+        { label: `間歇輸注 LD（${r(tbw)} kg）`, value: sanfordD.ld, highlight: true },
+        { label: `間歇輸注 MD（${r(tbw)} kg）`, value: sanfordD.md, highlight: true },
+        { label: "熱病腎調", value: sanfordD.note },
+        { label: "TDM", value: "以 TDM 調整；嚴重 MRSA 感染仍建議 AUC/MIC 400-600 或依院內 TDM 流程。" },
+      ];
 
       // ARC
       const isARC = rrt === "none" && crcl >= 130;
       if (isARC) {
-        const arcInt = `LD ${toVials(30 * tbw)}（25-35 mg/kg）→ 15-20 mg/kg Q8H（部分需 Q6H）`;
-        const arcCI = `LD 15-20 mg/kg → 40-60 mg/kg/day CI（目標 Css 20-25）`;
-        rows.push({ label: "⚡ ARC 間歇輸注", value: arcInt, highlight: true });
-        rows.push({ label: "⚡ ARC 連續輸注", value: arcCI, highlight: true });
+        const arcInt = `LD ${toCappedLoadingVials(30 * tbw)}（25-35 mg/kg，max 3 g）→ 15-20 mg/kg Q8H（部分需 Q6H）`;
+        const arcCI = `LD 15-20 mg/kg（max 3 g）→ 40-60 mg/kg/day CI（目標 Css 20-25）`;
+        upToDateRows.push({ label: "⚡ ARC 間歇輸注", value: arcInt, highlight: true });
+        upToDateRows.push({ label: "⚡ ARC 連續輸注", value: arcCI, highlight: true });
+        sanfordRows.push({ label: "⚡ ARC", value: "CrCl ≥130：15-20 mg/kg Q8H，部分病人可能需 Q6H；重症可 LD 25-35 mg/kg（max 3 g）。", highlight: true });
         warnings.push("⚡ ARC（CrCl ≥130）：需頻繁 TDM。連續輸注目標 Css 20-25 mg/L");
       }
 
@@ -401,6 +460,7 @@ export const vancomycin: Drug = {
 
       // TDM 提醒
       warnings.push("📊 TDM：嚴重 MRSA 感染首選 AUC-guided dosing（目標 AUC/MIC 400-600）。非嚴重感染可用 trough 10-20 mg/L。連續輸注目標 Css 20-25 mg/L");
+      warnings.push("📌 UpToDate loading dose：嚴重 MRSA 可考慮 20-35 mg/kg（max 3 g）；sepsis / septic shock 建議 loading dose，並於懷疑或證實 sepsis 後 1 小時內給藥");
 
       // UpToDate vs 熱病差異提醒
       if (crcl < 50 && rrt === "none") {
@@ -420,7 +480,27 @@ export const vancomycin: Drug = {
       warnings.push("⚠️ IV vancomycin 對 C. difficile 感染無效（腸道無法達到有效濃度）");
 
       if (sc.note) rows.push({ label: "療程與備註", value: sc.note });
-      return { title: sc.label, rows, warnings };
+      return {
+        title: sc.label,
+        rows,
+        subResults: [
+          {
+            route: "IV",
+            customLabel: "UpToDate",
+            customLabelBg: "#DBEAFE",
+            customLabelColor: "#1E40AF",
+            rows: upToDateRows,
+          },
+          {
+            route: "IV",
+            customLabel: "熱病 / Sanford",
+            customLabelBg: "#FEF3C7",
+            customLabelColor: "#92400E",
+            rows: sanfordRows,
+          },
+        ],
+        warnings,
+      };
     });
 
     return { scenarioResults };
@@ -463,17 +543,18 @@ export const vancomycin: Drug = {
           "  CrCl 15-<50：LD 20-25 mg/kg → MD 10-15 mg/kg Q24H\n" +
           "  CrCl <15：LD 20-25 mg/kg → MD 10-15 mg/kg Q48-72H（濃度 >20 時勿給）\n\n" +
           "【熱病】（差異：CrCl <50 不減 mg/kg，只減頻率）\n" +
+          "  Usual LD：25-30 mg/kg IV（max 3 g）\n" +
           "  CrCl >100：15-20 mg/kg Q8-12H\n" +
           "  CrCl >50-100：15-20 mg/kg Q12H\n" +
           "  CrCl 20-50：15-20 mg/kg Q24H ← UpToDate 減至 10-15\n" +
           "  CrCl <20：15-20 mg/kg Q48H ← UpToDate 減至 10-15\n\n" +
-          "ARC (≥130)：LD 25-35 mg/kg → 15-20 mg/kg Q8H（部分需 Q6H）\n" +
+          "ARC (≥130)：LD 25-35 mg/kg（max 3 g）→ 15-20 mg/kg Q8H（部分需 Q6H）\n" +
           "重症 LD 可達 35 mg/kg（max 3 g）",
       },
       {
         heading: "連續輸注腎調速查表",
         body:
-          "LD 15-20 mg/kg → 目標 Css 20-25 mg/L\n" +
+          "LD 15-20 mg/kg（max 3 g）→ 目標 Css 20-25 mg/L\n" +
           "CrCl >80-119：30 mg/kg/day\n" +
           "CrCl >50-80：25 mg/kg/day\n" +
           "CrCl 25-50：14 mg/kg/day\n" +
@@ -493,7 +574,8 @@ export const vancomycin: Drug = {
         heading: "肥胖",
         body:
           "LD 和 MD 都用 TBW 計算\n" +
-          "LD：20-25 mg/kg（重症 20-35 mg/kg），max 3 g\n" +
+          "非肥胖重症 MRSA：LD 20-35 mg/kg，max 3 g\n" +
+          "肥胖：通常 LD 20-25 mg/kg；critically ill 可考慮 20-35 mg/kg，max 3 g\n" +
           "MD：UpToDate 用 CL 公式算每日總劑量（四捨五入至 250 mg）\n" +
           "  熱病：15-20 mg/kg Q8-12H（max 2 g/dose）\n" +
           "每日總劑量很少需要 >4.5 g",

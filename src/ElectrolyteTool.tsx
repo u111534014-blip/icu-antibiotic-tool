@@ -23,6 +23,9 @@ const CALGLON_MG_PER_ML = 9.3;
 const VITACAL_ML_PER_AMP = 20;
 const VITACAL_MEQ_PER_ML = 0.272;
 const VITACAL_GLUCOSE_MG_PER_ML = 100;
+const NS_NA_MEQ_PER_L = 154;
+const HYPERTONIC_SALINE_NA_MEQ_PER_L = 513;
+const HYPERTONIC_SALINE_NA_MEQ_PER_ML = HYPERTONIC_SALINE_NA_MEQ_PER_L / 1000;
 
 type KAccess = "peripheral" | "central" | "crrt";
 type RenalRisk = "normal" | "impaired" | "oliguria" | "crrt";
@@ -30,10 +33,14 @@ type KSeverity = "mild" | "moderate" | "severe" | "critical" | "none";
 type MgUnit = "mgdl" | "mmoll";
 type MgSeverity = "none" | "mild" | "moderate" | "severe";
 type PhosSeverity = "none" | "mild" | "moderate" | "severe";
-type ElectrolyteTab = "k" | "mg" | "phos" | "ca" | "reference";
+type ElectrolyteTab = "k" | "mg" | "phos" | "ca" | "na" | "reference";
 type CalciumProduct = "calglon" | "vitacal";
 type CalciumIndication = "hypocalcemia" | "hyperkalemia" | "massiveTransfusion" | "ccb";
 type CalciumLabMode = "total" | "ionized";
+type SodiumMode = "hyponatremia" | "hypernatremia";
+type SodiumDuration = "acute" | "chronic" | "unknown";
+type SodiumVolumeStatus = "hypovolemic" | "euvolemic" | "hypervolemic" | "unclear";
+type SodiumSex = "male" | "female";
 
 function n(value: string) {
   return parseFloat(value) || 0;
@@ -42,6 +49,10 @@ function n(value: string) {
 function round(value: number, digits = 1) {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function ceilHalf(value: number) {
@@ -108,6 +119,21 @@ function phosDoseFactor(phosMgDl: number) {
 function roundPhosDose(value: number) {
   if (value <= 0) return 0;
   return Math.max(5, Math.round(value / 5) * 5);
+}
+
+function sodiumSeverity(na: number, mode: SodiumMode) {
+  if (!na) return "請輸入 Na";
+  if (mode === "hyponatremia") {
+    if (na < 120) return "Profound hyponatremia";
+    if (na < 125) return "Severe hyponatremia";
+    if (na < 130) return "Moderate hyponatremia";
+    if (na < 135) return "Mild hyponatremia";
+    return "未達低血鈉";
+  }
+  if (na >= 160) return "Severe hypernatremia";
+  if (na >= 150) return "Moderate hypernatremia";
+  if (na > 145) return "Mild hypernatremia";
+  return "未達高血鈉";
 }
 
 const severityText: Record<KSeverity, string> = {
@@ -181,6 +207,15 @@ function Bullets({ items }: { items: string[] }) {
   );
 }
 
+function ClinicalReference({ children }: { children: ReactNode }) {
+  return (
+    <details style={S.clinicalReference}>
+      <summary style={S.clinicalSummary}>臨床參考</summary>
+      <div style={S.clinicalBody}>{children}</div>
+    </details>
+  );
+}
+
 export default function ElectrolyteTool() {
   const [activeTab, setActiveTab] = useState<ElectrolyteTab>("k");
   const [currentK, setCurrentK] = useState("3.0");
@@ -191,7 +226,7 @@ export default function ElectrolyteTool() {
   const [magLow, setMagLow] = useState(false);
   const [customDose, setCustomDose] = useState("");
   const [prepAmpules, setPrepAmpules] = useState("");
-  const [finalVolume, setFinalVolume] = useState("100");
+  const [finalVolume, setFinalVolume] = useState("250");
   const [infusionHours, setInfusionHours] = useState("1");
   const [crrtBagVolume, setCrrtBagVolume] = useState("5000");
   const [crrtBaseK, setCrrtBaseK] = useState("0");
@@ -229,6 +264,21 @@ export default function ElectrolyteTool() {
   const [calciumCustomMeq, setCalciumCustomMeq] = useState("");
   const [calciumDiluentVolume, setCalciumDiluentVolume] = useState("100");
   const [calciumInfusionMinutes, setCalciumInfusionMinutes] = useState("10");
+  const [sodiumMode, setSodiumMode] = useState<SodiumMode>("hyponatremia");
+  const [serumNa, setSerumNa] = useState("122");
+  const [targetNa, setTargetNa] = useState("128");
+  const [sodiumWeight, setSodiumWeight] = useState("60");
+  const [sodiumAge, setSodiumAge] = useState("65");
+  const [sodiumSex, setSodiumSex] = useState<SodiumSex>("female");
+  const [sodiumDuration, setSodiumDuration] = useState<SodiumDuration>("unknown");
+  const [sodiumVolumeStatus, setSodiumVolumeStatus] = useState<SodiumVolumeStatus>("unclear");
+  const [sodiumRenalRisk, setSodiumRenalRisk] = useState<RenalRisk>("normal");
+  const [sodiumSevereSymptoms, setSodiumSevereSymptoms] = useState(false);
+  const [sodiumOdsRisk, setSodiumOdsRisk] = useState(false);
+  const [sodiumOngoingLoss, setSodiumOngoingLoss] = useState("0");
+  const [sodiumCorrectionHours, setSodiumCorrectionHours] = useState("24");
+  const [hypertonicVolume, setHypertonicVolume] = useState("100");
+  const [hypertonicInfusionMinutes, setHypertonicInfusionMinutes] = useState("60");
 
   const calc = useMemo(() => {
     const k = n(currentK);
@@ -287,12 +337,12 @@ export default function ElectrolyteTool() {
   const bagPlan = useMemo(() => {
     if (calc.dose <= 0) return "請輸入目前 K 或自訂補充量";
     if (access === "peripheral") {
-      const bags = Math.ceil(calc.dose / 10);
-      return `建議拆成 ${bags} 袋：每袋 KCl 10 mEq 加入 NS 100 mL，run 1 hr/袋；若使用商業配方 KCl 10 mEq/500 mL，補鉀速度較慢且輸液量較大。`;
+      const bags = Math.ceil(calc.dose / 20);
+      return `可拆成 ${bags} 袋：每袋 KCl 20 mEq 加入 NS 250 mL，run >1 hr/袋；周邊 line 若疼痛或靜脈炎風險高，需放慢或再稀釋。`;
     }
     if (access === "central") {
       const bags = Math.ceil(calc.dose / 20);
-      return `可拆成 ${bags} 袋：每袋 KCl 20 mEq 加入 NS 100 mL，常見 run 1 hr/袋；需心電監測與醫囑確認。`;
+      return `可拆成 ${bags} 袋：每袋 KCl 20 mEq 加入 NS 100 mL，run >1 hr/袋；限水病人可用 NS 50 mL，但需 CVC/監測與醫囑確認。`;
     }
     return "CVVH 調鉀請依 replacement fluid 總量計算；KCl 原汁只可加入 CVVH solution 並充分混合，不可直接 IV push。";
   }, [calc.dose, access]);
@@ -425,6 +475,115 @@ export default function ElectrolyteTool() {
     };
   }, [calciumProduct, calciumIndication, calciumLabMode, ionizedCa, totalCaForCa, albuminForCa, calciumSymptoms, calciumCentralLine, calciumRenalRisk, calciumCustomMeq, calciumDiluentVolume, calciumInfusionMinutes]);
 
+  const sodiumCalc = useMemo(() => {
+    const na = n(serumNa);
+    const targetInput = n(targetNa);
+    const weight = n(sodiumWeight);
+    const age = n(sodiumAge);
+    const ongoingLossL = n(sodiumOngoingLoss);
+    const hours = n(sodiumCorrectionHours) || 24;
+    const tbwFactor = sodiumSex === "male" ? (age >= 65 ? 0.5 : 0.6) : (age >= 65 ? 0.45 : 0.5);
+    const tbw = weight * tbwFactor;
+    const severity = sodiumSeverity(na, sodiumMode);
+    const correctionLimit24 = sodiumOdsRisk ? 6 : 8;
+    const correctionGoal24 = sodiumSevereSymptoms && sodiumMode === "hyponatremia" ? 4 : correctionLimit24;
+    const desiredNa = sodiumMode === "hyponatremia"
+      ? Math.min(targetInput || na + correctionGoal24, na + correctionLimit24, 135)
+      : Math.max(targetInput || na - 10, 145);
+    const deltaNa = sodiumMode === "hyponatremia" ? Math.max(0, desiredNa - na) : Math.max(0, na - desiredNa);
+    const naRisePerL3 = tbw > 0 ? (HYPERTONIC_SALINE_NA_MEQ_PER_L - na) / (tbw + 1) : 0;
+    const naRisePer100Ml3 = naRisePerL3 / 10;
+    const estimated3PercentMl = naRisePerL3 > 0 && deltaNa > 0 ? (deltaNa / naRisePerL3) * 1000 : 0;
+    const bolusCount = sodiumSevereSymptoms ? (naRisePer100Ml3 > 0 ? clamp(Math.ceil(4 / naRisePer100Ml3), 1, 3) : 1) : 0;
+    const nsNaChangePerL = tbw > 0 ? (NS_NA_MEQ_PER_L - na) / (tbw + 1) : 0;
+    const hypertonicVolMl = n(hypertonicVolume);
+    const hypertonicMinutes = n(hypertonicInfusionMinutes);
+    const hypertonicPumpRate = hypertonicVolMl > 0 && hypertonicMinutes > 0 ? hypertonicVolMl / (hypertonicMinutes / 60) : 0;
+    const hypertonicNaLoad = hypertonicVolMl * HYPERTONIC_SALINE_NA_MEQ_PER_ML;
+    const hypertonicEstimatedRise = naRisePer100Ml3 > 0 ? (hypertonicVolMl / 100) * naRisePer100Ml3 : 0;
+    const hypertonicEstimatedRise24 = hypertonicMinutes > 0 ? hypertonicEstimatedRise * (1440 / hypertonicMinutes) : 0;
+    const hypertonicOverLimit = hypertonicEstimatedRise > correctionLimit24 || hypertonicEstimatedRise24 > correctionLimit24;
+    const suggestedContinuousWindowHours = 6;
+    const suggestedHypertonicVolumeMl = sodiumMode !== "hyponatremia"
+      ? 0
+      : sodiumSevereSymptoms
+        ? 100
+        : estimated3PercentMl > 0
+          ? Math.max(10, Math.round((estimated3PercentMl * suggestedContinuousWindowHours / 24) / 10) * 10)
+          : 0;
+    const suggestedHypertonicMinutes = sodiumMode !== "hyponatremia"
+      ? 0
+      : sodiumSevereSymptoms
+        ? 10
+        : suggestedHypertonicVolumeMl > 0
+          ? suggestedContinuousWindowHours * 60
+          : 0;
+    const suggestedHypertonicPumpRate = suggestedHypertonicVolumeMl > 0 && suggestedHypertonicMinutes > 0
+      ? suggestedHypertonicVolumeMl / (suggestedHypertonicMinutes / 60)
+      : 0;
+    const suggestedHypertonicRise = naRisePer100Ml3 > 0
+      ? (suggestedHypertonicVolumeMl / 100) * naRisePer100Ml3
+      : 0;
+    const suggestedHypertonicTimeText = sodiumSevereSymptoms ? "10 min" : `${suggestedContinuousWindowHours} hr，複查 Na 後重算`;
+    const suggestedHypertonicNote = sodiumSevereSymptoms
+      ? "嚴重神經症狀優先 bolus；每次後重評症狀與 Na，可依反應重複 2-3 次。"
+      : "非嚴重症狀若仍需 3% 連續輸注，先用本日安全上限反推 6 小時起始量；6 小時或更早複查 Na 後重算，不是固定跑滿 24 小時。";
+    const freeWaterDeficit = sodiumMode === "hypernatremia" && tbw > 0 && na > desiredNa
+      ? tbw * ((na / desiredNa) - 1)
+      : 0;
+    const totalWaterPlan = freeWaterDeficit + ongoingLossL;
+    const waterRate = hours > 0 ? totalWaterPlan * 1000 / hours : 0;
+    const sodiumRenalSafetyNote = sodiumRenalRisk === "normal"
+      ? "腎功能/尿量不直接放入 Adrogue-Madias 或 free water deficit 公式；腎功能穩定且有尿時，公式較適合作起始估算。"
+      : sodiumRenalRisk === "impaired"
+        ? "腎功能差但仍有尿時，水與鈉排除較不穩；公式仍只作起始估算，需更密集追蹤 Na、I/O 與容量狀態。"
+        : sodiumRenalRisk === "oliguria"
+          ? "少尿/無尿時，水與鈉很難靠腎臟自行調整，公式容易失準；3% NaCl 或 free water 都需更保守，並評估 RRT/腎臟科。"
+          : "CRRT/HD 中 serum Na 會受透析液、置換液、effluent rate 與脫水量影響；需依機器處方與 Na trend 調整，公式只作粗略參考。";
+    const sodiumMonitoringText = sodiumMode === "hyponatremia"
+      ? sodiumRenalRisk === "normal"
+        ? "3% NaCl 期間 q2-4h Na；穩定且非高張鹽水時可依醫囑拉長。"
+        : "建議至少 q2-4h Na + I/O；少尿/無尿或 CRRT 時依 ICU/腎臟科與機器處方更密集調整。"
+      : sodiumRenalRisk === "normal"
+        ? "慢性/不明高血鈉常 q4-6h Na，依下降速度調整 free water。"
+        : "建議 q2-4h 到 q4h Na + I/O；少尿/無尿或 CRRT 時需同步看機器處方、脫水量與 hemodynamics。";
+    const hyperCorrectionLimit24 = sodiumDuration === "acute" ? "可較快校正；通常先處理休克/原因並密集追蹤 Na" : "慢性或不明：傳統目標 <=10-12 mEq/L/day，成人資料顯示過慢也可能不好，需避免 undertreatment";
+    const mechanismTitle = sodiumMode === "hyponatremia"
+      ? sodiumVolumeStatus === "hypovolemic" ? "Hypovolemic hyponatremia"
+        : sodiumVolumeStatus === "euvolemic" ? "Euvolemic hyponatremia"
+          : sodiumVolumeStatus === "hypervolemic" ? "Hypervolemic hyponatremia"
+            : "先確認 hypotonic hyponatremia，再用 volume status / urine Osm / urine Na 分型"
+      : sodiumVolumeStatus === "hypovolemic" ? "Water loss > sodium loss"
+        : sodiumVolumeStatus === "euvolemic" ? "Pure water loss"
+          : sodiumVolumeStatus === "hypervolemic" ? "Sodium gain"
+            : "高血鈉多代表水分不足或 sodium gain，需看尿量、滲透壓與輸入輸出";
+    const mechanismItems = sodiumMode === "hyponatremia"
+      ? sodiumVolumeStatus === "hypovolemic"
+        ? ["GI loss、diuretics、third spacing、adrenal insufficiency；通常 total body Na 與水都低，但 Na loss 較多。", "Urine Na <30 常見於 extrarenal loss；diuretic/renal salt wasting 則可能 urine Na 高。", "治療常以 isotonic saline 補有效循環血量；ADH 下降後 Na 可能快速上升，需防 overcorrection。"]
+        : sodiumVolumeStatus === "euvolemic"
+          ? ["常見 SIADH、藥物、hypothyroidism、glucocorticoid deficiency、primary polydipsia/low solute intake。", "SIADH 常見 urine Osm >100、urine Na >30，臨床無明顯水腫或脫水。", "治療依原因：fluid restriction、增加 solute、停致病藥；嚴重症狀才用 3% NaCl urgent correction。"]
+          : sodiumVolumeStatus === "hypervolemic"
+            ? ["常見 heart failure、cirrhosis、nephrotic syndrome、advanced kidney disease；total body Na 與水都高，但水增加更多。", "有效循環血量不足會刺激 ADH，造成 dilutional hyponatremia。", "治療多為 fluid/sodium restriction、loop diuretic、處理原疾病；單純補 NS 常可能更水腫。"]
+            : ["先排除 pseudo/translocational hyponatremia：高血糖、mannitol、脂血/高蛋白。", "確認 serum Osm 低後，再看 urine Osm：<100 常見多喝水/低 solute；>100 表示 ADH 仍活躍。", "再用 urine Na 與 volume status 分 hypovolemic/euvolemic/hypervolemic。"]
+      : sodiumVolumeStatus === "hypovolemic"
+        ? ["常見發燒/出汗、腹瀉、滲透性利尿、diuretics、post-ATN diuresis；水流失多於鈉流失。", "若 shock 或明顯低血容積，先用 isotonic crystalloid resuscitation；穩定後再補 free water。", "計算 free water deficit 只處理水缺口，仍需補 ongoing loss。"]
+        : sodiumVolumeStatus === "euvolemic"
+          ? ["常見 diabetes insipidus、中樞/腎性 DI、insensible loss 或無法喝水。", "尿量多且 urine Osm 低要考慮 DI；中樞 DI 可評估 desmopressin response。", "治療以 free water（enteral water 或 D5W）為主，並處理原因。"]
+          : sodiumVolumeStatus === "hypervolemic"
+            ? ["常見 hypertonic saline、sodium bicarbonate、大量鹽分負荷或透析液/輸液 sodium gain。", "病人水和鈉都多，但 sodium gain 更明顯。", "治療常需停止鈉來源、給 free water，必要時合併 loop diuretic 或 dialysis。"]
+            : ["高血鈉先問：水不夠、尿太多、還是鈉太多。", "看 volume status、urine output、urine Osm、glucose/urea/osmotic diuresis 與近期 sodium-containing fluids。", "慢性或不明高血鈉通常分 48-72 hr 校正並密集追蹤。"];
+    return {
+      na, targetInput, weight, age, tbwFactor, tbw, severity, correctionLimit24, correctionGoal24,
+      desiredNa, deltaNa, naRisePerL3, naRisePer100Ml3, estimated3PercentMl, bolusCount,
+      nsNaChangePerL, hypertonicVolMl, hypertonicMinutes, hypertonicPumpRate, hypertonicNaLoad,
+      hypertonicEstimatedRise, hypertonicEstimatedRise24, hypertonicOverLimit,
+      suggestedContinuousWindowHours, suggestedHypertonicVolumeMl, suggestedHypertonicMinutes, suggestedHypertonicPumpRate,
+      suggestedHypertonicRise, suggestedHypertonicTimeText, suggestedHypertonicNote,
+      freeWaterDeficit, ongoingLossL, totalWaterPlan, waterRate, hours,
+      sodiumRenalSafetyNote, sodiumMonitoringText, hyperCorrectionLimit24, mechanismTitle, mechanismItems,
+    };
+  }, [serumNa, targetNa, sodiumWeight, sodiumAge, sodiumSex, sodiumMode, sodiumDuration, sodiumVolumeStatus, sodiumRenalRisk, sodiumSevereSymptoms, sodiumOdsRisk, sodiumOngoingLoss, sodiumCorrectionHours, hypertonicVolume, hypertonicInfusionMinutes]);
+
   return (
     <div>
       <header style={S.header}>
@@ -469,6 +628,10 @@ export default function ElectrolyteTool() {
             <strong>Vitacal 400 mg/20 mL</strong>
             <span>Calcium chloride；Ca 0.272 mEq/mL。每 amp = 5.4 mEq Ca；另含 glucose-H2O 100 mg/mL。</span>
           </div>
+          <div style={S.productBox}>
+            <strong>3% 高濃度 NaCl 瓶 500 mL</strong>
+            <span>513 mEq/L = 0.513 mEq/mL。低血鈉使用需設定流速並密集追蹤 Na，避免 overcorrection。</span>
+          </div>
         </div>
       </section>
 
@@ -478,6 +641,7 @@ export default function ElectrolyteTool() {
           ["mg", "MgSO4 補鎂"],
           ["phos", "Glycophos 補磷"],
           ["ca", "Calcium 補鈣"],
+          ["na", "Na 鈉異常"],
           ["reference", "參考"],
         ] as const).map(([id, label]) => (
           <button
@@ -641,6 +805,12 @@ export default function ElectrolyteTool() {
           <div style={S.resultCard}>
             <div style={S.cardTitle}>目前設定檢查</div>
             <ResultRow label="本包 KCl 量" value={calc.prepDose ? `${calc.prepDose} mEq（原汁 ${round(calc.prepStockMl)} mL）` : "請輸入支數或補充量"} note={prepAmpules ? "依 KCl 原汁支數計算。" : "目前沿用上方本次建議補充量。"} highlight={!!prepAmpules} />
+            <ResultRow
+              label="院內套餐常用泡法"
+              value={access === "central" ? "CVC：KCl 20 mEq in NS 100 mL，run >1 hr；限水可 50 mL。" : access === "peripheral" ? "周邊 line：KCl 20 mEq in NS 250 mL，run >1 hr。" : "CVVH：KCl 加入 CVVH solution，不是一般 IV 輸注。"}
+              note="依你提供的 ICU 套餐整理；實際仍需依病人狀況、line、ECG 風險與醫囑。"
+              highlight
+            />
             <ResultRow label="建議速率 / 約需時間" value={calc.prepDose ? calc.suggestedText : "請輸入支數或補充量"} note={access === "peripheral" ? "周邊 IV 常用 10 mEq/hr。" : access === "central" ? "中心靜脈 / ICU 常用 20 mEq/hr；更高速率需監測與醫囑。" : "不可用一般 IV 補鉀速率套用。"} highlight />
             <ResultRow label="濃度" value={calc.volume ? `${round(calc.concentration, 3)} mEq/mL` : "請輸入體積"} note={calc.concentrationGuide} highlight={calc.overPeripheralConc} />
             <ResultRow label="補鉀速率" value={calc.hours ? `${round(calc.rateMeqHr)} mEq/hr` : "請輸入時間"} note={`此情境常用上限約 ${calc.maxRate} mEq/hr；更高速率需 ICU/心電監測與醫囑。`} highlight={calc.overRate} />
@@ -658,9 +828,37 @@ export default function ElectrolyteTool() {
           )}
         </section>
       </div>
+      <ClinicalReference>
+        <h3 style={S.refHeading}>整體原則</h3>
+        <p>電解質補充不只看單一數值，還要同時看症狀、ECG、腎功能/尿量、酸鹼狀態、是否持續流失，以及是否正在 CRRT。工具中的建議量是「本次先補多少」的粗估，補完後需依複查值與趨勢再調整。</p>
+        <h3 style={S.refHeading}>KCl concentrate 的底線</h3>
+        <p>KCl concentrate 必須稀釋後才能 IV infusion；未稀釋直接注射可能造成致命心律不整或心跳停止。若 serum K &gt;2.5 mEq/L，仿單常見上限為 10 mEq/hr、濃度最高 40 mEq/L；若 K &lt;2 mEq/L 且有 ECG change 或 paralysis，才考慮在連續心電監測下更高速率。</p>
+        <h3 style={S.refHeading}>為什麼優先用 NS？</h3>
+        <p>嚴重低血鉀時，dextrose-containing fluid 可能刺激 insulin 分泌並讓 K 短暫往細胞內移動；除非有其他理由，critical replacement 通常偏好用 saline 稀釋。</p>
+        <h3 style={S.refHeading}>院內套餐常用 KCl 泡法</h3>
+        <Bullets items={[
+          "CVC：KCl 20 mEq in NS 100 mL，run >1 hr；限水病人可用 NS 50 mL。",
+          "周邊 line：KCl 20 mEq in NS 250 mL，run >1 hr；若疼痛或靜脈炎風險高，需放慢或增加稀釋體積。",
+          "上述為你提供的 ICU 套餐常用寫法；若要補更大量，通常分袋、分次並依 K trend 調整。",
+        ]} />
+        <h3 style={S.refHeading}>補鉀前後要一起看的東西</h3>
+        <Bullets items={[
+          "Mg：低 Mg 會造成 renal K wasting，常讓低血鉀補不起來。",
+          "腎功能與尿量：少尿/無尿時補鉀要非常保守，並提早複查。",
+          "酸鹼與血糖/insulin：鹼中毒、insulin、beta-agonist 會讓 K 往細胞內移動。",
+          "ECG 與用藥：digoxin、QT/arrhythmia risk、利尿劑、laxative、amphotericin B 都會影響風險判斷。",
+        ]} />
+        <h3 style={S.refHeading}>CVVHDF 與電解質</h3>
+        <p>院內小白畫面屬 CVVHDF，會同時有 pre-dilution、dialysate、post-replacement 與病人脫水量。抗生素調整常看的「流速」多半是 effluent 或 CRRT dose，代表清除能力；KCl 加到 Prismasol B0 則是調整 replacement/CRRT fluid 的 K 濃度，兩者不是同一件事。</p>
+        <Bullets items={[
+          "院內 CVVH KCl supplement：K <4.5 mEq/L 時，CVVH solution 每袋加 KCl 20 mEq；K >=4.5 mEq/L 不加。",
+          "Prismasol B0 是 0K；每 5000 mL 加 KCl 20 mEq 後約變成 4K solution。",
+          "CRRT 可持續清除 K/Mg/Phos，因此 sepsis、DKA、refeeding 或高 effluent rate 時可能需要反覆補充與追蹤。",
+        ]} />
+      </ClinicalReference>
       </>)}
 
-      {activeTab === "mg" && (
+      {activeTab === "mg" && (<>
       <section style={S.section}>
         <div style={S.sectionTitle}>MgSO4 補鎂速查</div>
         <div style={S.layoutGrid}>
@@ -770,9 +968,19 @@ export default function ElectrolyteTool() {
           </div>
         </div>
       </section>
-      )}
+      <ClinicalReference>
+        <h3 style={S.refHeading}>MgSO4 補鎂重點</h3>
+        <p>低血鎂會讓低血鉀難以矯正，也可能造成 QT prolongation、arrhythmia、tetany 或 seizure。MgSO4 劑量臨床常用 g 表示，而不是 mEq；院內紅標 10% 20 mL/Amp = 2 g = 16.2 mEq Mg。</p>
+        <Bullets items={[
+          "非急救補鎂常用 1-2 g IV over 1 hr；較明顯低鎂或持續流失可 4-8 g over 12-24 hr。",
+          "Torsades 或 severe arrhythmia 可先 MgSO4 1-2 g 快速給予，之後再依 Mg/K/Ca 與 ECG 慢速補足。",
+          "腎功能差、少尿或高 Mg 風險時需保守減量，並監測低血壓、DTR 下降、呼吸抑制等毒性。",
+          "低 Mg 會造成 refractory hypokalemia，補 K 補不起來時要回頭看 Mg。",
+        ]} />
+      </ClinicalReference>
+      </>)}
 
-      {activeTab === "phos" && (
+      {activeTab === "phos" && (<>
       <section style={S.section}>
         <div style={S.sectionTitle}>Phosphate / Glycophos 補磷速查</div>
         <div style={S.layoutGrid}>
@@ -858,16 +1066,17 @@ export default function ElectrolyteTool() {
 
           <div>
             <div style={S.grid2}>
-              <Field label="預計稀釋體積" hint="Glycophos 為 concentrate，必須稀釋；常用 100-250 mL 以上依院內流程。">
+              <Field label="預計稀釋體積" hint="院內套餐：Glycophos 1 amp in NS 100 mL，6 hr via CVC。">
                 <input value={phosDiluentVolume} onChange={(e) => setPhosDiluentVolume(e.target.value)} inputMode="numeric" style={S.input} />
               </Field>
-              <Field label="預計輸注時間" hint="IV phosphate 常見 over 4-6 hr；依劑量與監測調整。">
+              <Field label="預計輸注時間" hint="院內套餐常用 6 hr；依劑量、Ca/Phos、腎功能與監測調整。">
                 <input value={phosInfusionHours} onChange={(e) => setPhosInfusionHours(e.target.value)} inputMode="decimal" style={S.input} />
               </Field>
             </div>
             <div style={S.resultCard}>
               <div style={S.cardTitle}>泡製 / 流速檢查</div>
-              <ResultRow label="常用速率" value="常見 over 4-6 hr；避免快速補磷造成低鈣、低血壓或鈣磷沉積。" highlight />
+              <ResultRow label="院內套餐常用泡法" value="Glycophos 1 amp in NS 100 mL，IVD 6 hr via CVC。" note="1 amp = phosphate 20 mmol + sodium 40 mmol。" highlight />
+              <ResultRow label="常用速率" value="常見 over 4-6 hr；院內套餐採 6 hr。" note="避免快速補磷造成低鈣、低血壓或鈣磷沉積。" highlight />
               <ResultRow label="目前速率" value={phosCalc.hours ? `${round(phosCalc.rateMmolHr, 2)} mmol/hr` : "請輸入輸注時間"} note="若速率過快或劑量偏大，建議拆次或延長輸注時間。" highlight={phosCalc.overRate} />
               <ResultRow label="濃度" value={phosCalc.volume ? `${round(phosCalc.concentration, 3)} mmol/mL` : "請輸入稀釋體積"} note="Glycophos 不可未稀釋直接給。" />
               <ResultRow label="Pump rate" value={phosCalc.volume && phosCalc.hours ? `${round(phosCalc.pumpRate)} mL/hr` : "請輸入體積與時間"} />
@@ -884,9 +1093,20 @@ export default function ElectrolyteTool() {
           </div>
         </div>
       </section>
-      )}
+      <ClinicalReference>
+        <h3 style={S.refHeading}>Glycophos 補磷重點</h3>
+        <p>低血磷可能造成呼吸肌無力、rhabdomyolysis、hemolysis、心肌功能下降與 refeeding syndrome。Glycophos 是 sodium glycerophosphate，補 phosphate 的同時也帶入 sodium；每 20 mL 含 phosphate 20 mmol 與 sodium 40 mmol。</p>
+        <Bullets items={[
+          "輕度低血磷且無症狀時常可口服或飲食補充；Phos <1 mg/dL、有症狀、refeeding/DKA/CRRT 或無法 enteral 時較常考慮 IV。",
+          "院內套餐常用：Glycophos 1 amp in NS 100 mL，IVD 6 hr via CVC。",
+          "IV phosphate 補充前建議看 total Ca、Ca x Phos product、K/Mg、腎功能與尿量。",
+          "Ca x Phos product 偏高時需小心鈣磷沉積；工具採常用警戒值約 55 mg2/dL2。",
+          "補磷可能造成 hypocalcemia、低血壓或鈣磷沉積，通常避免快速輸注，補完後追蹤 Phos/Ca/K/Mg。",
+        ]} />
+      </ClinicalReference>
+      </>)}
 
-      {activeTab === "ca" && (
+      {activeTab === "ca" && (<>
       <section style={S.section}>
         <div style={S.sectionTitle}>Calcium 補鈣速查</div>
         <div style={S.layoutGrid}>
@@ -998,7 +1218,234 @@ export default function ElectrolyteTool() {
           </div>
         </div>
       </section>
-      )}
+      <ClinicalReference>
+        <h3 style={S.refHeading}>Calcium 補鈣重點</h3>
+        <p>急性/ICU 情境若有 ionized calcium，通常比 corrected total calcium 更能反映當下生理狀態。Calcium gluconate 與 calcium chloride 的 elemental calcium 含量與組織刺激性不同，建議用 mEq elemental Ca 來比較。</p>
+        <Bullets items={[
+          "Calcium gluconate 較適合周邊 IV；calcium chloride 較刺激，外滲可造成組織壞死，通常偏好 central line 或急救情境。",
+          "Hyperkalemia with ECG changes 給 calcium 是心肌保護，不會降低血鉀；需同步給 insulin/glucose、beta-agonist、排鉀或 dialysis。",
+          "大量輸血/citrate effect 常依 iCa、血壓、ECG 與輸血速度反覆補鈣。",
+          "補鈣前後需注意 phosphate；Ca x Phos product 偏高時，補鈣或補磷都需更謹慎。",
+        ]} />
+      </ClinicalReference>
+      </>)}
+
+      {activeTab === "na" && (<>
+      <section style={S.section}>
+        <div style={S.sectionTitle}>Sodium / Hyponatremia & Hypernatremia</div>
+        <div style={S.layoutGrid}>
+          <div>
+            <div style={S.segmented}>
+              <button type="button" onClick={() => setSodiumMode("hyponatremia")} style={{ ...S.segmentButton, ...(sodiumMode === "hyponatremia" ? S.segmentButtonActive : {}) }}>低血鈉</button>
+              <button type="button" onClick={() => setSodiumMode("hypernatremia")} style={{ ...S.segmentButton, ...(sodiumMode === "hypernatremia" ? S.segmentButtonActive : {}) }}>高血鈉</button>
+            </div>
+            <div style={S.grid2}>
+              <Field label="目前 Na" hint="單位 mEq/L">
+                <input value={serumNa} onChange={(e) => setSerumNa(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+              <Field label="目標 Na" hint={sodiumMode === "hyponatremia" ? "工具會自動套用 24 hr 校正上限，不會直接跳到此目標。" : "高血鈉常先抓 145 或每 24 hr 下降約 10-12；需依急慢性。"}>
+                <input value={targetNa} onChange={(e) => setTargetNa(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+              <Field label="體重" hint="用來估 total body water。">
+                <input value={sodiumWeight} onChange={(e) => setSodiumWeight(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+              <Field label="年齡">
+                <input value={sodiumAge} onChange={(e) => setSodiumAge(e.target.value)} inputMode="numeric" style={S.input} />
+              </Field>
+              <Field label="生理性別">
+                <select value={sodiumSex} onChange={(e) => setSodiumSex(e.target.value as SodiumSex)} style={S.select}>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                </select>
+              </Field>
+              <Field label="急慢性">
+                <select value={sodiumDuration} onChange={(e) => setSodiumDuration(e.target.value as SodiumDuration)} style={S.select}>
+                  <option value="unknown">Unknown / 不明</option>
+                  <option value="chronic">Chronic / &gt;48 hr</option>
+                  <option value="acute">Acute / &lt;48 hr</option>
+                </select>
+              </Field>
+              <Field label="Volume status / 機轉">
+                <select value={sodiumVolumeStatus} onChange={(e) => setSodiumVolumeStatus(e.target.value as SodiumVolumeStatus)} style={S.select}>
+                  <option value="unclear">尚不確定</option>
+                  <option value="hypovolemic">低血容積</option>
+                  <option value="euvolemic">看似等血容積</option>
+                  <option value="hypervolemic">高血容積 / 水腫</option>
+                </select>
+              </Field>
+              <Field label="腎功能 / 尿量">
+                <select value={sodiumRenalRisk} onChange={(e) => setSodiumRenalRisk(e.target.value as RenalRisk)} style={S.select}>
+                  {Object.entries(renalText).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </Field>
+            </div>
+            {sodiumMode === "hyponatremia" && (
+              <>
+                <label style={S.checkboxRow}>
+                  <input type="checkbox" checked={sodiumSevereSymptoms} onChange={(e) => setSodiumSevereSymptoms(e.target.checked)} />
+                  <span>嚴重症狀：seizure、coma、嚴重意識改變、腦壓症狀</span>
+                </label>
+                <label style={S.checkboxRow}>
+                  <input type="checkbox" checked={sodiumOdsRisk} onChange={(e) => setSodiumOdsRisk(e.target.checked)} />
+                  <span>ODS 高風險：Na ≤105、酒精使用疾患、營養不良、肝病、低血鉀等</span>
+                </label>
+                <div style={S.grid2}>
+                  <Field label="3% NaCl 預計體積" hint="院內品項 500 mL/bot；嚴重症狀常用 100 mL bolus，非嚴重症狀則依醫囑小心調速。">
+                    <input value={hypertonicVolume} onChange={(e) => setHypertonicVolume(e.target.value)} inputMode="decimal" style={S.input} />
+                  </Field>
+                  <Field label="3% NaCl 輸注時間" hint="分鐘；例如 bolus 10 min，或連續輸注 60-240 min。">
+                    <input value={hypertonicInfusionMinutes} onChange={(e) => setHypertonicInfusionMinutes(e.target.value)} inputMode="decimal" style={S.input} />
+                  </Field>
+                </div>
+              </>
+            )}
+            {sodiumMode === "hypernatremia" && (
+              <div style={S.grid2}>
+                <Field label="Ongoing water loss" hint="可先填 0；若仍發燒、腹瀉、多尿，要另外加回。單位 L/day。">
+                  <input value={sodiumOngoingLoss} onChange={(e) => setSodiumOngoingLoss(e.target.value)} inputMode="decimal" style={S.input} />
+                </Field>
+                <Field label="預計校正時間" hint="小時；慢性/不明常分 48-72 hr，這裡先算此時間內平均速率。">
+                  <input value={sodiumCorrectionHours} onChange={(e) => setSodiumCorrectionHours(e.target.value)} inputMode="numeric" style={S.input} />
+                </Field>
+              </div>
+            )}
+
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>{sodiumMode === "hyponatremia" ? "低血鈉安全校正" : "高血鈉 free water 估算"}</div>
+              <ResultRow label="分級" value={sodiumCalc.severity} highlight />
+              <ResultRow label="TBW 估算" value={sodiumCalc.tbw ? `${round(sodiumCalc.tbw)} L` : "請輸入體重"} note={`TBW factor ${sodiumCalc.tbwFactor}（依年齡/性別粗估）。`} />
+              <ResultRow label="公式適用性" value={sodiumCalc.sodiumRenalSafetyNote} highlight={sodiumRenalRisk !== "normal"} />
+              <ResultRow label="監測建議" value={sodiumCalc.sodiumMonitoringText} highlight={sodiumRenalRisk !== "normal"} />
+              {sodiumMode === "hyponatremia" ? (
+                <>
+                  <ResultRow label="24 hr 校正上限" value={`最多 +${sodiumCalc.correctionLimit24} mEq/L/day`} note={sodiumOdsRisk ? "ODS 高風險者採更保守上限；需更密集追蹤。" : "多數慢性/不明低血鈉仍建議避免 >8-10 mEq/L/day；本工具先採保守 8。"} highlight />
+                  <ResultRow label="本日安全目標" value={sodiumCalc.na ? `Na ${round(sodiumCalc.desiredNa)} mEq/L（約 +${round(sodiumCalc.deltaNa)}）` : "請輸入 Na"} note="嚴重症狀時先求上升 4-6 mEq/L 緩解腦水腫，不追求一次補到正常。" highlight />
+                  <ResultRow label="3% NaCl 100 mL 估計上升" value={sodiumCalc.naRisePer100Ml3 ? `約 +${round(sodiumCalc.naRisePer100Ml3, 2)} mEq/L` : "請輸入 Na/體重"} note="Adrogue-Madias 粗估；實際上升可能因水利尿、尿鈉尿鉀而偏離。" />
+                  <ResultRow label="若嚴重症狀" value={sodiumSevereSymptoms ? `3% NaCl 100 mL over 10 min，可重複，工具估約 ${sodiumCalc.bolusCount} 次達 +4 mEq/L` : "無嚴重症狀時通常不需急速 3% bolus"} note="每次 bolus 後重評神經症狀與 Na；避免 overcorrection。" highlight={sodiumSevereSymptoms} />
+                  <ResultRow label="若用 3% 連續補至本日目標" value={sodiumCalc.estimated3PercentMl ? `粗估約 ${round(sodiumCalc.estimated3PercentMl)} mL` : "請輸入 Na/體重/目標"} note="僅作量級估算，不等於固定醫囑；需 q2-4h Na 追蹤。" />
+                  <ResultRow label="NS 1 L 估計影響" value={sodiumCalc.nsNaChangePerL ? `${sodiumCalc.nsNaChangePerL >= 0 ? "+" : ""}${round(sodiumCalc.nsNaChangePerL, 2)} mEq/L` : "請輸入 Na/體重"} note="低血容積低血鈉補 NS 後 ADH 下降，Na 可能比公式更快上升。" />
+                </>
+              ) : (
+                <>
+                  <ResultRow label="校正策略" value={sodiumCalc.hyperCorrectionLimit24} highlight />
+                  <ResultRow label="本階段目標" value={sodiumCalc.na ? `Na ${round(sodiumCalc.desiredNa)} mEq/L（約 -${round(sodiumCalc.deltaNa)}）` : "請輸入 Na"} note="急性 sodium gain 可較快處理；慢性/不明則建議密集追蹤與分段校正。" highlight />
+                  <ResultRow label="Free water deficit" value={sodiumCalc.freeWaterDeficit ? `約 ${round(sodiumCalc.freeWaterDeficit, 2)} L` : "請輸入 Na/體重/目標"} note="公式：TBW x [(目前 Na / 目標 Na) - 1]。不含 ongoing loss。" highlight />
+                  <ResultRow label="含 ongoing loss" value={sodiumCalc.totalWaterPlan ? `約 ${round(sodiumCalc.totalWaterPlan, 2)} L` : "請輸入資料"} note="發燒、腹瀉、多尿、NG drainage 等需另外加回。" />
+                  <ResultRow label="平均 free water 速率" value={sodiumCalc.waterRate ? `${round(sodiumCalc.waterRate)} mL/hr` : "請輸入校正時間"} note="可用 enteral free water 或 D5W；若低血容積/休克先補 isotonic crystalloid。" highlight />
+                </>
+              )}
+            </div>
+          </div>
+
+          <div>
+            {sodiumMode === "hyponatremia" && (
+              <div style={S.resultCard}>
+                <div style={S.cardTitle}>3% NaCl 泡製 / 流速檢查</div>
+                <ResultRow label="院內品項" value="3% 高濃度 NaCl 500 mL；513 mEq/L" note="等於 0.513 mEq/mL；100 mL 約 51.3 mEq Na。" highlight />
+                <ResultRow label={sodiumSevereSymptoms ? "建議體積" : "前 6 hr 建議體積"} value={sodiumCalc.suggestedHypertonicVolumeMl ? `約 ${round(sodiumCalc.suggestedHypertonicVolumeMl)} mL（${round(sodiumCalc.suggestedHypertonicVolumeMl / 500, 2)} bot）` : "通常不需 3% NaCl"} note={sodiumCalc.suggestedHypertonicNote} highlight />
+                <ResultRow label="建議輸注時間" value={sodiumCalc.suggestedHypertonicVolumeMl ? sodiumCalc.suggestedHypertonicTimeText : "依病因處理"} />
+                <ResultRow label="建議流速" value={sodiumCalc.suggestedHypertonicPumpRate ? `約 ${round(sodiumCalc.suggestedHypertonicPumpRate, 1)} mL/hr` : "不適用"} note={sodiumSevereSymptoms ? "100 mL over 10 min 換算約 600 mL/hr；可用 infusion pump 或依院內急救給法。" : "先跑 6 hr 或更早複查 Na；若上升太快就降速或停用。"} highlight />
+                <ResultRow label="建議量估計上升" value={sodiumCalc.suggestedHypertonicRise ? `約 +${round(sodiumCalc.suggestedHypertonicRise, 2)} mEq/L` : "請輸入 Na/體重/目標"} note="用 Adrogue-Madias 公式粗估；補鉀、水利尿或低血容積矯正後可能上升更快。" />
+                <ResultRow label="本次 3% NaCl 量" value={sodiumCalc.hypertonicVolMl ? `${round(sodiumCalc.hypertonicVolMl)} mL（約 ${round(sodiumCalc.hypertonicNaLoad, 1)} mEq Na）` : "請輸入體積"} />
+                <ResultRow label="Pump rate" value={sodiumCalc.hypertonicPumpRate ? `${round(sodiumCalc.hypertonicPumpRate)} mL/hr` : "請輸入體積與時間"} note={sodiumSevereSymptoms ? "嚴重症狀 bolus 常見 100 mL over 10 min；每次後重評。" : "非嚴重症狀連續輸注需依 Na trend 調速，通常 q2-4h 追蹤。"} highlight />
+                <ResultRow label="本次估計 Na 上升" value={sodiumCalc.hypertonicEstimatedRise ? `約 +${round(sodiumCalc.hypertonicEstimatedRise, 2)} mEq/L` : "請輸入 Na/體重/體積"} note="Adrogue-Madias 粗估；實際可能因水利尿而上升更快。" highlight={sodiumCalc.hypertonicEstimatedRise > sodiumCalc.correctionLimit24} />
+                <ResultRow label="若同速率跑 24 hr" value={sodiumCalc.hypertonicEstimatedRise24 ? `約 +${round(sodiumCalc.hypertonicEstimatedRise24, 1)} mEq/L/day` : "請輸入輸注時間"} note={`目前 24 hr 上限設定：+${sodiumCalc.correctionLimit24} mEq/L/day。`} highlight={sodiumCalc.hypertonicOverLimit} />
+                <ResultRow label="安全監測" value="建議 q2-4h Na；若低血容積補液後、尿量突然增加或正在補 K，要更小心 overcorrection。" />
+              </div>
+            )}
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>機轉速查</div>
+              <ResultRow label="目前分型" value={sodiumCalc.mechanismTitle} highlight />
+              <Bullets items={sodiumCalc.mechanismItems} />
+            </div>
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>需要同步確認</div>
+              {sodiumMode === "hyponatremia" ? (
+                <Bullets items={[
+                  "Serum Osm：先確認是否 hypotonic hyponatremia。",
+                  "Glucose：高血糖會造成 translocational hyponatremia，需校正 Na。",
+                  "Urine Osm / urine Na：協助分 SIADH、低血容積、低 solute intake 或腎性流失。",
+                  "K：補鉀本身也會拉高 serum Na，低血鉀也是 ODS 風險因子。",
+                  "若 Na 上升過快：考慮停止高張鹽水、補 D5W，必要時 desmopressin clamp。",
+                ]} />
+              ) : (
+                <Bullets items={[
+                  "先看血流動力：shock/低血容積先補 isotonic crystalloid，不要先只給 D5W。",
+                  "Urine output + urine Osm：多尿且尿很稀要想 diabetes insipidus。",
+                  "近期 sodium load：3% NaCl、NaHCO3、TPN、透析液或大量 NS。",
+                  "Free water deficit 只是起始估算，需 q4-6h 依 Na trend 重新調速。",
+                  "成人資料對「降太快造成腦水腫」證據較弱，但慢性/不明仍建議保守分段監測。",
+                ]} />
+              )}
+            </div>
+            <div style={S.warning}>
+              {sodiumMode === "hyponatremia" && sodiumCalc.hypertonicOverLimit && <p>目前 3% NaCl 設定若持續太久，估計可能超過 24 小時校正上限；請縮短、放慢、改分次 bolus，並依 Na trend 調整。</p>}
+              {sodiumRenalRisk === "oliguria" && <p>少尿/無尿時公式容易失準，3% NaCl 或 free water 都可能造成容量或 Na 變化不可預期，建議更密集追蹤並評估 RRT/專科共同處理。</p>}
+              {sodiumRenalRisk === "crrt" && <p>CRRT/HD 中 serum Na 會受透析液、置換液、effluent rate 與脫水量影響，需同步確認機器設定與醫囑。</p>}
+              鈉異常校正建議需結合症狀、急慢性與檢驗趨勢。此工具提供安全框架與公式估算；嚴重症狀、Na &lt;120、Na &gt;160、腎衰竭、肝病、營養不良或校正速度失控時，建議 ICU/腎臟科或相關專科共同處理。
+            </div>
+          </div>
+        </div>
+      </section>
+      <ClinicalReference>
+        <h3 style={S.refHeading}>低血鈉：目前仍不建議一次補太快</h3>
+        <p>近年有研究提醒，低血鈉校正過慢或長時間維持低鈉可能和較差預後相關；但這不等於 ODS 已經不存在。慢性或不明時間的低血鈉仍要避免過快校正，尤其 Na 很低、低血鉀、酒精使用疾患、營養不良或肝病者。</p>
+        <Bullets items={[
+          "院內 3% 高濃度 NaCl：500 mL/bot，513 mEq/L；100 mL 約含 Na 51.3 mEq。",
+          "嚴重神經症狀時，優先用 3% NaCl bolus 讓 Na 先上升約 4-6 mEq/L，目標是改善腦水腫，不是補到正常。",
+          "慢性或不明低血鈉：多數情境建議 24 hr 不超過 8-10 mEq/L；ODS 高風險者常採更保守上限約 4-6 mEq/L/day。",
+          "低血容積低血鈉補 NS 後，ADH 下降可能突然水利尿，Na 反而飆升，需密集追蹤。",
+          "若 overcorrection，可考慮 D5W 補回 free water，必要時 desmopressin clamp。",
+        ]} />
+
+        <h3 style={S.refHeading}>3% NaCl 公式怎麼算？</h3>
+        <p>工具使用 Adrogue-Madias 公式粗估輸液對 serum Na 的影響。這是量級估算，實際變化會受尿量、水利尿、尿 Na/K、補 K、ongoing loss 影響。</p>
+        <div style={S.formulaBox}>
+          <div style={S.formulaLine}><span>通式</span><strong>(輸注液 Na + K - serum Na) / (TBW + 1)</strong></div>
+          <div style={S.formulaLine}><span>3% NaCl</span><strong>(513 - serum Na) / (TBW + 1) = 每 1 L 約上升多少 Na</strong></div>
+          <div style={S.formulaHint}>例如 Na 122、TBW 27 L：每 1 L 約 (513-122)/(27+1)=14 mEq/L；100 mL 約 +1.4 mEq/L。</div>
+        </div>
+        <h3 style={S.refHeading}>腎功能與尿量怎麼影響？</h3>
+        <p>腎功能/尿量不直接放進 Na 校正公式，但會大幅影響公式準確度與安全性。少尿/無尿時，病人較難自行排水或排鈉；CRRT/HD 時，Na 變化還會被透析液、置換液、effluent rate 與脫水量牽動。</p>
+        <Bullets items={[
+          "腎功能穩定且有尿：公式較適合作起始估算，但仍需依 Na trend 調整。",
+          "腎功能差但仍有尿：水鈉排除不穩，建議更密集追蹤 Na、I/O、體重與容量狀態。",
+          "少尿/無尿：3% NaCl、NS、D5W 或 enteral water 都可能更容易造成容量負荷或校正失控，通常要更保守。",
+          "CRRT/HD：不要只看公式，需同步看機器處方、dialysate/replacement sodium、effluent rate、病人脫水量與實際 Na trend。",
+        ]} />
+
+        <h3 style={S.refHeading}>Volume status 怎麼判斷？</h3>
+        <Bullets items={[
+          "Hypovolemic：血壓低、HR 快、口乾、orthostatic hypotension、尿量少、BUN/Cr 上升；常見 vomiting、diarrhea、diuretics、third spacing。Urine Na 常 <30，但用利尿劑時可能不準。",
+          "Euvolemic：沒有明顯水腫或脫水；常見 SIADH、藥物、hypothyroidism、adrenal insufficiency、primary polydipsia/low solute。SIADH 常見 urine Osm >100、urine Na >30。",
+          "Hypervolemic：水腫、肺水腫、ascites、JVP 上升；常見 HF、cirrhosis、nephrotic syndrome、advanced CKD。通常 total body water 和 Na 都增加，但水增加更多。",
+          "低血鈉建議同步看 serum Osm、glucose、urine Osm、urine Na、I/O、利尿劑使用、腎上腺/甲狀腺功能與病人實際體液狀態。",
+        ]} />
+
+        <h3 style={S.refHeading}>低血鈉機轉速查</h3>
+        <Bullets items={[
+          "Hypovolemic：Na 與水都少，但 Na loss 較多；治療多為 isotonic saline 補有效循環血量。",
+          "Euvolemic：身體總鈉大致正常但水太多；治療依原因，如 fluid restriction、增加 solute、停致病藥。",
+          "Hypervolemic：Na 與水都多，但水增加更多；常需 fluid/sodium restriction、loop diuretic 與處理原疾病。",
+          "Pseudo/translocational：高血糖、mannitol、脂血或高蛋白會讓 Na 看起來低，治療方向不同。",
+        ]} />
+
+        <h3 style={S.refHeading}>高血鈉：校正速度與公式</h3>
+        <p>高血鈉傳統教學會說慢性高血鈉不可降太快，避免腦水腫；但成人 ICU/住院研究中，快速校正造成神經傷害的證據比兒科弱。實務上仍建議慢性或不明高血鈉分段校正並密集追蹤，但也要避免因太保守而讓 severe hypernatremia 拖太久。</p>
+        <Bullets items={[
+          "急性高血鈉或明確 sodium gain：可較積極校正並處理鈉來源。",
+          "慢性或不明：常以每 24 hr 下降不超過約 10-12 mEq/L 作保守起點，依神經狀態與 Na trend 調整。",
+          "低血容積/休克時先用 isotonic crystalloid resuscitation；血流動力穩定後再用 D5W 或 enteral free water 補自由水。",
+          "Free water deficit = TBW x [(目前 Na / 目標 Na) - 1]；仍要另外加上 ongoing losses。",
+        ]} />
+        <h3 style={S.refHeading}>高血鈉機轉速查</h3>
+        <Bullets items={[
+          "Hypovolemic hypernatremia：水流失 > 鈉流失；常見發燒/出汗、腹瀉、滲透性利尿、diuretics。",
+          "Euvolemic hypernatremia：主要是水流失；常見 diabetes insipidus、insensible loss 或無法喝水。",
+          "Hypervolemic hypernatremia：鈉負荷過多；常見 hypertonic saline、NaHCO3、TPN、透析液或大量 sodium-containing fluid。",
+        ]} />
+      </ClinicalReference>
+      </>)}
 
       {activeTab === "reference" && (<>
       <section style={S.section}>
@@ -1039,6 +1486,12 @@ export default function ElectrolyteTool() {
                 <td style={S.td}>iCa、total Ca/albumin、ECG、BP、Phos/Ca x Phos product、管路外滲風險。</td>
               </tr>
               <tr>
+                <td style={S.tdStrong}>Sodium</td>
+                <td style={S.td}>3% 高濃度 NaCl 瓶 500 mL：513 mEq/L；另依情境使用 0.9% NaCl、D5W 或 enteral free water。</td>
+                <td style={S.td}>mEq/L correction；低血鈉重點是 24 hr 上升上限，高血鈉重點是 free water deficit。</td>
+                <td style={S.td}>神經症狀、急慢性、serum Osm、glucose、urine Osm/Na、I/O、K、ODS 風險或高血鈉腦水腫風險。</td>
+              </tr>
+              <tr>
                 <td style={S.tdStrong}>CRRT / CVVHDF</td>
                 <td style={S.td}>Prismasol B0/B4、KCl add-in 依院內 CVVH protocol。</td>
                 <td style={S.td}>看 serum level trend 與 effluent / replacement / dialysate flow。</td>
@@ -1049,61 +1502,6 @@ export default function ElectrolyteTool() {
         </div>
       </section>
 
-      <section style={S.section}>
-        <div style={S.sectionTitle}>臨床參考</div>
-        <div style={S.referenceBody}>
-          <h3 style={S.refHeading}>整體原則</h3>
-          <p>電解質補充不只看單一數值，還要同時看症狀、ECG、腎功能/尿量、酸鹼狀態、是否持續流失，以及是否正在 CRRT。工具中的建議量是「本次先補多少」的粗估，補完後需依複查值與趨勢再調整。</p>
-
-          <h3 style={S.refHeading}>KCl concentrate 的底線</h3>
-          <p>KCl concentrate 必須稀釋後才能 IV infusion；未稀釋直接注射可能造成致命心律不整或心跳停止。若 serum K &gt;2.5 mEq/L，仿單常見上限為 10 mEq/hr、濃度最高 40 mEq/L；若 K &lt;2 mEq/L 且有 ECG change 或 paralysis，才考慮在連續心電監測下更高速率。</p>
-
-          <h3 style={S.refHeading}>為什麼優先用 NS？</h3>
-          <p>嚴重低血鉀時，dextrose-containing fluid 可能刺激 insulin 分泌並讓 K 短暫往細胞內移動；除非有其他理由，critical replacement 通常偏好用 saline 稀釋。</p>
-
-          <h3 style={S.refHeading}>補鉀前後要一起看的東西</h3>
-          <Bullets items={[
-            "Mg：低 Mg 會造成 renal K wasting，常讓低血鉀補不起來。",
-            "腎功能與尿量：少尿/無尿時補鉀要非常保守，並提早複查。",
-            "酸鹼與血糖/insulin：鹼中毒、insulin、beta-agonist 會讓 K 往細胞內移動。",
-            "ECG 與用藥：digoxin、QT/arrhythmia risk、利尿劑、laxative、amphotericin B 都會影響風險判斷。",
-          ]} />
-
-          <h3 style={S.refHeading}>MgSO4 補鎂重點</h3>
-          <p>低血鎂會讓低血鉀難以矯正，也可能造成 QT prolongation、arrhythmia、tetany 或 seizure。MgSO4 劑量臨床常用 g 表示，而不是 mEq；院內紅標 10% 20 mL/Amp = 2 g = 16.2 mEq Mg。</p>
-          <Bullets items={[
-            "非急救補鎂常用 1-2 g IV over 1 hr；較明顯低鎂或持續流失可 4-8 g over 12-24 hr。",
-            "Torsades 或 severe arrhythmia 可先 MgSO4 1-2 g 快速給予，之後再依 Mg/K/Ca 與 ECG 慢速補足。",
-            "腎功能差、少尿或高 Mg 風險時需保守減量，並監測低血壓、DTR 下降、呼吸抑制等毒性。",
-          ]} />
-
-          <h3 style={S.refHeading}>Glycophos 補磷重點</h3>
-          <p>低血磷可能造成呼吸肌無力、rhabdomyolysis、hemolysis、心肌功能下降與 refeeding syndrome。Glycophos 是 sodium glycerophosphate，補 phosphate 的同時也帶入 sodium；每 20 mL 含 phosphate 20 mmol 與 sodium 40 mmol。</p>
-          <Bullets items={[
-            "輕度低血磷且無症狀時常可口服或飲食補充；Phos <1 mg/dL、有症狀、refeeding/DKA/CRRT 或無法 enteral 時較常考慮 IV。",
-            "IV phosphate 補充前建議看 total Ca、Ca x Phos product、K/Mg、腎功能與尿量。",
-            "Ca x Phos product 偏高時需小心鈣磷沉積；工具採常用警戒值約 55 mg2/dL2。",
-            "補磷可能造成 hypocalcemia、低血壓或鈣磷沉積，通常避免快速輸注，補完後追蹤 Phos/Ca/K/Mg。",
-          ]} />
-
-          <h3 style={S.refHeading}>Calcium 補鈣重點</h3>
-          <p>急性/ICU 情境若有 ionized calcium，通常比 corrected total calcium 更能反映當下生理狀態。Calcium gluconate 與 calcium chloride 的 elemental calcium 含量與組織刺激性不同，建議用 mEq elemental Ca 來比較。</p>
-          <Bullets items={[
-            "Calcium gluconate 較適合周邊 IV；calcium chloride 較刺激，外滲可造成組織壞死，通常偏好 central line 或急救情境。",
-            "Hyperkalemia with ECG changes 給 calcium 是心肌保護，不會降低血鉀；需同步給 insulin/glucose、beta-agonist、排鉀或 dialysis。",
-            "大量輸血/citrate effect 常依 iCa、血壓、ECG 與輸血速度反覆補鈣。",
-            "補鈣前後需注意 phosphate；Ca x Phos product 偏高時，補鈣或補磷都需更謹慎。",
-          ]} />
-
-          <h3 style={S.refHeading}>CVVHDF 與電解質</h3>
-          <p>院內小白畫面屬 CVVHDF，會同時有 pre-dilution、dialysate、post-replacement 與病人脫水量。抗生素調整常看的「流速」多半是 effluent 或 CRRT dose，代表清除能力；KCl 加到 Prismasol B0 則是調整 replacement/CRRT fluid 的 K 濃度，兩者不是同一件事。</p>
-          <Bullets items={[
-            "院內 CVVH KCl supplement：K <4.5 mEq/L 時，CVVH solution 每袋加 KCl 20 mEq；K >=4.5 mEq/L 不加。",
-            "Prismasol B0 是 0K；每 5000 mL 加 KCl 20 mEq 後約變成 4K solution。",
-            "CRRT 可持續清除 phosphate 和 magnesium，因此 refeeding、DKA、sepsis 或高 effluent rate 時可能需要反覆補充與追蹤。",
-          ]} />
-        </div>
-      </section>
       </>)}
     </div>
   );
@@ -1119,6 +1517,9 @@ const S: Record<string, CSSProperties> = {
   tabBar: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(104px, 1fr))", gap: 8, background: "#E2E8F0", padding: 4, borderRadius: 12, marginBottom: 16 },
   tabButton: { border: "none", borderRadius: 9, background: "transparent", color: "#475569", padding: "10px 6px", fontSize: 13, fontWeight: 900, cursor: "pointer" },
   tabButtonActive: { background: "#FFFFFF", color: ACCENT, boxShadow: "0 1px 3px rgba(15,23,42,0.12)" },
+  segmented: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: "#E2E8F0", padding: 4, borderRadius: 12, marginBottom: 14 },
+  segmentButton: { border: "none", borderRadius: 9, background: "transparent", color: "#475569", padding: "10px 8px", fontSize: 13, fontWeight: 900, cursor: "pointer" },
+  segmentButtonActive: { background: "#FFFFFF", color: ACCENT, boxShadow: "0 1px 3px rgba(15,23,42,0.12)" },
   section: { background: "#fff", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", boxSizing: "border-box", overflow: "hidden" },
   sectionTitle: { fontSize: 13, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0, marginBottom: 14 },
   layoutGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 },
@@ -1137,6 +1538,9 @@ const S: Record<string, CSSProperties> = {
   resultLabel: { color: "#64748B", fontSize: 13, fontWeight: 800 },
   resultNote: { color: "#94A3B8", fontSize: 12, lineHeight: 1.45, marginTop: 3 },
   resultValue: { color: "#0F172A", fontSize: 14, lineHeight: 1.55, wordBreak: "break-word", fontWeight: 800 },
+  clinicalReference: { background: "#FFFFFF", border: "1px solid #DDE5F0", borderRadius: 12, padding: "0 14px", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" },
+  clinicalSummary: { cursor: "pointer", color: "#0F172A", fontSize: 15, fontWeight: 900, padding: "13px 0", listStylePosition: "inside" },
+  clinicalBody: { color: "#334155", fontSize: 13, lineHeight: 1.65, padding: "0 0 14px" },
   crrtBox: { marginTop: 14, border: "1px solid #CCFBF1", background: "#F0FDFA", borderRadius: 10, padding: 12 },
   protocolBox: { background: "#FFFFFF", border: "1px solid #99F6E4", borderRadius: 10, padding: 12, marginBottom: 12 },
   protocolTitle: { color: "#0F766E", fontSize: 13, fontWeight: 900, marginBottom: 8 },

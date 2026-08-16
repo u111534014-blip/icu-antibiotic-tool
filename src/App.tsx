@@ -14,6 +14,7 @@ import SepticShock from './SepticShock';
 import InsulinTool from './InsulinTool';
 import HeparinTool from './HeparinTool';
 import ElectrolyteTool from './ElectrolyteTool';
+import AcidBaseTool from './AcidBaseTool';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -617,7 +618,7 @@ function PrepQuickRef() {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const viewportWidth = useViewportWidth();
   const [drugId, setDrugId] = useState("");
@@ -769,7 +770,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool"].includes(page);
+  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool", "acidBaseTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -835,6 +836,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "electrolyteTool" ? S.menuItemActive : {}) }}>
                 ⚡ 電解質異常工具
               </button>
+              <button onClick={() => { setPage("acidBaseTool"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "acidBaseTool" ? S.menuItemActive : {}) }}>
+                🧫 酸鹼異常 / ABG
+              </button>
             </div>
           )}
           {menuOpen && (
@@ -864,6 +869,8 @@ export default function App() {
           <HeparinTool />
         ) : page === "electrolyteTool" ? (
           <ElectrolyteTool />
+        ) : page === "acidBaseTool" ? (
+          <AcidBaseTool />
         ) : page === "prepRef" ? (
           <PrepQuickRef />
         ) : (

@@ -849,6 +849,17 @@ export default function ElectrolyteTool() {
             </div>
             <ResultRow label="15% KCl 原液量" value={calc.dose ? `${round(calc.stockMl)} mL，約 ${ceilHalf(calc.amps)} amp` : "-"} note="院內 15% KCl：20 mEq/10 mL = 2 mEq/mL。" />
             <ResultRow label="拆袋建議" value={bagPlan} />
+            <DetailBox title="MI/院內低血鉀補充參考" summary="K 3.0-3.5: 20 mEq；2.5-3.0: 40 mEq；<2.5: 60 mEq">
+              <div style={S.detailGrid}>
+                <div style={S.detailItem}><span>一般目標</span><strong>多數病人 keep K &gt;3.5</strong></div>
+                <div style={S.detailItem}><span>較高目標</span><strong>Arrhythmia 或血壓不穩時可希望 keep K &gt;4.0</strong></div>
+                <div style={S.detailItem}><span>K 3.0-3.5</span><strong>KCl 20 mEq，補完後依 regular follow-up 追蹤</strong></div>
+                <div style={S.detailItem}><span>K 2.5-3.0</span><strong>KCl 40 mEq，給完約 1 hr 或依追蹤時間複查</strong></div>
+                <div style={S.detailItem}><span>K &lt;2.5</span><strong>KCl 60 mEq，給完約 1 hr 或依追蹤時間複查</strong></div>
+                <div style={S.detailItemWide}><span>腎功能不佳 Cr &gt;1.5</span><strong>K 2.5-3.0 時再給 10 mEq；K &lt;2.5 時再給 20 mEq，並追蹤指數。工具本身仍會依「腎功能 / 尿量」選項先保守估算。</strong></div>
+                <div style={S.detailItemWide}><span>DKA/HHS</span><strong>不套用一般補鉀級距；若 K &lt;3.3，需先停止 regular insulin pump，先補充 KCl。</strong></div>
+              </div>
+            </DetailBox>
           </div>
         </section>
 
@@ -932,6 +943,11 @@ export default function ElectrolyteTool() {
               value={access === "central" ? "CVC：KCl 20 mEq in NS 100 mL，run >1 hr；限水可 50 mL。" : access === "peripheral" ? "周邊 line：KCl 20 mEq in NS 250 mL，run >1 hr。" : "CVVH：KCl 加入 CVVH solution，不是一般 IV 輸注。"}
               note="依你提供的 ICU 套餐整理；實際仍需依病人狀況、line、ECG 風險與醫囑。"
               highlight
+            />
+            <ResultRow
+              label="MI 快速給法"
+              value={access === "central" ? "CVC：一般 20 mEq in NS 100 mL（限水 50 mL）run at least 2 hr；若需快速大量補且 K <2.5，可在 pump/監測下至少 30 min。" : access === "peripheral" ? "無 CVC：口服優先，或已泡成 500 mL 的 KCl slow drip >4 hr。" : "CVVH：依機器液體處方調整。"}
+              note="此為 MI 醫師補充的實務寫法；比工具預設更保守時，以病人安全與院內流程優先。"
             />
             <ResultRow label="建議速率 / 約需時間" value={calc.prepDose ? calc.suggestedText : "請輸入支數或補充量"} note={access === "peripheral" ? "周邊 IV 常用 10 mEq/hr。" : access === "central" ? "中心靜脈 / ICU 常用 20 mEq/hr；更高速率需監測與醫囑。" : "不可用一般 IV 補鉀速率套用。"} highlight />
             <ResultRow label="濃度" value={calc.volume ? `${round(calc.concentration, 3)} mEq/mL` : "請輸入體積"} note={calc.concentrationGuide} highlight={calc.overPeripheralConc} />
@@ -1061,6 +1077,15 @@ export default function ElectrolyteTool() {
               <ResultRow label="Beta-agonist" value={hyperKCalc.betaAgonistAction} />
               <ResultRow label="NaHCO3" value={hyperKCalc.bicarbonateAction} highlight={hyperKAcidosis} />
               <ResultRow label="NaHCO3 常見劑量" value={hyperKCalc.bicarbonateDose} highlight={hyperKAcidosis} />
+              <DetailBox title="MI/院內高血鉀處置參考" summary="K 5.5-6: Kalimate；K >6: RI + D50W；ECG change 加 Calglon">
+                <div style={S.detailGrid}>
+                  <div style={S.detailItem}><span>K 5.5-6.0</span><strong>若無 ECG change，可考慮 Kalimate 3 packs q6h；實際包數請與 VS/醫囑確認。</strong></div>
+                  <div style={S.detailItem}><span>K &gt;6.0 無 ECG change</span><strong>Regular insulin 10 U + D50W 2 amp；1 hr 後 recheck K/血糖。</strong></div>
+                  <div style={S.detailItem}><span>輔助移鉀</span><strong>可視情況加 bricanyl 或 ventolin inhalation 1-2 支，搭配 binder 使用。</strong></div>
+                  <div style={S.detailItem}><span>合併代謝性酸中毒</span><strong>若 pH &lt;7.25、HCO3 &lt;18，可討論是否加 Rolikan / NaHCO3。</strong></div>
+                  <div style={S.detailItemWide}><span>K &gt;6.0 + ECG change</span><strong>先給 Calglon 3 amp 保護心肌，再給上述移鉀/排鉀治療；需 ECG monitoring 與密集複查。</strong></div>
+                </div>
+              </DetailBox>
               <DetailBox title="Rolikan 7% 換算" summary="50 mEq ≈ 60 mL ≈ 3 amp">
                 <div style={S.detailGrid}>
                   <div style={S.detailItem}><span>Rolikan 針</span><strong>7% 20 mL/Amp = {ROLIKAN_MEQ_PER_AMP} mEq</strong></div>
@@ -1225,6 +1250,14 @@ export default function ElectrolyteTool() {
               </div>
               <ResultRow label="院內 10% MgSO4 原液量" value={mgCalc.doseG ? `${round(mgCalc.stockMl)} mL，約 ${round(mgCalc.ampules, 1)} amp` : "-"} note="10% MgSO4：0.1 g/mL；紅標 20 mL = 2 g/amp = 16.2 mEq Mg/amp。" />
               <ResultRow label="mmol / mEq 換算" value={mgCalc.doseG ? `約 ${round(mgCalc.mmol)} mmol Mg，${round(mgCalc.meq, 1)} mEq Mg` : "-"} note="依院內標示：MgSO4 2 g/amp = 16.2 mEq Mg；1 g 約 8.1 mEq Mg。" />
+              <DetailBox title="MI/院內補鎂參考" summary="Mg 1.5-2: 1 amp；Mg <1.5: 2 amp">
+                <div style={S.detailGrid}>
+                  <div style={S.detailItem}><span>常用目標</span><strong>Keep Mg &gt;2 mg/dL，約等於 &gt;1 mmol/L</strong></div>
+                  <div style={S.detailItem}><span>Mg 1.5-2 mg/dL</span><strong>MgSO4 1 amp in NS 100 mL，run &gt;2 hr</strong></div>
+                  <div style={S.detailItem}><span>Mg &lt;1.5 mg/dL</span><strong>MgSO4 2 amp in NS 100 mL，run &gt;4 hr</strong></div>
+                  <div style={S.detailItemWide}><span>腎功能不佳 Cr &gt;1.5</span><strong>減半給予，並追蹤 Mg、K、Ca、DTR/呼吸與血壓。</strong></div>
+                </div>
+              </DetailBox>
             </div>
           </div>
 
@@ -1349,22 +1382,31 @@ export default function ElectrolyteTool() {
               <ResultRow label="Glycophos 原液量" value={phosCalc.doseMmol ? `${round(phosCalc.glycoMl)} mL，約 ${round(phosCalc.ampules, 1)} amp` : "-"} note="Glycophos：phosphate 1 mmol/mL；1 amp 20 mL = phosphate 20 mmol。" />
               <ResultRow label="Sodium load" value={phosCalc.doseMmol ? `約 ${round(phosCalc.sodiumMmol)} mmol Na` : "-"} note="Glycophos 同時提供 sodium 2 mmol/mL；限鈉/水腫病人需注意。" />
               <ResultRow label="Ca x Phos product" value={phosCalc.caPhosProduct ? `${round(phosCalc.caPhosProduct, 1)}` : "未輸入 Total Ca"} note="使用 total Ca (mg/dL) x Phos (mg/dL)；常用警戒值約 55 mg2/dL2，偏高時補磷需更謹慎。" highlight={phosCalc.highCaPhos} />
+              <DetailBox title="MI/院內補磷參考" summary="P <2: Glycophos 1 amp；限水可 100 mL">
+                <div style={S.detailGrid}>
+                  <div style={S.detailItem}><span>常用目標</span><strong>Routine 補到 P &gt;2 mg/dL</strong></div>
+                  <div style={S.detailItem}><span>P &lt;2 mg/dL</span><strong>Glycophos 1 amp in NS 250 mL run 4 hr</strong></div>
+                  <div style={S.detailItem}><span>限水</span><strong>可用 NS 100 mL；院內 ICU 套餐常見 1 amp in NS 100 mL run 6 hr via CVC</strong></div>
+                  <div style={S.detailItemWide}><span>安全提醒</span><strong>不給太快，需注意對 Ca 的影響；雖然證據有限，但原理上 Ca 下降太快可能造成 arrhythmia。腎功能不佳 Cr &gt;1.5 時禁忌/需非常謹慎。</strong></div>
+                </div>
+              </DetailBox>
             </div>
           </div>
 
           <div>
             <div style={S.grid2}>
-              <Field label="預計稀釋體積" hint="院內套餐：Glycophos 1 amp in NS 100 mL，6 hr via CVC。">
+              <Field label="預計稀釋體積" hint="一般：Glycophos 1 amp in NS 250 mL；限水/CVC 可用 NS 100 mL。">
                 <input value={phosDiluentVolume} onChange={(e) => setPhosDiluentVolume(e.target.value)} inputMode="numeric" style={S.input} />
               </Field>
-              <Field label="預計輸注時間" hint="院內套餐常用 6 hr；依劑量、Ca/Phos、腎功能與監測調整。">
+              <Field label="預計輸注時間" hint="一般 run 4 hr；限水/CVC 套餐常用 6 hr。">
                 <input value={phosInfusionHours} onChange={(e) => setPhosInfusionHours(e.target.value)} inputMode="decimal" style={S.input} />
               </Field>
             </div>
             <div style={S.resultCard}>
               <div style={S.cardTitle}>泡製 / 流速檢查</div>
-              <ResultRow label="院內套餐常用泡法" value="Glycophos 1 amp in NS 100 mL，IVD 6 hr via CVC。" note="1 amp = phosphate 20 mmol + sodium 40 mmol。" highlight />
-              <ResultRow label="常用速率" value="常見 over 4-6 hr；院內套餐採 6 hr。" note="避免快速補磷造成低鈣、低血壓或鈣磷沉積。" highlight />
+              <ResultRow label="院內一般給法" value="Glycophos 1 amp in NS 250 mL，run 4 hr。" note="1 amp = phosphate 20 mmol + sodium 40 mmol。" highlight />
+              <ResultRow label="限水 / CVC 給法" value="可用 NS 100 mL；ICU 套餐常見 Glycophos 1 amp in NS 100 mL，run 6 hr via CVC。" note="限水時濃度較高，需確認管路、監測與醫囑。" />
+              <ResultRow label="常用速率" value="一般 4 hr；限水/CVC 可拉長到 6 hr。" note="避免快速補磷造成低鈣、低血壓或鈣磷沉積。" highlight />
               <ResultRow label="目前速率" value={phosCalc.hours ? `${round(phosCalc.rateMmolHr, 2)} mmol/hr` : "請輸入輸注時間"} note="若速率過快或劑量偏大，建議拆次或延長輸注時間。" highlight={phosCalc.overRate} />
               <ResultRow label="濃度" value={phosCalc.volume ? `${round(phosCalc.concentration, 3)} mmol/mL` : "請輸入稀釋體積"} note="Glycophos 不可未稀釋直接給。" />
               <ResultRow label="Pump rate" value={phosCalc.volume && phosCalc.hours ? `${round(phosCalc.pumpRate)} mL/hr` : "請輸入體積與時間"} />
@@ -1386,7 +1428,8 @@ export default function ElectrolyteTool() {
         <p>低血磷可能造成呼吸肌無力、rhabdomyolysis、hemolysis、心肌功能下降與 refeeding syndrome。Glycophos 是 sodium glycerophosphate，補 phosphate 的同時也帶入 sodium；每 20 mL 含 phosphate 20 mmol 與 sodium 40 mmol。</p>
         <Bullets items={[
           "輕度低血磷且無症狀時常可口服或飲食補充；Phos <1 mg/dL、有症狀、refeeding/DKA/CRRT 或無法 enteral 時較常考慮 IV。",
-          "院內套餐常用：Glycophos 1 amp in NS 100 mL，IVD 6 hr via CVC。",
+          "院內一般給法：Glycophos 1 amp in NS 250 mL，run 4 hr。",
+          "限水或 CVC 情境：可用 NS 100 mL；ICU 套餐常見 Glycophos 1 amp in NS 100 mL，run 6 hr via CVC。",
           "IV phosphate 補充前建議看 total Ca、Ca x Phos product、K/Mg、腎功能與尿量。",
           "Ca x Phos product 偏高時需小心鈣磷沉積；工具採常用警戒值約 55 mg2/dL2。",
           "補磷可能造成 hypocalcemia、低血壓或鈣磷沉積，通常避免快速輸注，補完後追蹤 Phos/Ca/K/Mg。",
@@ -1475,6 +1518,18 @@ export default function ElectrolyteTool() {
                   <div style={S.scaleRow}><span>CCB / arrest</span><strong>依反應重複</strong></div>
                 </div>
               </div>
+              <DetailBox title="MI/院內補鈣參考" summary="一般 iCa keep 1.0-1.1；休克/大出血可 1.1-1.3">
+                <div style={S.detailGrid}>
+                  <div style={S.detailItem}><span>一般目標</span><strong>可看 ABG 中 ionized Ca，keep iCa 1.0-1.1 mmol/L</strong></div>
+                  <div style={S.detailItem}><span>無 iCa 時</span><strong>用 corrected Ca：cCa = total Ca + 0.8 x (4 - albumin)</strong></div>
+                  <div style={S.detailItem}><span>iCa &lt;1.0</span><strong>約 cCa &lt;8.0 時，可給 Calglon 2 amp</strong></div>
+                  <div style={S.detailItem}><span>休克/大出血/大量輸血</span><strong>可考慮 keep iCa 1.1-1.3 mmol/L</strong></div>
+                  <div style={S.detailItem}><span>此情境 iCa &lt;1.0</span><strong>Calglon 3 amp</strong></div>
+                  <div style={S.detailItem}><span>iCa 1.0-1.1</span><strong>Calglon 2 amp</strong></div>
+                  <div style={S.detailItem}><span>iCa 1.1-1.2</span><strong>Calglon 1 amp</strong></div>
+                  <div style={S.detailItemWide}><span>注意</span><strong>大量補鈣仍需追蹤 ECG、BP、Phos、Ca x Phos product 與 iCa/total Ca trend。</strong></div>
+                </div>
+              </DetailBox>
             </div>
           </div>
 
@@ -1676,6 +1731,14 @@ export default function ElectrolyteTool() {
         </div>
       </section>
       <ClinicalReference>
+        <h3 style={S.refHeading}>MI/院內鈉異常補充提醒</h3>
+        <Bullets items={[
+          "一般 Na <125 mEq/L 或 >155 mEq/L 才較常出現症狀；但症狀與急慢性、下降/上升速度、腦部狀況有關，不能只看數字。",
+          "低血鈉通常不急著飲食加鹽；先確認是否 hypotonic hyponatremia，再依 volume status、urine Osm、urine Na 找原因。",
+          "高血鈉 >155 mEq/L 且有症狀（例如昏迷、明顯意識改變）時，常需要 D5W infusion 或 enteral free water，但要注意血糖與校正速度。",
+          "若休克或明顯低血容積，即使高血鈉也先補 isotonic crystalloid 穩定循環；穩定後再補 free water。",
+        ]} />
+
         <h3 style={S.refHeading}>低血鈉：目前仍不建議一次補太快</h3>
         <p>近年有研究提醒，低血鈉校正過慢或長時間維持低鈉可能和較差預後相關；但這不等於 ODS 已經不存在。慢性或不明時間的低血鈉仍要避免過快校正，尤其 Na 很低、低血鉀、酒精使用疾患、營養不良或肝病者。</p>
         <Bullets items={[

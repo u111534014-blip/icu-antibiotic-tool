@@ -833,7 +833,7 @@ export default function App() {
               </button>
               <button onClick={() => { setPage("electrolyteTool"); setMenuOpen(false); }}
                 style={{ ...S.menuItem, ...(page === "electrolyteTool" ? S.menuItemActive : {}) }}>
-                ⚡ 電解質補充工具
+                ⚡ 電解質異常工具
               </button>
             </div>
           )}

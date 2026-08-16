@@ -26,10 +26,16 @@ const VITACAL_GLUCOSE_MG_PER_ML = 100;
 const NS_NA_MEQ_PER_L = 154;
 const HYPERTONIC_SALINE_NA_MEQ_PER_L = 513;
 const HYPERTONIC_SALINE_NA_MEQ_PER_ML = HYPERTONIC_SALINE_NA_MEQ_PER_L / 1000;
+const ROLIKAN_MEQ_PER_ML = 0.83;
+const ROLIKAN_ML_PER_AMP = 20;
+const ROLIKAN_MEQ_PER_AMP = 16.66;
+const ROLIKAN_BOT_ML = 250;
+const ROLIKAN_BOT_MEQ = ROLIKAN_MEQ_PER_ML * ROLIKAN_BOT_ML;
 
 type KAccess = "peripheral" | "central" | "crrt";
 type RenalRisk = "normal" | "impaired" | "oliguria" | "crrt";
 type KSeverity = "mild" | "moderate" | "severe" | "critical" | "none";
+type HyperKSeverity = "none" | "mild" | "moderate" | "severe";
 type MgUnit = "mgdl" | "mmoll";
 type MgSeverity = "none" | "mild" | "moderate" | "severe";
 type PhosSeverity = "none" | "mild" | "moderate" | "severe";
@@ -38,6 +44,7 @@ type CalciumProduct = "calglon" | "vitacal";
 type CalciumIndication = "hypocalcemia" | "hyperkalemia" | "massiveTransfusion" | "ccb";
 type CalciumLabMode = "total" | "ionized";
 type SodiumMode = "hyponatremia" | "hypernatremia";
+type PotassiumMode = "hypokalemia" | "hyperkalemia";
 type SodiumDuration = "acute" | "chronic" | "unknown";
 type SodiumVolumeStatus = "hypovolemic" | "euvolemic" | "hypervolemic" | "unclear";
 type SodiumSex = "male" | "female";
@@ -82,6 +89,13 @@ function severityFromK(k: number): KSeverity {
   if (k < 3.2) return "moderate";
   if (k < 3.5) return "mild";
   return "none";
+}
+
+function severityFromHyperK(k: number): HyperKSeverity {
+  if (!k || k < 5.5) return "none";
+  if (k < 6) return "mild";
+  if (k < 6.5) return "moderate";
+  return "severe";
 }
 
 function severityFromMg(mgDl: number): MgSeverity {
@@ -142,6 +156,13 @@ const severityText: Record<KSeverity, string> = {
   moderate: "Moderate hypokalemia",
   severe: "Severe hypokalemia",
   critical: "Critical hypokalemia",
+};
+
+const hyperKSeverityText: Record<HyperKSeverity, string> = {
+  none: "未達高血鉀範圍",
+  mild: "Mild hyperkalemia：K 5.5-5.9",
+  moderate: "Moderate hyperkalemia：K 6.0-6.4",
+  severe: "Severe hyperkalemia：K ≥6.5",
 };
 
 const mgSeverityText: Record<MgSeverity, string> = {
@@ -216,8 +237,21 @@ function ClinicalReference({ children }: { children: ReactNode }) {
   );
 }
 
+function DetailBox({ title, summary, children }: { title: string; summary: string; children: ReactNode }) {
+  return (
+    <details style={S.detailBox}>
+      <summary style={S.detailSummary}>
+        <span>{title}</span>
+        <strong>{summary}</strong>
+      </summary>
+      <div style={S.detailBody}>{children}</div>
+    </details>
+  );
+}
+
 export default function ElectrolyteTool() {
   const [activeTab, setActiveTab] = useState<ElectrolyteTab>("k");
+  const [potassiumMode, setPotassiumMode] = useState<PotassiumMode>("hypokalemia");
   const [currentK, setCurrentK] = useState("3.0");
   const [targetK, setTargetK] = useState("4.0");
   const [renalRisk, setRenalRisk] = useState<RenalRisk>("normal");
@@ -228,6 +262,16 @@ export default function ElectrolyteTool() {
   const [prepAmpules, setPrepAmpules] = useState("");
   const [finalVolume, setFinalVolume] = useState("250");
   const [infusionHours, setInfusionHours] = useState("1");
+  const [hyperK, setHyperK] = useState("6.2");
+  const [hyperKRenalRisk, setHyperKRenalRisk] = useState<RenalRisk>("impaired");
+  const [hyperKEcgChange, setHyperKEcgChange] = useState(false);
+  const [hyperKWeakness, setHyperKWeakness] = useState(false);
+  const [hyperKUnstable, setHyperKUnstable] = useState(false);
+  const [hyperKPseudoRisk, setHyperKPseudoRisk] = useState(false);
+  const [hyperKOngoingLoad, setHyperKOngoingLoad] = useState(false);
+  const [hyperKImpendingSurgery, setHyperKImpendingSurgery] = useState(false);
+  const [hyperKAcidosis, setHyperKAcidosis] = useState(false);
+  const [hyperKGlucose, setHyperKGlucose] = useState("120");
   const [crrtBagVolume, setCrrtBagVolume] = useState("5000");
   const [crrtBaseK, setCrrtBaseK] = useState("0");
   const [crrtTargetFluidK, setCrrtTargetFluidK] = useState("4");
@@ -346,6 +390,79 @@ export default function ElectrolyteTool() {
     }
     return "CVVH 調鉀請依 replacement fluid 總量計算；KCl 原汁只可加入 CVVH solution 並充分混合，不可直接 IV push。";
   }, [calc.dose, access]);
+
+  const hyperKCalc = useMemo(() => {
+    const k = n(hyperK);
+    const glucose = n(hyperKGlucose);
+    const severity = severityFromHyperK(k);
+    const significantKidneyImpairment = hyperKRenalRisk !== "normal";
+    const severeKidneyImpairment = hyperKRenalRisk === "oliguria" || hyperKRenalRisk === "crrt";
+    const manifestation = hyperKEcgChange || hyperKWeakness || hyperKUnstable;
+    const emergencyFromLoad = k > 5.5 && significantKidneyImpairment && hyperKOngoingLoad;
+    const emergency = manifestation || k > 6.5 || emergencyFromLoad;
+    const promptLower = !emergency && k > 5.5 && (severeKidneyImpairment || hyperKImpendingSurgery);
+    const treatShift = emergency;
+    const repeatFirst = hyperKPseudoRisk && !manifestation && k <= 6.5 && !emergencyFromLoad;
+    const calciumAction = hyperKEcgChange || hyperKUnstable
+      ? "立即給 IV calcium 保護心肌：calcium gluconate 10% 10 mL（1 g）IV over 2-3 min（院內品項：Calglon 針 1 g/10 mL）；若 ECG 未改善可重複，院內流程不同時依院內規範。"
+      : k > 6.5
+        ? "K >6.5 建議 continuous ECG monitoring；可考慮 IV calcium，部分專家只在 ECG change 時給。院內品項：Calglon 針 1 g/10 mL；若 ECG 改變立即給。"
+        : "目前無 ECG change / 不穩定時不一定需要 calcium；若 ECG 改變，處置立即升級。";
+    const insulinAction = treatShift
+      ? "Regular insulin 10 units IV + glucose 25 g IV；若血糖 >250 mg/dL 可考慮只給 insulin。約 15-30 min 起效，作用約 4-6 hr，需防低血糖。"
+      : promptLower
+        ? "需在 6-12 hr 內迅速降鉀，但若無急症表現，不一定需要立即 insulin/glucose；以排鉀與原因逆轉為主。"
+        : "非急症時通常先確認原因、停致病藥與排鉀策略；不一定需要 insulin/glucose。";
+    const glucoseAction = treatShift
+      ? glucose > 0 && glucose < 126
+        ? "血糖 <126 mg/dL：給 insulin/glucose 後建議接 D10W infusion 或更密集血糖監測。"
+        : glucose > 0
+          ? "仍需監測血糖：給 insulin 後至少追蹤 6 hr，腎衰竭病人低血糖風險更久。"
+          : "若血糖未知，先測血糖；低血糖風險高者給 insulin 後要更密集監測或預防性 D10W。"
+      : "若未使用 insulin/glucose，仍需追蹤 K trend 與病因。";
+    const betaAgonistAction = treatShift
+      ? "可加 nebulized salbutamol/albuterol 10-20 mg 作為輔助移鉀；不可取代 calcium 或 insulin/glucose。"
+      : "通常保留給高血鉀急症、快速上升或需輔助移鉀時。";
+    const bicarbonateAction = hyperKAcidosis
+      ? "合併明顯 metabolic acidosis 時可考慮 NaHCO3 作輔助；不要當作唯一降鉀治療，並需注意 sodium/volume load、ionized Ca 下降與 alkalosis。"
+      : "NaHCO3 不建議 routine 用來急性降 K；主要考慮於合併明顯 metabolic acidosis、且病人能承受 sodium/volume load 時。";
+    const bicarbonateDose = hyperKAcidosis
+      ? "可展開查看 Rolikan 7% 換算；常見先給 50 mEq，依 pH/HCO3/Na 可重複至 100-150 mEq。"
+      : "若沒有明顯 metabolic acidosis，通常不建議為了降 K routine 給 NaHCO3；先以 calcium、insulin/glucose、beta-agonist 與排鉀策略為主。";
+    const eliminationAction = hyperKRenalRisk === "oliguria"
+      ? "少尿/無尿：排鉀能力差，若急症、K >6.5、反覆 rebound 或藥物無效，需及早評估 urgent dialysis。"
+      : hyperKRenalRisk === "crrt"
+        ? "CRRT 中：確認 dialysate/replacement K 濃度、effluent rate、filter function；若 K 持續高，需調整 CRRT 處方或評估 HD。"
+        : hyperKRenalRisk === "impaired"
+          ? "腎功能差但仍有尿：可考慮 loop diuretic（需有尿且容量允許）與 potassium binder；若不下降需評估 RRT。"
+          : "腎功能穩定且有尿：停致病藥、低鉀飲食/輸入、loop diuretic 或 binder 依病因與臨床情境。";
+    const binderAction = k >= 5.5
+      ? "可考慮 potassium binder 作排鉀輔助；不是立即救命藥，不能取代 calcium、insulin/glucose 或 urgent dialysis。"
+      : "輕度高血鉀可先處理原因並考慮 binder；需依院內品項與醫囑。";
+    const binderDose = "可展開查看 Kalimate / Lokelma 院內品項劑量；binder 不是立即救命藥，需搭配排鉀與複查計畫。";
+    const monitoringAction = emergency
+      ? "Continuous ECG monitoring；治療後約 1 hr 複查 K，之後 2/4/6 hr 依趨勢追蹤，注意 rebound。"
+      : promptLower
+        ? "建議 ECG；目標 6-12 hr 內把 K 降下來，期間重複追蹤 K、I/O 與治療反應。"
+        : k >= 5.5
+          ? "先確認是否假性、重抽或複查 K；若 CKD/AKI、用藥風險或 K 上升中，需較快追蹤。"
+          : "目前未達高血鉀；若臨床懷疑仍可複查。";
+    const disposition = emergency
+      ? "Emergency：先 calcium/移鉀/排鉀並監測，不要等重抽才處理。"
+      : repeatFirst
+        ? "先確認真假高血鉀：重抽 plasma K 或 blood gas K，並看 hemolysis index/採血過程。"
+        : promptLower
+          ? "Prompt lowering：通常不需 rapid calcium/insulin/glucose，但應在 6-12 hr 內降鉀。"
+          : k >= 5.5
+            ? "Slow lowering：處理原因、飲食/輸入與藥物，必要時 diuretic/bicarbonate/binder。"
+            : "未達高血鉀。";
+    return {
+      k, glucose, severity, significantKidneyImpairment, severeKidneyImpairment, manifestation,
+      emergencyFromLoad, emergency, promptLower, treatShift, repeatFirst, calciumAction, insulinAction,
+      glucoseAction, betaAgonistAction, bicarbonateAction, bicarbonateDose, eliminationAction, binderAction, binderDose,
+      monitoringAction, disposition,
+    };
+  }, [hyperK, hyperKRenalRisk, hyperKEcgChange, hyperKWeakness, hyperKUnstable, hyperKPseudoRisk, hyperKOngoingLoad, hyperKImpendingSurgery, hyperKAcidosis, hyperKGlucose]);
 
   const mgCalc = useMemo(() => {
     const enteredMg = n(serumMg);
@@ -587,14 +704,14 @@ export default function ElectrolyteTool() {
   return (
     <div>
       <header style={S.header}>
-        <div style={S.kicker}>Electrolyte Replacement</div>
-        <h1 style={S.title}>電解質補充工具</h1>
-        <div style={S.subtitle}>KCl、MgSO4、Glycophos 補充與泡製速查</div>
+        <div style={S.kicker}>Electrolyte Disorders</div>
+        <h1 style={S.title}>電解質異常工具</h1>
+        <div style={S.subtitle}>K、Mg、Phos、Ca、Na 異常處置、補充與監測速查</div>
       </header>
 
       <section style={S.notice}>
         <div style={S.noticeTitle}>安全提醒</div>
-        KCl concentrate 絕不可直接 IV push。低血鉀合併 ECG change、肌無力/麻痺、digoxin toxicity、DKA/HHS、腎功能急變或少尿無尿，需依醫囑與心電監測調整。
+        KCl concentrate 絕不可直接 IV push。高血鉀合併 ECG change、不穩定或 K ≥6.5 屬急症，需心電監測並立即處置。
       </section>
 
       <section style={S.section}>
@@ -637,7 +754,7 @@ export default function ElectrolyteTool() {
 
       <div style={S.tabBar}>
         {([
-          ["k", "KCl 補鉀"],
+          ["k", "K 鉀異常"],
           ["mg", "MgSO4 補鎂"],
           ["phos", "Glycophos 補磷"],
           ["ca", "Calcium 補鈣"],
@@ -656,6 +773,11 @@ export default function ElectrolyteTool() {
       </div>
 
       {activeTab === "k" && (<>
+      <div style={S.segmented}>
+        <button type="button" onClick={() => setPotassiumMode("hypokalemia")} style={{ ...S.segmentButton, ...(potassiumMode === "hypokalemia" ? S.segmentButtonActive : {}) }}>低血鉀補充</button>
+        <button type="button" onClick={() => setPotassiumMode("hyperkalemia")} style={{ ...S.segmentButton, ...(potassiumMode === "hyperkalemia" ? S.segmentButtonActive : {}) }}>高血鉀處置</button>
+      </div>
+      {potassiumMode === "hypokalemia" && (<>
       <div style={S.layoutGrid}>
         <section style={S.section}>
           <div style={S.sectionTitle}>病人資料與補充量</div>
@@ -856,6 +978,172 @@ export default function ElectrolyteTool() {
           "CRRT 可持續清除 K/Mg/Phos，因此 sepsis、DKA、refeeding 或高 effluent rate 時可能需要反覆補充與追蹤。",
         ]} />
       </ClinicalReference>
+      </>)}
+
+      {potassiumMode === "hyperkalemia" && (<>
+      <section style={S.section}>
+        <div style={S.sectionTitle}>高血鉀處置</div>
+        <div style={S.layoutGrid}>
+          <div>
+            <div style={S.grid2}>
+              <Field label="目前 K" hint="單位 mEq/L">
+                <input value={hyperK} onChange={(e) => setHyperK(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+              <Field label="腎功能 / 尿量">
+                <select value={hyperKRenalRisk} onChange={(e) => setHyperKRenalRisk(e.target.value as RenalRisk)} style={S.select}>
+                  {Object.entries(renalText).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </Field>
+              <Field label="目前血糖" hint="mg/dL；用來提醒 insulin/glucose 後低血糖風險。">
+                <input value={hyperKGlucose} onChange={(e) => setHyperKGlucose(e.target.value)} inputMode="decimal" style={S.input} />
+              </Field>
+            </div>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKEcgChange} onChange={(e) => setHyperKEcgChange(e.target.checked)} />
+              <span>有 ECG change：peaked T、PR prolongation、QRS widening、sine wave、VT/VF 等</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKWeakness} onChange={(e) => setHyperKWeakness(e.target.checked)} />
+              <span>有肌肉無力或麻痺等高血鉀臨床表現</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKUnstable} onChange={(e) => setHyperKUnstable(e.target.checked)} />
+              <span>臨床不穩定 / arrhythmia / peri-arrest</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKPseudoRisk} onChange={(e) => setHyperKPseudoRisk(e.target.checked)} />
+              <span>懷疑假性高血鉀：hemolysis、抽血困難、血小板/白血球很高、採檢延遲等</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKOngoingLoad} onChange={(e) => setHyperKOngoingLoad(e.target.checked)} />
+              <span>持續 K load / tissue breakdown：rhabdomyolysis、crush injury、TLS、明顯 GI bleeding 等</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKImpendingSurgery} onChange={(e) => setHyperKImpendingSurgery(e.target.checked)} />
+              <span>即將手術 / 需要術前快速最佳化</span>
+            </label>
+            <label style={S.checkboxRow}>
+              <input type="checkbox" checked={hyperKAcidosis} onChange={(e) => setHyperKAcidosis(e.target.checked)} />
+              <span>合併明顯 metabolic acidosis</span>
+            </label>
+
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>分級與第一步</div>
+              <ResultRow label="高血鉀分級" value={hyperKSeverityText[hyperKCalc.severity]} highlight={hyperKCalc.severity !== "none"} />
+              <ResultRow label="處置層級" value={hyperKCalc.disposition} highlight={hyperKCalc.emergency || hyperKCalc.promptLower || hyperKCalc.repeatFirst} />
+              <ResultRow label="UpToDate 急症條件" value={hyperKCalc.emergencyFromLoad ? "符合：K >5.5 + 腎功能受損 + 持續組織崩解/鉀吸收" : hyperKCalc.manifestation ? "符合：有臨床表現或心臟傳導/心律問題" : hyperKCalc.k > 6.5 ? "符合：K >6.5" : "目前未符合急症條件"} highlight={hyperKCalc.emergency} />
+              <ResultRow label="監測 / 複查" value={hyperKCalc.monitoringAction} highlight={hyperKCalc.emergency || hyperKCalc.promptLower || hyperKCalc.k >= 6} />
+            </div>
+
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>假性高血鉀檢查</div>
+              <ResultRow
+                label="是否先重抽"
+                value={hyperKCalc.repeatFirst ? "建議先重抽確認，但若 ECG change/不穩定不可延誤治療" : "若無疑點可按真性高血鉀處理；仍需看臨床與 ECG"}
+                highlight={hyperKCalc.repeatFirst}
+              />
+              <Bullets items={[
+                "採血 hemolysis、抽血困難、細針、用力拍打/反覆擠壓、檢體放太久。",
+                "抽血時握拳太久、止血帶綁太久。",
+                "從正在輸 KCl 或含 K line 附近抽血。",
+                "Marked thrombocytosis 或 leukocytosis：serum K 可能假高，必要時比對 plasma K 或 blood gas K。",
+                "若 K >6.5、ECG change、肌肉無力/麻痺或病人不穩定，先急救處置，不要為了確認假性而延誤。",
+              ]} />
+            </div>
+          </div>
+
+          <div>
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>立即處置</div>
+              <ResultRow label="1. 保護心肌" value={hyperKCalc.calciumAction} highlight={hyperKEcgChange || hyperKUnstable} />
+              <ResultRow label="2. 移鉀進細胞" value={hyperKCalc.insulinAction} highlight={hyperKCalc.treatShift} />
+              <ResultRow label="低血糖預防" value={hyperKCalc.glucoseAction} highlight={hyperKCalc.treatShift && hyperKCalc.glucose > 0 && hyperKCalc.glucose < 126} />
+              <ResultRow label="Beta-agonist" value={hyperKCalc.betaAgonistAction} />
+              <ResultRow label="NaHCO3" value={hyperKCalc.bicarbonateAction} highlight={hyperKAcidosis} />
+              <ResultRow label="NaHCO3 常見劑量" value={hyperKCalc.bicarbonateDose} highlight={hyperKAcidosis} />
+              <DetailBox title="Rolikan 7% 換算" summary="50 mEq ≈ 60 mL ≈ 3 amp">
+                <div style={S.detailGrid}>
+                  <div style={S.detailItem}><span>Rolikan 針</span><strong>7% 20 mL/Amp = {ROLIKAN_MEQ_PER_AMP} mEq</strong></div>
+                  <div style={S.detailItem}><span>Rolikan 常備瓶</span><strong>7% 250 mL/bot ≈ {round(ROLIKAN_BOT_MEQ)} mEq</strong></div>
+                  <div style={S.detailItem}><span>50 mEq</span><strong>{round(50 / ROLIKAN_MEQ_PER_ML)} mL ≈ {round(50 / ROLIKAN_MEQ_PER_AMP, 1)} amp，IV over 5-10 min</strong></div>
+                  <div style={S.detailItem}><span>100-150 mEq</span><strong>{round(100 / ROLIKAN_MEQ_PER_ML)}-{round(150 / ROLIKAN_MEQ_PER_ML)} mL ≈ {round(100 / ROLIKAN_MEQ_PER_AMP, 1)}-{round(150 / ROLIKAN_MEQ_PER_AMP, 1)} amp</strong></div>
+                  <div style={S.detailItemWide}><span>Infusion option</span><strong>D5W 1 L + NaHCO3 150 mEq，可作 isotonic bicarbonate infusion；避免 volume overload 時謹慎。</strong></div>
+                </div>
+              </DetailBox>
+            </div>
+            <div style={S.resultCard}>
+              <div style={S.cardTitle}>排鉀與預防 rebound</div>
+              <ResultRow label="排鉀策略" value={hyperKCalc.eliminationAction} highlight={hyperKRenalRisk === "oliguria" || hyperKRenalRisk === "crrt"} />
+              <ResultRow label="Potassium binder" value={hyperKCalc.binderAction} />
+              <ResultRow label="院內 binder 劑量" value={hyperKCalc.binderDose} highlight={hyperKCalc.k >= 5.5} />
+              <DetailBox title="Kalimate / Lokelma 劑量" summary="點開看 packs 換算">
+                <div style={S.detailGrid}>
+                  <div style={S.detailItem}><span>Kalimate</span><strong>5 g/pack</strong></div>
+                  <div style={S.detailItem}><span>常用劑量</span><strong>15-30 g/day PO 分 2-3 次 = 3-6 packs/day</strong></div>
+                  <div style={S.detailItem}><span>泡法</span><strong>每次以 30-50 mL 水懸浮</strong></div>
+                  <div style={S.detailItem}><span>Lokelma</span><strong>5 g/pack</strong></div>
+                  <div style={S.detailItem}><span>初始</span><strong>10 g PO TID up to 48 hr = 每次 2 packs</strong></div>
+                  <div style={S.detailItem}><span>維持</span><strong>5-10 g QD，依 K 調整</strong></div>
+                  <div style={S.detailItemWide}><span>Lokelma sodium load</span><strong>每 5 g 約含 Na 400 mg；10 g TID 約 2400 mg Na/day。心衰、CKD/少尿、水腫或限鈉病人需監測 fluid retention。</strong></div>
+                </div>
+              </DetailBox>
+              <ResultRow label="停止來源" value="停 KCl supplement、含 K 輸液/TPN、salt substitute；檢查 ACEi/ARB/ARNI、MRA、NSAID、TMP-SMX、heparin、calcineurin inhibitor 等。" />
+            </div>
+            {(hyperKCalc.emergency || hyperKCalc.promptLower || hyperKCalc.repeatFirst || hyperKRenalRisk !== "normal" || hyperKAcidosis) && (
+              <div style={S.warning}>
+                {hyperKCalc.emergency && <p>高血鉀急症重點是先保護心肌與移鉀，再安排排鉀；insulin/beta-agonist 只是暫時移鉀，若沒有排鉀會 rebound。</p>}
+                {hyperKCalc.promptLower && <p>目前屬於需要 6-12 小時內迅速降鉀的情境；若沒有急症表現，通常不一定要立即 calcium/insulin/glucose，但要有明確排鉀與複查計畫。</p>}
+                {hyperKCalc.repeatFirst && <p>目前符合「可能假性」且未達急症條件，建議重抽確認；但若 ECG 或臨床惡化，立即升級處置。</p>}
+                {hyperKRenalRisk !== "normal" && <p>腎功能差、少尿/無尿或 CRRT 中，治療後 K rebound 風險高，需更密集追蹤並確認排鉀策略。</p>}
+                {hyperKAcidosis && <p>合併酸中毒時 NaHCO3 可作輔助，但仍需 calcium/insulin/glucose/排鉀等主要處置。</p>}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+      <ClinicalReference>
+        <h3 style={S.refHeading}>分級與核心原則</h3>
+        <p>高血鉀通常以 K 5.5-5.9、6.0-6.4、≥6.5 mEq/L 分成 mild、moderate、severe。UpToDate 的分流重點不是只看數字，而是先看有無臨床表現、ECG/cardiac manifestation、K 是否 &gt;6.5，以及是否合併腎功能受損與持續鉀負荷。</p>
+        <Bullets items={[
+          "Hyperkalemic emergency：有肌肉無力/麻痺、ECG change/arrhythmia、K >6.5，或 K >5.5 + significant kidney impairment + ongoing tissue breakdown/ongoing potassium absorption。",
+          "Prompt lowering：若 K >5.5 且 ESKD/oliguria，或需要術前快速最佳化，通常目標在 6-12 hr 內降鉀，但不一定需要 rapid calcium/insulin/glucose。",
+          "Slow lowering：多數慢性 CKD 或 RAS inhibitor 相關輕度高血鉀，可處理原因、飲食/輸入、diuretic/bicarbonate/binder。",
+          "保護心肌：IV calcium 只穩定心肌，不會降低血鉀；有 ECG change 或 peri-arrest 時不要等。部分專家只在 ECG change 時給 calcium。",
+          "移鉀進細胞：insulin/glucose 與 beta-agonist 可快速降低 serum K，但效果是暫時的。",
+          "排鉀：binder、diuretic、dialysis/CRRT 才是移除體內 K；若排鉀不足，K 會 rebound。",
+          "監測：治療後需複查 K 與血糖；腎衰竭、少尿/無尿或使用 insulin 後低血糖風險較高。",
+        ]} />
+        <h3 style={S.refHeading}>常見高血鉀原因</h3>
+        <Bullets items={[
+          "細胞釋放增加：metabolic acidosis、insulin deficiency / hyperglycemia / hyperosmolality、rhabdomyolysis/crush injury/TLS、beta blocker、exercise、hyperkalemic periodic paralysis。",
+          "其他細胞釋放或鉀負荷：digoxin toxicity、red cell transfusion、succinylcholine、arginine hydrochloride、calcineurin inhibitor、鉀補充或 salt substitute。",
+          "尿中排鉀下降：acute/chronic kidney disease、hypoaldosteronism、aldosterone resistance、有效動脈血容積不足造成 distal Na/water delivery 下降。",
+          "低醛固酮相關：diabetic nephropathy、NSAIDs、calcineurin inhibitors、ACEi/ARB/direct renin inhibitor、chronic heparin therapy、primary adrenal insufficiency、severe illness。",
+          "Aldosterone resistance / ENaC inhibition：spironolactone、eplerenone、amiloride、triamterene、trimethoprim、pentamidine。",
+        ]} />
+        <h3 style={S.refHeading}>假性高血鉀</h3>
+        <p>假性高血鉀常來自採檢或檢體處理問題，也可能發生在血小板或白血球極高的病人。若病人穩定、ECG 正常且數值與臨床不符，應重抽確認；但不能因此延誤真正的高血鉀急救。</p>
+        <Bullets items={[
+          "採血 hemolysis、抽血太困難、細針、檢體搖晃或處理延遲。",
+          "止血帶太久、握拳太久、反覆拍打或擠壓。",
+          "從含鉀輸液附近或正在補 K 的 line 抽血。",
+          "Thrombocytosis / leukocytosis：可比較 serum K、plasma K 或 blood gas K。",
+        ]} />
+        <h3 style={S.refHeading}>常見處置劑量提醒</h3>
+        <Bullets items={[
+          "Calcium gluconate 10%：常用 1000 mg（10 mL）IV over 2-3 min；若 ECG 未改善可重複。院內品項：Calglon 針 1 g/10 mL。UKKA severe hyperkalemia 另列 calcium gluconate 10% 30 mL over 10 min，實際依 local protocol。",
+          "Regular insulin：常用 10 units IV + glucose 25 g IV；若血糖 >250 mg/dL 可考慮不給 glucose。常需接 D10W 50-75 mL/hr 並監測血糖 5-6 hr。",
+          "Nebulized salbutamol/albuterol：常用 10-20 mg，可作輔助移鉀；單獨效果不可靠。",
+          `NaHCO3：主要用於合併明顯 metabolic acidosis，不建議 routine 單獨作降 K。院內品項 Rolikan 7% 20 mL/Amp = ${ROLIKAN_MEQ_PER_AMP} mEq/amp、${ROLIKAN_MEQ_PER_ML} mEq/mL；Rolikan 7% 250 mL/bot 約 ${round(ROLIKAN_BOT_MEQ)} mEq/bot。常見先給 50 mEq（約 ${round(50 / ROLIKAN_MEQ_PER_ML)} mL，約 ${round(50 / ROLIKAN_MEQ_PER_AMP, 1)} amp）IV over 5-10 min，依 pH/HCO3/Na 可重複至 100-150 mEq。需注意 sodium/volume load、alkalosis 與 ionized Ca 下降。`,
+          "Kalimate（calcium polystyrene sulfonate）5 g/pack：常用 15-30 g/day PO 分 2-3 次，約 3-6 packs/day；每次以 30-50 mL 水懸浮。腸阻塞、嚴重便秘或術後腸麻痺風險需避免或謹慎。",
+          "Lokelma（sodium zirconium cyclosilicate）5 g/pack：初始常用 10 g PO TID up to 48 hr（每次 2 packs）；維持常用 5-10 g QD，依 K 調整。每 5 g 約含 sodium 400 mg；10 g TID 時約 2400 mg Na/day，心衰、CKD/少尿、水腫或限鈉病人需監測 fluid retention。",
+          "Loop diuretic：非少尿、容量允許或高血容量時可考慮；UpToDate 例子包含 furosemide 40 mg q12h，需依尿量與容量狀態調整。",
+          "Dialysis/RRT：少尿/無尿、嚴重 AKI/ESRD、K ≥6.5 且反覆 rebound 或藥物無效時需及早評估。",
+        ]} />
+        <h3 style={S.refHeading}>主要參考</h3>
+        <p>架構參考 UK Kidney Association Clinical Practice Guideline: Management of Hyperkalaemia in Adults, 2023 update，並依UpToDate 急性高血鉀治療流程補充分流條件；實際品項、濃度與流程仍以院內規範為準。</p>
+      </ClinicalReference>
+      </>)}
       </>)}
 
       {activeTab === "mg" && (<>
@@ -1541,6 +1829,12 @@ const S: Record<string, CSSProperties> = {
   clinicalReference: { background: "#FFFFFF", border: "1px solid #DDE5F0", borderRadius: 12, padding: "0 14px", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" },
   clinicalSummary: { cursor: "pointer", color: "#0F172A", fontSize: 15, fontWeight: 900, padding: "13px 0", listStylePosition: "inside" },
   clinicalBody: { color: "#334155", fontSize: 13, lineHeight: 1.65, padding: "0 0 14px" },
+  detailBox: { border: "1px solid #E2E8F0", borderRadius: 10, background: "#F8FAFC", padding: "0 12px", margin: "8px 0 10px" },
+  detailSummary: { cursor: "pointer", color: "#334155", fontSize: 13, fontWeight: 900, padding: "10px 0", listStylePosition: "inside", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  detailBody: { padding: "0 0 12px" },
+  detailGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 },
+  detailItem: { background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4, color: "#64748B", fontSize: 12, lineHeight: 1.45 },
+  detailItemWide: { background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4, color: "#64748B", fontSize: 12, lineHeight: 1.45, gridColumn: "1 / -1" },
   crrtBox: { marginTop: 14, border: "1px solid #CCFBF1", background: "#F0FDFA", borderRadius: 10, padding: 12 },
   protocolBox: { background: "#FFFFFF", border: "1px solid #99F6E4", borderRadius: 10, padding: 12, marginBottom: 12 },
   protocolTitle: { color: "#0F766E", fontSize: 13, fontWeight: 900, marginBottom: 8 },

@@ -15,6 +15,7 @@ import InsulinTool from './InsulinTool';
 import HeparinTool from './HeparinTool';
 import ElectrolyteTool from './ElectrolyteTool';
 import AcidBaseTool from './AcidBaseTool';
+import ARDSTool from './ARDSTool';
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -618,7 +619,7 @@ function PrepQuickRef() {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool">("dose");
+  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool">("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const viewportWidth = useViewportWidth();
   const [drugId, setDrugId] = useState("");
@@ -770,7 +771,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool", "acidBaseTool"].includes(page);
+  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -824,6 +825,10 @@ export default function App() {
                 style={{ ...S.menuItem, ...(page === "septicShock" ? S.menuItemActive : {}) }}>
                 🚨 Sepsis / Septic shock
               </button>
+              <button onClick={() => { setPage("ardsTool"); setMenuOpen(false); }}
+                style={{ ...S.menuItem, ...(page === "ardsTool" ? S.menuItemActive : {}) }}>
+                🫁 ARDS / 呼吸器
+              </button>
               <button onClick={() => { setPage("insulinTool"); setMenuOpen(false); }}
                 style={{ ...S.menuItem, ...(page === "insulinTool" ? S.menuItemActive : {}) }}>
                 🩸 血糖 / Insulin 調整
@@ -863,6 +868,8 @@ export default function App() {
           <AidsGuideline />
         ) : page === "septicShock" ? (
           <SepticShock />
+        ) : page === "ardsTool" ? (
+          <ARDSTool />
         ) : page === "insulinTool" ? (
           <InsulinTool />
         ) : page === "heparinTool" ? (

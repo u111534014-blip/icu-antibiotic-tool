@@ -25,14 +25,13 @@ import type { Drug } from './types';
 const MG_PER_VIAL = 2500; // 2.5 g/Vial
 
 // ── 腎功能調整表 ──────────────────────────────────────────────
-// 每列：{ min: CrCl 下限, dose: 顯示字串, dose_mg: 支數計算用, freq: 頻率 }
-const RENAL_TABLE = [
-  { min: 51,  dose: "2.5 g",  dose_mg: 2500, freq: "Q8H" },
-  { min: 31,  dose: "1.25 g", dose_mg: 1250, freq: "Q8H" },
-  { min: 16,  dose: "0.94 g", dose_mg: 940,  freq: "Q12H" },
-  { min: 6,   dose: "0.94 g", dose_mg: 940,  freq: "Q24H" },
-  { min: 0,   dose: "0.94 g", dose_mg: 940,  freq: "Q48H" },
-];
+const RENAL_DOSES = {
+  normal: { dose: "2.5 g", dose_mg: 2500, freq: "Q8H" },
+  crcl31to50: { dose: "1.25 g", dose_mg: 1250, freq: "Q8H" },
+  crcl16to30: { dose: "0.94 g", dose_mg: 940, freq: "Q12H" },
+  crcl6to15: { dose: "0.94 g", dose_mg: 940, freq: "Q24H" },
+  crcl0to5: { dose: "0.94 g", dose_mg: 940, freq: "Q48H" },
+};
 
 // Helper：支數與配置說明
 function getVialInfo(dose_mg: number): string {
@@ -83,7 +82,15 @@ function getZaviceftaDose(crcl: number, rrt: string): {
 
   // 一般 CKD（含 ARC）
   // ARC ≥130：不需調整（仍是 2.5 g Q8H）
-  const match = RENAL_TABLE.find((row) => crcl >= row.min)!;
+  const match = crcl > 50
+    ? RENAL_DOSES.normal
+    : crcl >= 31
+      ? RENAL_DOSES.crcl31to50
+      : crcl >= 16
+        ? RENAL_DOSES.crcl16to30
+        : crcl >= 6
+          ? RENAL_DOSES.crcl6to15
+          : RENAL_DOSES.crcl0to5;
   let note = "";
   if (crcl >= 130) {
     note = "ARC（CrCl ≥130）：不需調整，維持 2.5 g Q8H";

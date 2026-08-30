@@ -16,6 +16,50 @@ import HeparinTool from './HeparinTool';
 import ElectrolyteTool from './ElectrolyteTool';
 import AcidBaseTool from './AcidBaseTool';
 import ARDSTool from './ARDSTool';
+import FloTracGuide from './FloTracGuide';
+import HeartFailureGuide from './HeartFailureGuide';
+
+type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide";
+type MenuIconName = "pill" | "chart" | "syringe" | "book" | "alert" | "lungs" | "heart" | "drop" | "shield" | "bolt" | "lab";
+
+const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
+  { id: "dose", label: "抗生素劑量及給藥方法", icon: "pill" },
+  { id: "vancoTDM", label: "Vancomycin TDM", icon: "chart" },
+  { id: "amikacinTDM", label: "Amikacin TDM", icon: "chart" },
+  { id: "digoxinTDM", label: "Digoxin TDM", icon: "chart" },
+  { id: "depakineTDM", label: "Depakine TDM", icon: "chart" },
+  { id: "prepRef", label: "院內針劑泡製速查", icon: "syringe" },
+  { id: "tbGuideline", label: "結核病診治指引", icon: "book" },
+  { id: "aidsGuideline", label: "AIDS 治療指引", icon: "book" },
+  { id: "septicShock", label: "Sepsis / Septic shock", icon: "alert" },
+  { id: "ardsTool", label: "ARDS / 呼吸器", icon: "lungs" },
+  { id: "flotracGuide", label: "FloTrac / 血流動力學", icon: "chart" },
+  { id: "hfGuide", label: "HF guideline 對照", icon: "heart" },
+  { id: "insulinTool", label: "血糖 / Insulin 調整", icon: "drop" },
+  { id: "heparinTool", label: "抗凝血 / 逆轉工具", icon: "shield" },
+  { id: "electrolyteTool", label: "電解質異常工具", icon: "bolt" },
+  { id: "acidBaseTool", label: "酸鹼異常 / ABG", icon: "lab" },
+];
+
+function MenuIcon({ name, active }: { name: MenuIconName; active: boolean }) {
+  const color = active ? "#0D9488" : "#64748B";
+  const common = { fill: "none", stroke: color, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>
+      {name === "pill" && <><path {...common} d="M10.5 20.5 20.5 10.5a5 5 0 0 0-7-7L3.5 13.5a5 5 0 0 0 7 7Z" /><path {...common} d="m8.5 8.5 7 7" /></>}
+      {name === "chart" && <><path {...common} d="M4 19V5" /><path {...common} d="M4 19h16" /><path {...common} d="M8 15l3-4 3 2 4-6" /></>}
+      {name === "book" && <><path {...common} d="M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3Z" /><path {...common} d="M5 4v16a3 3 0 0 1 3-3h9" /></>}
+      {name === "syringe" && <><path {...common} d="m18 3 3 3" /><path {...common} d="m11 10 3 3" /><path {...common} d="m14 7 3 3-8 8H6v-3Z" /><path {...common} d="M4 20l3-3" /></>}
+      {name === "lungs" && <><path {...common} d="M12 4v7" /><path {...common} d="M12 11c-2-3-5-5-7-4v9c0 2 1 3 3 3 3 0 4-4 4-8Z" /><path {...common} d="M12 11c2-3 5-5 7-4v9c0 2-1 3-3 3-3 0-4-4-4-8Z" /></>}
+      {name === "alert" && <><path {...common} d="M12 3 22 20H2Z" /><path {...common} d="M12 9v5" /><path {...common} d="M12 17h.01" /></>}
+      {name === "heart" && <><path {...common} d="M20.5 8.5c0 6-8.5 11-8.5 11s-8.5-5-8.5-11A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 8.5 2.5Z" /></>}
+      {name === "drop" && <><path {...common} d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" /></>}
+      {name === "shield" && <><path {...common} d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6Z" /><path {...common} d="M8 12h8" /></>}
+      {name === "bolt" && <><path {...common} d="M13 2 4 14h7l-1 8 10-13h-7Z" /></>}
+      {name === "lab" && <><path {...common} d="M9 3h6" /><path {...common} d="M10 3v5l-5 9a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 17l-5-9V3" /><path {...common} d="M8 15h8" /></>}
+    </svg>
+  );
+}
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -619,7 +663,7 @@ function PrepQuickRef() {
 // ╚══════════════════════════════════════════════════════════════════╝
 
 export default function App() {
-  const [page, setPage] = useState<"dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool">("dose");
+  const [page, setPage] = useState<Page>("dose");
   const [menuOpen, setMenuOpen] = useState(false);
   const viewportWidth = useViewportWidth();
   const [drugId, setDrugId] = useState("");
@@ -771,7 +815,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool"].includes(page);
+  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -788,63 +832,17 @@ export default function App() {
             ☰
           </button>
           {menuOpen && (
-            <div style={{ position: "absolute", top: 46, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 99, minWidth: 200, overflow: "hidden" }}>
-              <button onClick={() => { setPage("dose"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "dose" ? S.menuItemActive : {}) }}>
-                💊 抗生素劑量及給藥方法
-              </button>
-              <button onClick={() => { setPage("vancoTDM"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "vancoTDM" ? S.menuItemActive : {}) }}>
-                📊 Vancomycin TDM
-              </button>
-              <button onClick={() => { setPage("amikacinTDM"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "amikacinTDM" ? S.menuItemActive : {}) }}>
-                🎯 Amikacin TDM
-              </button>
-              <button onClick={() => { setPage("digoxinTDM"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "digoxinTDM" ? S.menuItemActive : {}) }}>
-                📈 Digoxin TDM
-              </button>
-              <button onClick={() => { setPage("depakineTDM"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "depakineTDM" ? S.menuItemActive : {}) }}>
-                🧪 Depakine TDM
-              </button>
-              <button onClick={() => { setPage("prepRef"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "prepRef" ? S.menuItemActive : {}) }}>
-                💉 院內針劑泡製速查
-              </button>
-              <button onClick={() => { setPage("tbGuideline"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "tbGuideline" ? S.menuItemActive : {}) }}>
-                🫁 結核病診治指引
-              </button>
-              <button onClick={() => { setPage("aidsGuideline"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "aidsGuideline" ? S.menuItemActive : {}) }}>
-                🧬 AIDS 治療指引
-              </button>
-              <button onClick={() => { setPage("septicShock"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "septicShock" ? S.menuItemActive : {}) }}>
-                🚨 Sepsis / Septic shock
-              </button>
-              <button onClick={() => { setPage("ardsTool"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "ardsTool" ? S.menuItemActive : {}) }}>
-                🫁 ARDS / 呼吸器
-              </button>
-              <button onClick={() => { setPage("insulinTool"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "insulinTool" ? S.menuItemActive : {}) }}>
-                🩸 血糖 / Insulin 調整
-              </button>
-              <button onClick={() => { setPage("heparinTool"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "heparinTool" ? S.menuItemActive : {}) }}>
-                🧷 抗凝血 / 逆轉工具
-              </button>
-              <button onClick={() => { setPage("electrolyteTool"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "electrolyteTool" ? S.menuItemActive : {}) }}>
-                ⚡ 電解質異常工具
-              </button>
-              <button onClick={() => { setPage("acidBaseTool"); setMenuOpen(false); }}
-                style={{ ...S.menuItem, ...(page === "acidBaseTool" ? S.menuItemActive : {}) }}>
-                🧫 酸鹼異常 / ABG
-              </button>
+            <div style={{ position: "absolute", top: 46, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 99, minWidth: 246, overflow: "hidden" }}>
+              {MENU_ITEMS.map((item) => {
+                const active = page === item.id;
+                return (
+                  <button key={item.id} onClick={() => { setPage(item.id); setMenuOpen(false); }}
+                    style={{ ...S.menuItem, ...(active ? S.menuItemActive : {}) }}>
+                    <span style={S.menuIcon}><MenuIcon name={item.icon} active={active} /></span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
           {menuOpen && (
@@ -870,6 +868,10 @@ export default function App() {
           <SepticShock />
         ) : page === "ardsTool" ? (
           <ARDSTool />
+        ) : page === "flotracGuide" ? (
+          <FloTracGuide />
+        ) : page === "hfGuide" ? (
+          <HeartFailureGuide />
         ) : page === "insulinTool" ? (
           <InsulinTool />
         ) : page === "heparinTool" ? (
@@ -1226,6 +1228,7 @@ const S: Record<string, React.CSSProperties> = {
   select: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", appearance: "auto" as const, boxSizing: "border-box" },
   input: { flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 15, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box", width: "100%" },
   resetBtn: { width: "100%", marginTop: 20, padding: "14px 0", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 15, fontWeight: 600, cursor: "pointer" },
-  menuItem: { display: "block", width: "100%", padding: "12px 16px", border: "none", background: "none", textAlign: "left" as const, fontSize: 14, color: "#334155", cursor: "pointer", borderBottom: "1px solid #F1F5F9" },
+  menuItem: { display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 16px", border: "none", background: "none", textAlign: "left" as const, fontSize: 14, color: "#334155", cursor: "pointer", borderBottom: "1px solid #F1F5F9" },
   menuItemActive: { background: "#F0FDFA", color: "#0D9488", fontWeight: 700 },
+  menuIcon: { width: 20, display: "inline-flex", justifyContent: "center", flexShrink: 0 },
 };

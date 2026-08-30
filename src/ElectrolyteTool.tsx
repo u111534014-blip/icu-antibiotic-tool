@@ -714,44 +714,6 @@ export default function ElectrolyteTool() {
         KCl concentrate 絕不可直接 IV push。高血鉀合併 ECG change、不穩定或 K ≥6.5 屬急症，需心電監測並立即處置。
       </section>
 
-      <section style={S.section}>
-        <div style={S.sectionTitle}>院內品項</div>
-        <div style={S.productGrid}>
-          <div style={S.productBox}>
-            <strong>KCl 氯化鉀針 15% 10 mL</strong>
-            <span>20 mEq/amp；濃度 2 mEq/mL。屬高濃度原液，需稀釋後才可輸注。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>KCl 10 mEq 瓶 500 mL</strong>
-            <span>KCl 0.149% in 0.9% NaCl 500 mL；商業配方，約 0.02 mEq/mL，輸液量較大。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>MgSO4 針【紅標】10% 20 mL</strong>
-            <span>2 g/amp；16.2 mEq Mg/amp；10% = 0.1 g/mL。常用於 IV 補鎂。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>MgSO4 瓶 10% 200 mL/Bot</strong>
-            <span>20 g/bottle；較少見於一般補鎂醫囑，需依院內流程確認用途。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>Glycophos 針 20 mL</strong>
-            <span>Sodium glycerophosphate；phosphate 1 mmol/mL、sodium 2 mmol/mL。每支 20 mL = phosphate 20 mmol + sodium 40 mmol；不可未稀釋直接給。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>Calglon 針 1 g/10 mL</strong>
-            <span>Calcium gluconate 10%；Ca 0.465 mEq/mL、9.3 mg/mL。每 amp = 4.65 mEq Ca = 93 mg elemental Ca。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>Vitacal 400 mg/20 mL</strong>
-            <span>Calcium chloride；Ca 0.272 mEq/mL。每 amp = 5.4 mEq Ca；另含 glucose-H2O 100 mg/mL。</span>
-          </div>
-          <div style={S.productBox}>
-            <strong>3% 高濃度 NaCl 瓶 500 mL</strong>
-            <span>513 mEq/L = 0.513 mEq/mL。低血鈉使用需設定流速並密集追蹤 Na，避免 overcorrection。</span>
-          </div>
-        </div>
-      </section>
-
       <div style={S.tabBar}>
         {([
           ["k", "K 鉀異常"],

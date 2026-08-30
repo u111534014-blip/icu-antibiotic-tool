@@ -134,8 +134,15 @@ export default function DigoxinTDM() {
       : weight
         ? `使用 TBW ${round1(weight)} kg；輸入身高後可估 IBW`
         : "尚未輸入體重";
+    const weightNoteEn = weight && ibw
+      ? weight < ibw
+        ? `TBW < IBW; using actual body weight ${round1(weight)} kg`
+        : `Using IBW/lean body weight ${ibw} kg for digoxin dosing`
+      : weight
+        ? `Using TBW ${round1(weight)} kg; enter height to estimate IBW`
+        : "Weight not entered";
 
-    return { age: patientAge, ibw, dosingWeight, crcl, weightNote };
+    return { age: patientAge, ibw, dosingWeight, crcl, weightNote, weightNoteEn };
   }, [age, directCrCl, height, scr, sex, tbw, useDirectCrCl]);
 
   const loading = useMemo(() => {
@@ -181,6 +188,11 @@ export default function DigoxinTDM() {
         : conservative
           ? "高齡、腎功能下降或低 lean BW：建議從 62.5-125 mcg/day 保守起始"
           : "一般起始常見 125 mcg/day；少數需要 250 mcg/day",
+      noteEn: patient.crcl < 30
+        ? "CrCl <30 mL/min: 62.5 mcg once daily or every 48 hours is often needed; adjust by level, heart rate, and toxicity risk"
+        : conservative
+          ? "Older age, reduced renal function, or low lean body weight: start conservatively at 62.5-125 mcg/day"
+          : "Usual adult starting maintenance is 125 mcg/day; 250 mcg/day is rarely needed",
     };
   }, [loading, maintenanceRoute, patient]);
 
@@ -325,40 +337,95 @@ export default function DigoxinTDM() {
       text: currentlyHeld
         ? `目前已 hold digoxin${doseMcg ? `；原 regimen ${fmtMcg(doseMcg)} ${currentRoute} ${freq}` : ""}`
         : `${fmtMcg(doseMcg)} ${currentRoute} ${freq}`,
+      textEn: currentlyHeld
+        ? `Digoxin is currently held${doseMcg ? `; prior regimen was ${fmtMcg(doseMcg)} ${currentRoute} ${freq}` : ""}`
+        : `${fmtMcg(doseMcg)} ${currentRoute} ${freq}`,
     };
   }, [currentDoseMg, currentFrequency, currentRoute, currentlyHeld, customFrequency]);
 
-  const regimenSuggestion = useMemo(() => {
-    if (!levelInterpretation || !regimen || currentlyHeld) return "";
+  const levelInterpretationEn = useMemo(() => {
     const value = n(level);
+    const hours = levelTiming || 0;
+    if (!value) return null;
     const target = targetRange(indication);
-    if (levelTiming !== null && levelTiming < 6) {
-      return "Do not adjust the maintenance regimen from this early level; repeat a post-distribution level.";
+    const targetText = indication === "af"
+      ? "preferred range 0.5-0.9 ng/mL; if monitoring for AF, keep <1.2 ng/mL"
+      : "HF target 0.5-0.9 ng/mL";
+    if (hours && hours < 6) {
+      return {
+        title: "Level drawn too early",
+        summary: "Serum digoxin may be falsely high during the distribution phase; do not adjust maintenance from this level alone.",
+      };
     }
     if (value >= 2) {
-      return "Recommend holding digoxin and reassessing toxicity, ECG, electrolytes, renal function, and interacting drugs.";
+      return {
+        title: "Markedly elevated level",
+        summary: `${value} ng/mL is >=2 ng/mL and is associated with increased toxicity risk.`,
+      };
     }
     if (value > target.high || value >= target.caution) {
+      return {
+        title: "Above preferred target",
+        summary: `${value} ng/mL is above the ${targetText}.`,
+      };
+    }
+    if (value < target.low) {
+      return {
+        title: "Below usual target",
+        summary: `${value} ng/mL is below the ${targetText}; interpret with sampling time, adherence, heart rate, and clinical response.`,
+      };
+    }
+    return {
+      title: "Within target range",
+      summary: `${value} ng/mL is within the ${targetText}.`,
+    };
+  }, [indication, level, levelTiming]);
+
+  const regimenSuggestion = useMemo(() => {
+    if (!levelInterpretation || !regimen) return "";
+    const value = n(level);
+    const target = targetRange(indication);
+    const fallbackDose = patient.crcl !== null && patient.crcl < 30 ? 62.5 : (maintenance?.practical || noLoadStart?.dose || 125);
+    const reducedFromPrior = regimen.dailyEquivalent ? Math.max(62.5, roundDose(regimen.dailyEquivalent / 2)) : fallbackDose;
+    const restartDose = Math.min(fallbackDose, reducedFromPrior);
+    const restartInterval = patient.crcl !== null && patient.crcl < 30 ? "Q48H or QD with close monitoring" : "QD";
+    if (levelTiming !== null && levelTiming < 6) {
+      return currentlyHeld
+        ? `Continue holding for now. Repeat a post-distribution level before restarting; when clinically ready, consider ${fmtMcg(restartDose)} ${maintenanceRoute} ${restartInterval} rather than resuming the prior dose automatically.`
+        : "Do not adjust the maintenance regimen from this early level; repeat a post-distribution level.";
+    }
+    if (value >= 2) {
+      return currentlyHeld
+        ? `Continue holding digoxin. Restart only after toxicity resolves and the level returns to/near target; a conservative restart option is ${fmtMcg(restartDose)} ${maintenanceRoute} ${restartInterval}, with repeat trough monitoring.`
+        : "Recommend holding digoxin and reassessing toxicity, ECG, electrolytes, renal function, and interacting drugs.";
+    }
+    if (value > target.high || value >= target.caution) {
+      if (currentlyHeld) {
+        return `Continue hold or hold 1-2 additional doses depending on symptoms and heart rate. When restarting, consider ${fmtMcg(restartDose)} ${maintenanceRoute} ${restartInterval}, with repeat level after the new regimen approaches steady state.`;
+      }
       if (regimen.dailyEquivalent && regimen.dailyEquivalent > 62.5) {
         return `Consider decreasing maintenance dose or extending interval (for example, reduce toward ${fmtMcg(Math.max(62.5, regimen.dailyEquivalent / 2))}/day equivalent or hold 1 dose then resume lower), depending on HR and symptoms.`;
       }
       return "Current dose is already very low; consider extending interval, holding temporarily, or reassessing need for digoxin.";
     }
+    if (currentlyHeld) {
+      return `If digoxin is still clinically indicated, consider restarting at ${fmtMcg(restartDose)} ${maintenanceRoute} ${restartInterval}; avoid automatically returning to the previous regimen if renal function or interacting drugs have changed.`;
+    }
     if (value < target.low) {
       return "If HR/symptoms are not controlled and sampling/adherence are appropriate, consider cautious dose increase; avoid escalation if toxicity risk is high.";
     }
     return "Current regimen can usually be continued if HR/symptoms are controlled and no toxicity is present.";
-  }, [currentlyHeld, indication, level, levelInterpretation, levelTiming, regimen]);
+  }, [currentlyHeld, indication, level, levelInterpretation, levelTiming, maintenance, maintenanceRoute, noLoadStart, patient.crcl, regimen]);
 
   const note = useMemo(() => {
     const lines = [
       "Digoxin TDM Note",
       `Indication: ${indication === "af" ? "AF rate control" : "HF"}`,
-      `DW: ${patient.dosingWeight ? round1(patient.dosingWeight) : "__"} kg (${patient.weightNote})`,
+      `DW: ${patient.dosingWeight ? round1(patient.dosingWeight) : "__"} kg (${patient.weightNoteEn})`,
       `CrCl: ${patient.crcl ?? "__"} mL/min`,
     ];
     if (regimen) {
-      lines.push(`Current regimen: ${regimen.text}${regimen.dailyEquivalent ? ` (daily equivalent ${fmtMcg(regimen.dailyEquivalent)}/day)` : ""}.`);
+      lines.push(`Current regimen: ${regimen.textEn}${regimen.dailyEquivalent ? ` (daily equivalent ${fmtMcg(regimen.dailyEquivalent)}/day)` : ""}.`);
       if (lastDoseDatetime) lines.push(`Last digoxin dose time: ${formatDT(lastDoseDatetime)}.`);
     }
     if (loadingHistory) {
@@ -370,15 +437,15 @@ export default function DigoxinTDM() {
       lines.push(`Schedule: ${fmtMcg(loading.first)} now, then ${fmtMcg(loading.second)} q6-8h x1, then ${fmtMcg(loading.third)} q6-8h x1; assess HR/ECG/toxicity before each dose.`);
     }
     if (maintenance) {
-      lines.push(`Maintenance estimate (${maintenanceRoute}): ${fmtMcg(maintenance.practical)} daily-ish; ${maintenance.note}.`);
+      lines.push(`Maintenance estimate (${maintenanceRoute}): ${fmtMcg(maintenance.practical)} daily-ish; ${maintenance.noteEn}.`);
     }
     if (levelDatetime) lines.push(`Digoxin level draw time: ${formatDT(levelDatetime)}${levelTiming !== null ? ` (${levelTiming} hr after last dose)` : ""}.`);
     lines.push(`Level timing (${loadingStatus === "given" ? "loading given" : "no loading"}): ${samplingAdviceEn}`);
-    if (levelInterpretation) lines.push(`Level interpretation: ${levelInterpretation.title} - ${levelInterpretation.summary}`);
+    if (levelInterpretationEn) lines.push(`Level interpretation: ${levelInterpretationEn.title} - ${levelInterpretationEn.summary}`);
     if (regimenSuggestion) lines.push(`Regimen suggestion: ${regimenSuggestion}`);
     if (!steadyState) lines.push("Steady state: not confirmed; chronic maintenance level is most interpretable after ~5 half-lives (normal renal function often ~7-10 days; renal dysfunction may require 2-3 weeks or longer).");
     return lines.join("\n");
-  }, [indication, lastDoseDatetime, levelDatetime, levelInterpretation, levelTiming, loading, loadingHistory, loadingStatus, maintenance, maintenanceRoute, patient, regimen, regimenSuggestion, route, samplingAdviceEn, steadyState]);
+  }, [indication, lastDoseDatetime, levelDatetime, levelInterpretationEn, levelTiming, loading, loadingHistory, loadingStatus, maintenance, maintenanceRoute, patient, regimen, regimenSuggestion, route, samplingAdviceEn, steadyState]);
 
   const copyNote = async () => {
     await navigator.clipboard.writeText(note);

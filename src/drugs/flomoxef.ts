@@ -32,6 +32,14 @@ const SENIOR_TABLE = [
   { min: 0,  single_mg: 1000, freq: "Q24H", label: "1 g Q24H（1 g/day）" },
 ];
 
+function pickHospitalDose(crcl: number) {
+  if (crcl > 80) return HOSPITAL_TABLE[0];
+  if (crcl >= 50) return HOSPITAL_TABLE[1];
+  if (crcl >= 25) return HOSPITAL_TABLE[2];
+  if (crcl >= 5) return HOSPITAL_TABLE[3];
+  return HOSPITAL_TABLE[4];
+}
+
 export const flomoxef: Drug = {
   name: "Flumarin",
   subtitle: "Flomoxef",
@@ -89,7 +97,7 @@ export const flomoxef: Drug = {
         { label: "備註", value: "院內處方集未明列 CVVH，介於 CrCl 25–50 與 5–25 之間" },
       ];
     } else {
-      const match = HOSPITAL_TABLE.find((row: any) => crcl >= row.min);
+      const match = pickHospitalDose(crcl);
       // 院內版劑量多以「每日總量」表示，此處註記每次單劑換算支數
       const daily_g = match!.total_mg / 1000;
       let vialsPerDoseStr = "";
@@ -111,7 +119,7 @@ export const flomoxef: Drug = {
         { label: "每日總量", value: `${daily_g} g/day` },
         { label: "每次取藥", value: vialsPerDoseStr },
       ];
-      if (crcl >= 80) {
+      if (crcl > 80) {
         hospitalRows.push({ label: "備註", value: "院內處方集未明列 >80，依文件提及上限" });
       }
     }

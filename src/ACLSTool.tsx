@@ -543,14 +543,15 @@ const gVF = (): string => {
   return toPath(pts);
 };
 
-// Pulseless VT：規則、快、單型的「寬」QRS（水平佔 ≥3 小格）
+// Pulseless VT：規則、快、單型的「寬」QRS；轉折鈍一點、避免看起來像另一個小 QRS
 const gVT = (): string => {
-  const pts: number[][] = []; const bl = 72; const rr = 66; let x = 8; pts.push([x, bl]);
+  const pts: number[][] = []; const bl = 72; const rr = 68; let x = 8; pts.push([x, bl]);
   while (x < EW - rr) {
-    pts.push([x + 4, bl + 6]);    // QRS 起點
-    pts.push([x + 16, bl - 42]);  // R（緩升）
-    pts.push([x + 34, bl + 34]);  // S（QRS 寬 ~30px = 3 小格）
-    pts.push([x + 48, bl - 6]);   // 反向 T
+    pts.push([x + 6, bl + 6]);    // QRS 起點
+    pts.push([x + 16, bl - 30]);  // 緩升
+    pts.push([x + 26, bl - 40]);  // 圓鈍的 R 頂
+    pts.push([x + 42, bl + 28]);  // 寬 S（QRS 寬 ~36px）
+    pts.push([x + 54, bl + 6]);   // 平緩回到 baseline（不做尖折）
     pts.push([x + rr, bl]);
     x += rr;
   }
@@ -558,12 +559,12 @@ const gVT = (): string => {
   return toPath(pts);
 };
 
-// Torsades：紡錘狀 envelope + 相位緩慢漂移 → QRS 極性/軸繞著 baseline 逐漸扭轉
+// Torsades：紡錘狀 envelope + 相位漂移（扭轉）+ 額外不規則 → 更 polymorphic、避免太整齊
 const gTorsades = (): string => {
   const pts: number[][] = []; const c = 58;
   for (let x = 4; x <= EW - 2; x += 2.5) {
-    const env = 6 + 36 * Math.abs(Math.sin(x * 0.019));
-    const phase = x * 0.30 + 0.9 * Math.sin(x * 0.02);   // 相位漂移 = 扭轉
+    const env = 6 + 32 * Math.abs(Math.sin(x * 0.018)) + 6 * Math.sin(x * 0.11 + 0.5);   // 振幅不均
+    const phase = x * 0.29 + 1.1 * Math.sin(x * 0.021) + 0.35 * Math.sin(x * 0.075);     // 週期/極性不均
     pts.push([x, c - env * Math.sin(phase)]);
   }
   return toPath(pts);
@@ -603,17 +604,17 @@ const gPSVT = (): string => {
   return toPath(pts);
 };
 
-// WPW：短 PR（<3 小格）+ delta（QRS 起始 slurred upstroke）+ 寬 QRS（≥3 小格）
+// WPW：短 PR（<3 小格）+ 明顯 delta（QRS 起點就開始鈍鈍斜上）+ 寬 QRS（≥3 小格）
 const gWPW = (): string => {
-  const pts: number[][] = []; const bl = 76; const rr = 155; let x = 12; pts.push([x, bl]);
+  const pts: number[][] = []; const bl = 76; const rr = 158; let x = 12; pts.push([x, bl]);
   while (x < EW - rr + 40) {
     bump(pts, x, 14, 8, bl); pts.push([x + 14, bl]);   // P（起點 x）
     const q = x + 24; pts.push([q, bl]);                // 短 PR：P 起點→QRS 起點 24px (<3 小格)
-    pts.push([q + 10, bl - 12]);                        // delta：緩緩斜上（slurred upstroke）
-    pts.push([q + 22, bl - 46]);                        // R
-    pts.push([q + 40, bl + 16]);                        // S（QRS 寬 ~40px ≥3 小格）
-    pts.push([q + 50, bl]);
-    bump(pts, q + 64, 34, 11, bl); pts.push([q + 98, bl]);   // T
+    // delta wave：QRS 一開始就是一段鈍鈍、漸升的 slur（多點漸升），再接陡峭 R
+    pts.push([q + 8, bl - 9], [q + 18, bl - 22], [q + 30, bl - 48]);   // slurred upstroke → R
+    pts.push([q + 48, bl + 16]);                        // S（QRS 寬 ~54px ≥3 小格，含 delta）
+    pts.push([q + 56, bl]);
+    bump(pts, q + 70, 34, 11, bl); pts.push([q + 104, bl]);   // T
     x += rr;
   }
   pts.push([EW, bl]);
@@ -623,13 +624,22 @@ const gWPW = (): string => {
 // 1° AVB：每個 P 都傳導，但 PR 固定 >5 小格（80px = 8 小格 ≈ 0.32 s）
 const g1AVB = (): string => tile({ pr: 80, rr: 190, r: 44, tw: 38 });
 
-// Mobitz I / Wenckebach：PR 逐拍延長（44→64→84）→ 一個 P 不傳導 → 循環重來
+// Mobitz I / Wenckebach：P-P 固定（P 走自己的節奏），PR 逐拍延長（4→5→6 小格）→ 一個 P 不接 QRS → reset
 const gMobitz1 = (): string => {
-  const pts: number[][] = []; const bl = 76; let x = 12; pts.push([x, bl]);
-  const prs = [44, 64, 84]; const st = 10, tw = 30;
-  for (let g = 0; g < 2 && x < EW - 90; g++) {
-    for (const pr of prs) { x = beat(pts, x, { pr, st, tw }); x += 16; pts.push([x, bl]); }
-    x = beat(pts, x, { pr: 44, drop: true, dropTail: 8 }); x += 30; pts.push([x, bl]);   // P 沒接 QRS + 長 pause
+  const pts: number[][] = []; const bl = 76; const PP = 116;   // 固定 P-P
+  const cycle: (number | null)[] = [40, 56, 72, null];         // PR 依序 4→5.6→7.2 小格；null = P 無 QRS
+  pts.push([4, bl]);
+  let px = 16;
+  for (let i = 0; px < EW - 30; i++) {
+    const pr = cycle[i % cycle.length];
+    bump(pts, px, 16, 10, bl); pts.push([px + 16, bl]);          // P（固定位置）
+    if (pr !== null) {
+      const q = px + pr; pts.push([q, bl]);                      // QRS 逐拍延後
+      pts.push([q + 3, bl + 5], [q + 9, bl - 44], [q + 15, bl + 12], [q + 18, bl]);   // 窄 QRS
+      bump(pts, q + 24, 18, 10, bl); pts.push([q + 42, bl]);     // 小 T
+    }
+    pts.push([px + PP - 2, bl]);                                 // baseline 到下一個 P（維持 P-P 固定）
+    px += PP;
   }
   pts.push([EW, bl]);
   return toPath(pts);
@@ -654,20 +664,21 @@ const gMobitz2 = (): string => {
   return toPath(pts);
 };
 
-// 3° AVB：P-P 規則、R-R 規則，但兩者完全獨立（AV dissociation）；P 落在 QRS 前/後/內都有
+// 3° AVB：atrial rate（P-P≈52）明顯 > ventricular escape（R-R≈150），兩者完全獨立；
+// P 因此有時在 QRS 前、有時後、有時落在 T 上 → 一眼看出 AV dissociation
 const g3AVB = (): string => {
-  const bl = 78; const pts: number[][] = []; const qw = 36;
-  const rs = [52, 190, 328, 466];                    // 慢、寬、規則的 escape（R-R≈138）
-  const inQRS = (x: number) => rs.some((r) => x >= r - 6 && x <= r + qw + 8);
-  const PP = 46, pOff = 16;                           // 較快、規則、獨立行進的 P（P-P≈46，與 R-R 不通約）
-  for (let x = 2; x <= EW; x += 3) {
+  const bl = 80; const pts: number[][] = []; const qw = 40;
+  const rs = [64, 214, 364];                         // 只有 3 個慢、寬的 escape（R-R≈150）
+  const inQRS = (x: number) => rs.some((r) => x >= r - 8 && x <= r + qw + 8);
+  const PP = 52, pOff = 14, pAmp = 11;               // 快、規則、獨立行進的 P（與 R-R 不通約）
+  for (let x = 2; x <= EW; x += 2.5) {
     if (inQRS(x)) continue;
     const k = Math.round((x - pOff) / PP);
     const d = x - (pOff + k * PP);
-    const y = Math.abs(d) < 8 ? bl - 9 * Math.cos((d / 8) * (Math.PI / 2)) : bl;
+    const y = Math.abs(d) < 8 ? bl - pAmp * Math.cos((d / 8) * (Math.PI / 2)) : bl;
     pts.push([x, y]);
   }
-  for (const r of rs) pts.push([r - 6, bl], [r, bl + 6], [r + 12, bl - 40], [r + 30, bl + 30], [r + qw, bl - 6], [r + qw + 8, bl]);
+  for (const r of rs) pts.push([r - 8, bl], [r, bl + 8], [r + 14, bl - 42], [r + 34, bl + 30], [r + qw, bl - 8], [r + qw + 8, bl]);
   pts.sort((a, b) => a[0] - b[0]);
   return toPath(pts);
 };
@@ -729,7 +740,7 @@ const ecgCards: EcgCard[] = [
   {
     title: "Atrial fibrillation",
     path: gAF(),
-    visual: "Irregularly irregular；無一致、可辨識的 P wave（只有 fibrillatory 波）。",
+    visual: "Irregularly irregular；無一致、可辨識的 P wave；R-R interval irregularly irregular。",
     rhythm: "Narrow irregular rhythm without consistent P waves.",
     action: "不穩定（tachyarrhythmia 造成 hemodynamic instability）→ synchronized cardioversion；穩定則依情境評估 rate/rhythm control 與 thromboembolic risk。",
   },
@@ -743,7 +754,7 @@ const ecgCards: EcgCard[] = [
   {
     title: "1st-degree AV block",
     path: g1AVB(),
-    visual: "每個 P 都有 QRS，但 PR interval 固定延長。",
+    visual: "每個 P 都有 QRS，但 PR interval 固定延長（>5 小格，>0.20 s）。",
     rhythm: "AV conduction delay with 1:1 conduction.",
     action: "通常觀察與找原因；若合併症狀或其他 conduction disease，再依 bradycardia pathway。",
   },
@@ -926,6 +937,10 @@ export default function ACLSTool() {
       {tab === "ecg" && (
         <section style={S.section}>
           <div style={S.sectionTitle}>ACLS 心電圖判讀</div>
+          <div style={S.ecgScale}>
+            <div>示意圖以標準紙速 25 mm/s 繪製：1 小格 = 0.04 s，1 大格（5 小格）= 0.20 s。振幅未嚴格按 10 mm/mV，僅供 rhythm recognition。</div>
+            <div style={S.ecgScaleLegend}>{"對照　·　QRS ≥3 小格 = ≥0.12 s（wide）　·　WPW PR <3 小格　·　1° AV block PR >5 小格"}</div>
+          </div>
           <div style={S.ecgGrid}>
             {ecgCards.map((card) => (
               <div key={card.title} style={S.ecgCard}>
@@ -1003,7 +1018,7 @@ const S: Record<string, CSSProperties> = {
   subtitle: { margin: "0 auto", maxWidth: 760, color: "#64748B", fontSize: 14, lineHeight: 1.6 },
   notice: { background: "#F0FDFA", border: "1px solid #99F6E4", borderRadius: 12, padding: 14, color: "#115E59", fontSize: 14, lineHeight: 1.7, marginBottom: 16 },
   tabBar: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 16 },
-  tabButton: { border: "1.5px solid #E2E8F0", background: "#FFFFFF", color: "#64748B", borderRadius: 10, padding: "10px 8px", fontWeight: 800, cursor: "pointer" },
+  tabButton: { border: "1.5px solid #E2E8F0", background: "#FFFFFF", color: "#64748B", borderRadius: 10, padding: "13px 10px", fontSize: 15, fontWeight: 800, lineHeight: 1.3, cursor: "pointer" },
   tabButtonActive: { borderColor: ACCENT, background: "#ECFDF5", color: ACCENT },
   section: { background: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", overflow: "hidden", boxSizing: "border-box" },
   sectionTitle: { fontSize: 13, color: "#94A3B8", fontWeight: 900, letterSpacing: 0, marginBottom: 14 },
@@ -1039,6 +1054,8 @@ const S: Record<string, CSSProperties> = {
   ecgCard: { border: "1px solid #E2E8F0", borderRadius: 10, padding: 12, background: "#FFFFFF" },
   ecgTitle: { fontSize: 15, fontWeight: 900, color: "#0F172A", marginBottom: 8 },
   ecgSvg: { width: "100%", height: "auto", aspectRatio: "500 / 120", borderRadius: 8, border: "1px solid #E2E8F0", background: "#FFFFFF", display: "block" },
+  ecgScale: { color: "#64748B", fontSize: 12, lineHeight: 1.5, marginBottom: 12, marginTop: -4 },
+  ecgScaleLegend: { marginTop: 4, color: "#475569", fontWeight: 700 },
   ecgVisual: { color: "#475569", fontSize: 13, fontWeight: 800, lineHeight: 1.55, marginTop: 8 },
   ecgText: { color: "#334155", fontSize: 13, lineHeight: 1.55, marginTop: 8 },
   ecgAction: { color: "#0F766E", fontSize: 13, fontWeight: 900, lineHeight: 1.55, marginTop: 4 },

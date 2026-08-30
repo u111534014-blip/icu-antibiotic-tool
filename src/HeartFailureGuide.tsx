@@ -168,6 +168,39 @@ const therapyTermRows = [
   },
 ];
 
+const sidedFailureRows = [
+  {
+    clue: "症狀與理學檢查",
+    left: "喘、orthopnea、肺水腫、濕囉音、CXR pulmonary edema、胸水；嚴重時低氧與粉紅泡沫痰。",
+    right: "JVP/CVP 高、肝頸靜脈回流、肝腫大或右上腹脹、腹水、周邊水腫；肺部可能不濕。",
+    note: "BNP/NT-proBNP 可支持 HF，但不能單靠它分左右心。",
+  },
+  {
+    clue: "常見情境",
+    left: "LV systolic/diastolic dysfunction、急性 MR/AS、ACS、高血壓急症造成 pulmonary congestion。",
+    right: "Massive PE、RV infarction、pulmonary hypertension、ARDS/高 PEEP、COPD cor pulmonale、左心衰竭拖久造成肺高壓。",
+    note: "Clear lung + shock + JVP 高，要特別想到 RV failure、PE 或 RV infarction。",
+  },
+  {
+    clue: "Echo/POCUS",
+    left: "LV EF 下降或舒張功能差、LA enlargement、MR/AS、肺水腫 B-lines；IVC 可大但不具專一性。",
+    right: "RV dilation、RV hypokinesis、septal flattening/D-shaped LV、TR、估計 PA pressure 高、IVC 擴大且變異小。",
+    note: "Echo 是床邊區分左右心問題最有用的工具之一；但壓力估計在機械通氣或肺病時會有誤差。",
+  },
+  {
+    clue: "Swan-Ganz / hemodynamics",
+    left: "PCWP 高較支持 left-sided filling pressure 高；若 CI 低則代表低心輸出。",
+    right: "RAP/CVP 高、PCWP 不一定高；RAP/PCWP 比值偏高會支持 RV predominant failure。",
+    note: "侵入性監測不是每個 HF 都需要，但在 shock、診斷不清或治療方向衝突時很有幫助。",
+  },
+  {
+    clue: "治療方向的差異",
+    left: "若左心肺水腫且 SBP 夠，IV loop diuretic、NTG/nitrate 類降 preload 可很有用；高血壓時 vasodilator 角色更大。",
+    right: "避免亂降 preload/systemic BP；重點是找可逆原因、維持 MAP/RV perfusion、避免 hypoxia/acidosis/hypercapnia、降低 PVR、必要時 inotrope/inodilator 或 pulmonary vasodilator。",
+    note: "右心衰竭不是直接改用 hydralazine。Hydralazine 主要降 systemic afterload，較偏幫左心；若低血壓可能害 RV coronary perfusion 更差。",
+  },
+];
+
 const diureticRows = [
   {
     situation: "沒有長期使用 loop diuretic",
@@ -418,6 +451,22 @@ export default function HeartFailureGuide() {
               "Nitrate 類要確認沒有 PDE5 inhibitor；頭痛和低血壓很常限制上調。",
             ]} />
           </NoteCard>
+          <NoteCard title="左心衰竭 vs 右心衰竭怎麼判斷？" open>
+            <SmallTable
+              columns={["線索", "偏左心衰竭", "偏右心衰竭", "提醒"]}
+              rows={sidedFailureRows.map((row) => ({
+                線索: row.clue,
+                偏左心衰竭: row.left,
+                偏右心衰竭: row.right,
+                提醒: row.note,
+              }))}
+            />
+            <Bullets items={[
+              "值班快速版：肺很濕、血壓夠，偏左心鬱血；JVP/CVP 高、shock、肺不濕，或 echo 看到 RV 大，先警覺右心衰竭。",
+              "左右心常常不是互斥：左心衰竭久了可造成肺高壓與右心衰竭；ARDS、高 PEEP、PE 也可能讓右心突然失代償。",
+              "藥物不要只照左右心選。先問當下要處理的是 preload、afterload、contractility、PVR，還是 systemic perfusion pressure。",
+            ]} />
+          </NoteCard>
           <NoteCard title="FMT / GDIT / AMT 名詞速查" open>
             <SmallTable
               columns={["縮寫", "全名", "意思", "常見例子"]}
@@ -441,6 +490,7 @@ export default function HeartFailureGuide() {
           <NoteCard title="來源與版本">
             <p>ESC：2026 ESC Guidelines for the management of heart failure，官方 ESC guideline page 發布日期 2026-08-28，official slides 顯示 European Heart Journal 2026、doi: 10.1093/eurheartj/ehag100。</p>
             <p>AHA：2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure；ACC key perspectives last updated October 2023。</p>
+            <p>左/右心衰竭判讀與 RV failure 處置：參考 AHA/ACC/HFSA HF guideline 對 HF 症狀、鬱血與 advanced HF 的整理；另參考 ATS/PMC review「Management of Acute Right Ventricular Failure in the Intensive Care Unit」與 2025 MICU RV failure review 對 RV preload、afterload、PVR、echo/PA catheter 監測的整理。</p>
           </NoteCard>
         </section>
       )}

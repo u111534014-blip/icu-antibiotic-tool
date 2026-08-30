@@ -119,17 +119,23 @@ function SmallTable({ columns, rows }: { columns: string[]; rows: Array<Record<s
 
 function EcgStrip({ points, path }: { points?: string; path?: string }) {
   return (
-    <svg viewBox="0 0 240 64" style={S.ecgSvg} aria-hidden="true">
+    <svg viewBox="0 0 500 120" style={S.ecgSvg} aria-hidden="true">
       <defs>
-        <pattern id="ecg-grid" width="12" height="12" patternUnits="userSpaceOnUse">
-          <path d="M 12 0 L 0 0 0 12" fill="none" stroke="#E2E8F0" strokeWidth="0.8" />
+        {/* 真實 ECG 紙：細格 1mm、粗格每 5 格，粉紅色 */}
+        <pattern id="ecg-fine" width="10" height="10" patternUnits="userSpaceOnUse">
+          <path d="M10 0H0V10" fill="none" stroke="#F6C9D2" strokeWidth="0.6" />
+        </pattern>
+        <pattern id="ecg-bold" width="50" height="50" patternUnits="userSpaceOnUse">
+          <rect width="50" height="50" fill="url(#ecg-fine)" />
+          <path d="M50 0H0V50" fill="none" stroke="#E39AA8" strokeWidth="1.3" />
         </pattern>
       </defs>
-      <rect width="240" height="64" fill="url(#ecg-grid)" />
+      <rect width="500" height="120" fill="#FFF6F7" />
+      <rect width="500" height="120" fill="url(#ecg-bold)" />
       {path ? (
-        <path d={path} fill="none" stroke={ACCENT} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={path} fill="none" stroke="#111827" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       ) : (
-        <polyline points={points} fill="none" stroke={ACCENT} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={points} fill="none" stroke="#111827" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       )}
     </svg>
   );
@@ -469,94 +475,273 @@ const hAndTs = [
   { cause: "Thrombosis coronary", clue: "ACS/STEMI、VF/pVT、胸痛病史", action: "PCI/cath lab、ACS care" },
 ];
 
+// ── 心電圖波形產生器（畫成接近真實 ECG 的描記）──────────────────
+// 座標系：viewBox 500 × 120，y 越小越上面。
+// organized 節律 baseline≈76；VF/torsades 以中線≈58 上下擺盪。
+const EW = 500;
+
+function toPath(pts: number[][]): string {
+  return pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+}
+
+// 半弦波隆起（P、T 波用）
+function bump(pts: number[][], x0: number, w: number, amp: number, bl: number, steps = 8) {
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    pts.push([x0 + w * t, bl - amp * Math.sin(Math.PI * t)]);
+  }
+}
+
+type Beat = { bl?: number; pAmp?: number; pw?: number; pr?: number; qrsW?: number; r?: number; q?: number; s?: number; tAmp?: number; tw?: number; st?: number; hasP?: boolean; drop?: boolean };
+
+// 推入一個 P-QRS-T 心跳，回傳結束 x
+function beat(pts: number[][], x: number, o: Beat = {}): number {
+  const bl = o.bl ?? 76;
+  let cx = x;
+  pts.push([cx, bl]);
+  if (o.hasP !== false) { bump(pts, cx, o.pw ?? 16, o.pAmp ?? 7, bl); cx += o.pw ?? 16; pts.push([cx, bl]); }
+  cx += o.pr ?? 24; pts.push([cx, bl]);
+  if (!o.drop) {
+    const w = o.qrsW ?? 14;
+    pts.push([cx + w * 0.16, bl + (o.q ?? 5)]);   // Q
+    pts.push([cx + w * 0.42, bl - (o.r ?? 46)]);  // R
+    pts.push([cx + w * 0.72, bl + (o.s ?? 13)]);  // S
+    pts.push([cx + w, bl]);                        // J point
+    cx += w;
+    cx += o.st ?? 8; pts.push([cx, bl]);           // ST 段
+    bump(pts, cx, o.tw ?? 30, o.tAmp ?? 13, bl); cx += o.tw ?? 30;
+    pts.push([cx, bl]);
+  }
+  return cx;
+}
+
+// 規則節律：把心跳鋪滿整條
+function tile(o: Beat & { gap?: number; start?: number } = {}): string {
+  const pts: number[][] = []; const bl = o.bl ?? 76; const gap = o.gap ?? 30;
+  let x = o.start ?? 8; pts.push([x, bl]);
+  while (x < EW - 46) { x = beat(pts, x, o); x += gap; pts.push([x, bl]); }
+  pts.push([EW, bl]);
+  return toPath(pts);
+}
+
+const gVF = (): string => {
+  const pts: number[][] = []; const c = 58; let ph = 0;
+  for (let x = 4; x <= EW - 2; x += 3) {
+    const prog = x / EW;
+    const amp = (33 - 19 * prog) * (0.62 + 0.38 * Math.sin(x * 0.085 + 1.3));
+    ph += 0.12 + 0.055 * prog;
+    const y = c - amp * Math.sin(ph) - 7 * Math.sin(x * 0.33) * (0.55 - 0.35 * prog);
+    pts.push([x, y]);
+  }
+  return toPath(pts);
+};
+
+const gVT = (): string => {
+  const pts: number[][] = []; const bl = 80; const per = 54; let x = 6; pts.push([x, bl]);
+  while (x < EW - per) {
+    pts.push([x + 6, bl - 4], [x + 15, bl - 44], [x + 28, bl + 30], [x + 42, bl - 8], [x + per, bl]);
+    x += per;
+  }
+  pts.push([EW, bl]);
+  return toPath(pts);
+};
+
+const gTorsades = (): string => {
+  const pts: number[][] = []; const c = 58;
+  for (let x = 4; x <= EW - 2; x += 3) {
+    const env = 8 + 34 * Math.abs(Math.sin(x * 0.021));
+    pts.push([x, c - env * Math.sin(x * 0.29)]);
+  }
+  return toPath(pts);
+};
+
+const gAsystole = (): string => {
+  const pts: number[][] = []; const bl = 62;
+  for (let x = 2; x <= EW; x += 8) pts.push([x, bl + 1.3 * Math.sin(x * 0.045) + 0.8 * Math.sin(x * 0.5)]);
+  return toPath(pts);
+};
+
+const gAF = (): string => {
+  const bl = 72; const rs = [44, 100, 150, 226, 270, 338, 398, 452];
+  const near = (x: number) => rs.some((r) => x >= r - 6 && x <= r + 10);
+  const pts: number[][] = [];
+  for (let x = 2; x <= EW; x += 4) {
+    if (near(x)) continue;
+    const f = 3 * Math.sin(x * 0.55) + 2 * Math.sin(x * 0.9 + 1) + 1.4 * Math.sin(x * 1.4);
+    pts.push([x, bl - f]);
+  }
+  for (const r of rs) pts.push([r - 6, bl], [r - 1, bl + 5], [r + 2, bl - 40], [r + 5, bl + 9], [r + 10, bl]);
+  pts.sort((a, b) => a[0] - b[0]);
+  return toPath(pts);
+};
+
+const gPSVT = (): string => {
+  const pts: number[][] = []; const bl = 74; const per = 30; let x = 6; pts.push([x, bl]);
+  while (x < EW - per) {
+    pts.push([x + 3, bl + 4], [x + 7, bl - 40], [x + 11, bl + 8], [x + 15, bl]);
+    bump(pts, x + 16, 10, 9, bl);
+    pts.push([x + per, bl]);
+    x += per;
+  }
+  pts.push([EW, bl]);
+  return toPath(pts);
+};
+
+const gWPW = (): string => {
+  const pts: number[][] = []; const bl = 76; const per = 118; let x = 8; pts.push([x, bl]);
+  while (x < EW - per + 10) {
+    bump(pts, x, 16, 7, bl); let cx = x + 16; pts.push([cx, bl]);   // P
+    cx += 6; pts.push([cx, bl]);                                     // 短 PR
+    pts.push([cx + 12, bl - 14], [cx + 22, bl - 44], [cx + 34, bl + 16], [cx + 44, bl]); // delta + 寬 QRS
+    cx += 44; cx += 8; pts.push([cx, bl]);
+    bump(pts, cx, 30, 11, bl); cx += 30; pts.push([cx, bl]);        // T
+    x += per;
+  }
+  pts.push([EW, bl]);
+  return toPath(pts);
+};
+
+const g1AVB = (): string => tile({ pr: 52, gap: 40, r: 44 });   // 固定但延長的 PR
+
+const gMobitz1 = (): string => {
+  const pts: number[][] = []; const bl = 76; let x = 8; pts.push([x, bl]);
+  for (let g = 0; g < 3; g++) {
+    x = beat(pts, x, { pr: 22 }); x += 10; pts.push([x, bl]);
+    x = beat(pts, x, { pr: 40 }); x += 10; pts.push([x, bl]);
+    x = beat(pts, x, { pr: 56 }); x += 6; pts.push([x, bl]);
+    x = beat(pts, x, { drop: true }); x += 20; pts.push([x, bl]);   // P 沒接 QRS
+  }
+  pts.push([EW, bl]);
+  return toPath(pts);
+};
+
+const gMobitz2 = (): string => {
+  const pts: number[][] = []; const bl = 76; let x = 8; pts.push([x, bl]); let n = 0;
+  while (x < EW - 40) {
+    n++;
+    const drop = n % 3 === 0;   // PR 固定，每 3 個掉 1 個 QRS
+    x = beat(pts, x, { pr: 30, drop }); x += drop ? 16 : 30; pts.push([x, bl]);
+  }
+  pts.push([EW, bl]);
+  return toPath(pts);
+};
+
+const g3AVB = (): string => {
+  const bl = 78; const pts: number[][] = [];
+  const rs = [60, 200, 340, 470];                    // 慢、寬、規則的 escape QRS
+  const inQRS = (x: number) => rs.some((r) => x >= r - 10 && x <= r + 46);
+  const pPeriod = 52, pOff = 24;                      // 獨立行進、較快的 P 波
+  for (let x = 2; x <= EW; x += 3) {
+    if (inQRS(x)) continue;
+    const k = Math.round((x - pOff) / pPeriod);
+    const d = x - (pOff + k * pPeriod);
+    const y = Math.abs(d) < 7 ? bl - 8 * Math.cos((d / 7) * (Math.PI / 2)) : bl;
+    pts.push([x, y]);
+  }
+  for (const r of rs) pts.push([r - 10, bl], [r, bl - 40], [r + 12, bl + 22], [r + 30, bl - 8], [r + 44, bl]);
+  pts.sort((a, b) => a[0] - b[0]);
+  return toPath(pts);
+};
+
+const gPacer = (): string => {
+  const pts: number[][] = []; const bl = 76; const per = 112; let x = 16; pts.push([x, bl]);
+  while (x < EW - per + 24) {
+    pts.push([x, bl], [x, bl - 52], [x, bl]);                        // pacing spike（細高垂直）
+    pts.push([x + 6, bl + 6], [x + 16, bl - 30], [x + 30, bl + 34], [x + 48, bl - 6], [x + 60, bl]); // captured 寬 QRS
+    x += per; pts.push([x, bl]);
+  }
+  pts.push([EW, bl]);
+  return toPath(pts);
+};
+
 const ecgCards: EcgCard[] = [
   {
     title: "VF",
-    points: "0,35 6,8 13,52 21,18 29,58 36,12 44,47 52,26 60,55 69,6 77,39 86,20 94,60 102,14 110,45 119,27 127,54 136,10 144,49 153,21 162,57 171,12 180,41 189,30 198,53 207,7 216,44 225,16 234,56 240,31",
+    path: gVF(),
     visual: "亂、沒有規則 QRS、沒有可數心跳。",
     rhythm: "Chaotic, no organized QRS, no pulse.",
     action: "Shockable：defibrillation + CPR。",
   },
   {
     title: "Pulseless VT",
-    path: "M0 42 C8 10 18 10 28 42 C36 58 46 58 56 42 C64 10 74 10 84 42 C92 58 102 58 112 42 C120 10 130 10 140 42 C148 58 158 58 168 42 C176 10 186 10 196 42 C204 58 214 58 224 42 C230 20 236 18 240 30",
+    path: gVT(),
     visual: "寬、規則、每個 complex 長得像；沒脈搏就是 pulseless VT。",
     rhythm: "Wide regular tachycardia. If no pulse = pulseless VT.",
     action: "Shockable：defibrillation + CPR。",
   },
   {
     title: "PEA",
-    points: "0,34 18,34 23,30 27,34 31,34 35,16 39,52 43,34 74,34 79,30 83,34 87,34 91,16 95,52 99,34 130,34 135,30 139,34 143,34 147,16 151,52 155,34 186,34 191,30 195,34 199,34 203,16 207,52 211,34 240,34",
+    path: tile({ gap: 34 }),
     visual: "看起來有 organized rhythm，但摸不到 pulse。PEA 的重點是臨床，不是波形長相。",
     rhythm: "Organized rhythm on monitor, but no palpable pulse.",
     action: "Non-shockable：CPR + epinephrine + Hs/Ts。",
   },
   {
     title: "Asystole",
-    points: "0,32 36,32 72,33 108,32 144,32 180,31 216,32 240,32",
+    path: gAsystole(),
     visual: "幾乎平線；先確認 lead、gain、另一個導程。",
     rhythm: "Flat or near-flat line. Confirm leads/gain and another lead.",
     action: "Non-shockable：CPR + epinephrine + Hs/Ts。",
   },
   {
     title: "PSVT / regular SVT",
-    points: "0,34 6,34 8,20 10,46 12,34 22,34 24,20 26,46 28,34 38,34 40,20 42,46 44,34 54,34 56,20 58,46 60,34 70,34 72,20 74,46 76,34 86,34 88,20 90,46 92,34 102,34 104,20 106,46 108,34 118,34 120,20 122,46 124,34 134,34 136,20 138,46 140,34 150,34 152,20 154,46 156,34 166,34 168,20 170,46 172,34 182,34 184,20 186,46 188,34 198,34 200,20 202,46 204,34 214,34 216,20 218,46 220,34 230,34 232,20 234,46 236,34 240,34",
+    path: gPSVT(),
     visual: "窄、很快、非常規則；P wave 常藏起來。",
     rhythm: "Narrow, regular, fast; P waves often hidden.",
     action: "Stable：vagal maneuver → adenosine。Unstable：sync cardioversion。",
   },
   {
     title: "Torsades",
-    points: "0,32 8,16 16,8 24,16 32,32 40,48 48,56 56,48 64,32 72,20 80,14 88,22 96,32 104,42 112,50 120,42 128,32 136,18 144,7 152,17 160,32 168,47 176,58 184,48 192,32 200,22 208,14 216,22 224,32 232,43 240,50",
+    path: gTorsades(),
     visual: "寬、polymorphic，振幅忽大忽小，像繞著 baseline 扭轉。",
     rhythm: "Polymorphic VT with twisting axis; often QT-related.",
     action: "Unstable/no pulse：defib。With pulse：MgSO4, correct K/Mg, remove QT drugs。",
   },
   {
     title: "Atrial fibrillation",
-    points: "0,34 7,31 14,36 21,32 28,35 33,18 36,52 40,34 53,33 60,36 66,31 73,35 83,34 87,18 90,52 94,34 112,35 119,32 126,36 133,33 137,18 140,52 144,34 167,34 174,31 181,36 188,33 192,18 195,52 199,34 220,35 226,32 232,36 240,34",
+    path: gAF(),
     visual: "Irregularly irregular，沒有固定 P wave，R-R 間距不規則。",
     rhythm: "Narrow irregular rhythm without consistent P waves.",
     action: "有 pulse 時依 stable/unstable、rate/rhythm control、抗凝血風險處理；不穩定則 synchronized cardioversion。",
   },
   {
     title: "WPW pattern",
-    points: "0,34 12,34 16,30 20,34 26,34 32,28 39,16 47,52 56,34 76,34 80,30 84,34 90,34 96,28 103,16 111,52 120,34 140,34 144,30 148,34 154,34 160,28 167,16 175,52 184,34 204,34 208,30 212,34 218,34 224,28 231,16 239,52",
+    path: gWPW(),
     visual: "短 PR、QRS 起始有 slurred upstroke/delta wave，QRS 可能變寬。",
     rhythm: "Pre-excitation pattern; accessory pathway bypasses AV node.",
     action: "若 AF + WPW/pre-excitation，避免 adenosine、beta-blocker、diltiazem/verapamil、digoxin，請早期找心臟科。",
   },
   {
     title: "1st-degree AV block",
-    points: "0,34 12,34 16,30 20,34 42,34 45,18 48,52 52,34 72,34 84,34 88,30 92,34 114,34 117,18 120,52 124,34 144,34 156,34 160,30 164,34 186,34 189,18 192,52 196,34 216,34 228,34 232,30 236,34 240,34",
+    path: g1AVB(),
     visual: "每個 P 都有 QRS，但 PR interval 固定延長。",
     rhythm: "AV conduction delay with 1:1 conduction.",
     action: "通常觀察與找原因；若合併症狀或其他 conduction disease，再依 bradycardia pathway。",
   },
   {
     title: "2nd-degree AV block Mobitz I",
-    points: "0,34 10,34 14,30 18,34 32,34 35,18 38,52 42,34 56,34 66,34 70,30 74,34 96,34 99,18 102,52 106,34 120,34 130,34 134,30 138,34 170,34 173,18 176,52 180,34 194,34 204,34 208,30 212,34 240,34",
+    path: gMobitz1(),
     visual: "PR 越來越長，最後一個 P 沒有接 QRS，然後循環重來。",
     rhythm: "Wenckebach: progressive PR prolongation followed by dropped beat.",
     action: "常在 AV node；若有症狀走 bradycardia pathway，先找可逆原因。",
   },
   {
     title: "2nd-degree AV block Mobitz II",
-    points: "0,34 10,34 14,30 18,34 34,34 37,18 40,52 44,34 62,34 66,30 70,34 86,34 89,18 92,52 96,34 114,34 118,30 122,34 146,34 150,30 154,34 170,34 173,18 176,52 180,34 198,34 202,30 206,34 222,34 225,18 228,52 232,34 240,34",
+    path: gMobitz2(),
     visual: "PR 固定，突然掉 QRS；比 Mobitz I 更危險。",
     rhythm: "Intermittent nonconducted P waves without progressive PR prolongation.",
     action: "常提示 His-Purkinje disease；症狀性或 high-grade 時準備 pacing/TVP。",
   },
   {
     title: "3rd-degree AV block",
-    points: "0,34 10,34 14,30 18,34 30,34 50,34 53,18 56,52 60,34 70,34 74,30 78,34 108,34 112,30 116,34 122,34 142,34 145,18 148,52 152,34 166,34 170,30 174,34 204,34 208,30 212,34 214,34 234,34 237,18 240,52",
+    path: g3AVB(),
     visual: "P wave 和 QRS 各走各的，沒有固定關係；escape rhythm 通常慢。",
     rhythm: "Complete AV dissociation.",
     action: "若症狀或不穩定，準備 transcutaneous pacing 與 transvenous pacing。",
   },
   {
     title: "Pacemaker rhythm",
-    points: "0,34 18,34 20,6 22,34 28,16 36,52 44,34 70,34 72,6 74,34 80,16 88,52 96,34 122,34 124,6 126,34 132,16 140,52 148,34 174,34 176,6 178,34 184,16 192,52 200,34 226,34 228,6 230,34 236,16 240,52",
+    path: gPacer(),
     visual: "細高 pacing spike 後接寬 QRS，代表 ventricular capture。",
     rhythm: "Pacemaker spike with captured QRS complex.",
     action: "若 brady/shock 且沒有 capture，要檢查 output、lead、電池、電解質，並準備外部 pacing。",
@@ -824,7 +1009,7 @@ const S: Record<string, CSSProperties> = {
   ecgGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 },
   ecgCard: { border: "1px solid #E2E8F0", borderRadius: 10, padding: 12, background: "#FFFFFF" },
   ecgTitle: { fontSize: 15, fontWeight: 900, color: "#0F172A", marginBottom: 8 },
-  ecgSvg: { width: "100%", height: 74, borderRadius: 8, border: "1px solid #E2E8F0", background: "#FFFFFF", display: "block" },
+  ecgSvg: { width: "100%", height: "auto", aspectRatio: "500 / 120", borderRadius: 8, border: "1px solid #E2E8F0", background: "#FFFFFF", display: "block" },
   ecgVisual: { color: "#475569", fontSize: 13, fontWeight: 800, lineHeight: 1.55, marginTop: 8 },
   ecgText: { color: "#334155", fontSize: 13, lineHeight: 1.55, marginTop: 8 },
   ecgAction: { color: "#0F766E", fontSize: 13, fontWeight: 900, lineHeight: 1.55, marginTop: 4 },

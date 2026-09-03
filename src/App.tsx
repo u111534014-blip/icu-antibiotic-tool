@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { KeyboardEvent } from "react";
 import { DRUG_REGISTRY } from './drugs';
 import { PREP_DATA } from './drugs/prepData';
 import { round1 } from './drugs/shared/helpers';
@@ -226,8 +227,10 @@ type DrugSearchSelectProps = {
 function DrugSearchSelect({ drugList, selectedId, onSelect }: DrugSearchSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     const handler = (e: MouseEvent | TouchEvent) => {
@@ -255,12 +258,64 @@ function DrugSearchSelect({ drugList, selectedId, onSelect }: DrugSearchSelectPr
   });
 
   const selected = drugList.find(d => d.id === selectedId);
+  const listboxId = "drug-search-options";
+  const highlightedDrug = filtered[highlightedIndex];
+
+  useEffect(() => {
+    setHighlightedIndex(filtered.length > 0 ? 0 : -1);
+  }, [search, filtered.length]);
+
+  useEffect(() => {
+    if (!open || highlightedIndex < 0) return;
+    optionRefs.current[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [open, highlightedIndex, filtered.length]);
+
+  const openSelect = () => {
+    const selectedIndex = filtered.findIndex(d => d.id === selectedId);
+    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : filtered.length > 0 ? 0 : -1);
+    setOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const chooseDrug = (id: string) => {
+    onSelect(id);
+    setOpen(false);
+    setSearch("");
+  };
+
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      if (filtered.length === 0) return;
+      setHighlightedIndex(index => (index + 1) % filtered.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      if (filtered.length === 0) return;
+      setHighlightedIndex(index => (index <= 0 ? filtered.length - 1 : index - 1));
+    } else if (e.key === "Enter") {
+      if (!open || !highlightedDrug) return;
+      e.preventDefault();
+      chooseDrug(highlightedDrug.id);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      setSearch("");
+    }
+  };
 
   return (
     <div ref={wrapperRef} style={{ position: "relative", marginBottom: 20 }}>
       <label style={S.label}>選擇藥物</label>
       <div
-        onClick={() => { setOpen(!open); setTimeout(() => inputRef.current?.focus(), 50); }}
+        onClick={() => open ? setOpen(false) : openSelect()}
         style={{
           padding: "12px 14px", borderRadius: 10,
           border: open ? `2px solid ${ACCENT}` : "2px solid #E2E8F0",
@@ -297,37 +352,49 @@ function DrugSearchSelect({ drugList, selectedId, onSelect }: DrugSearchSelectPr
               </svg>
               <input
                 ref={inputRef} type="text" value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => { setSearch(e.target.value); setOpen(true); }}
+                onKeyDown={handleInputKeyDown}
+                role="combobox"
+                aria-expanded={open}
+                aria-controls={listboxId}
+                aria-activedescendant={highlightedDrug ? `drug-option-${highlightedDrug.id}` : undefined}
                 placeholder="藥名、商品名、學名、中文..."
                 style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, color: "#0F172A", width: "100%", minWidth: 0 }}
               />
               {search && (
-                <button onClick={(e) => { e.stopPropagation(); setSearch(""); }}
+                <button onClick={(e) => { e.stopPropagation(); setSearch(""); setHighlightedIndex(0); setTimeout(() => inputRef.current?.focus(), 0); }}
                   style={{ border: "none", background: "none", cursor: "pointer", color: "#94A3B8", fontSize: 16, padding: 0 }}>✕</button>
               )}
             </div>
           </div>
 
-          <div style={{ maxHeight: 300, overflowY: "auto" }}>
+          <div id={listboxId} role="listbox" style={{ maxHeight: 300, overflowY: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "20px 16px", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>找不到符合的藥物</div>
             ) : (
-              filtered.map(d => (
+              filtered.map((d, index) => {
+                const isHighlighted = index === highlightedIndex;
+                const isSelected = d.id === selectedId;
+                return (
                 <div key={d.id}
-                  onClick={() => { onSelect(d.id); setOpen(false); setSearch(""); }}
+                  id={`drug-option-${d.id}`}
+                  ref={(node) => { optionRefs.current[index] = node; }}
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => chooseDrug(d.id)}
                   style={{
                     padding: "12px 16px", cursor: "pointer",
-                    background: d.id === selectedId ? "#F0FDFA" : "transparent",
-                    borderLeft: d.id === selectedId ? `3px solid ${ACCENT}` : "3px solid transparent",
+                    background: isHighlighted ? "#ECFDF5" : isSelected ? "#F0FDFA" : "transparent",
+                    borderLeft: (isHighlighted || isSelected) ? `3px solid ${ACCENT}` : "3px solid transparent",
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={e => { if (d.id !== selectedId) e.currentTarget.style.background = "#F8FAFC"; }}
-                  onMouseLeave={e => { if (d.id !== selectedId) e.currentTarget.style.background = "transparent"; }}
+                  onMouseEnter={() => setHighlightedIndex(index)}
                 >
                   <div style={{ fontWeight: 600, fontSize: 15, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
                   <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.subtitle}</div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 

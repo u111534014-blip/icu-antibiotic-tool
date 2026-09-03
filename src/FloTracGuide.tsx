@@ -86,6 +86,78 @@ function Bullets({ items }: { items: string[] }) {
   );
 }
 
+function MiniTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
+  return (
+    <div style={S.tableWrap}>
+      <table style={S.miniTable}>
+        <thead>
+          <tr>
+            {columns.map((column) => <th key={column} style={S.th}>{column}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.join("|")}>
+              {row.map((cell, index) => (
+                <td key={`${cell}-${index}`} style={{ ...S.td, ...(index === 0 ? S.rowHeader : {}) }}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FlowBox({ title, text, tone = "gray" }: { title: string; text?: string; tone?: "green" | "blue" | "amber" | "red" | "gray" }) {
+  const c = toneColor(tone);
+  return (
+    <div style={{ ...S.flowBox, background: c.bg, borderColor: c.border }}>
+      <div style={{ ...S.flowTitle, color: c.color }}>{title}</div>
+      {text && <div style={S.flowText}>{text}</div>}
+    </div>
+  );
+}
+
+function FlowArrow({ label }: { label?: string }) {
+  return (
+    <div style={S.flowArrow}>
+      {label && <span style={S.flowArrowLabel}>{label}</span>}
+      <span style={S.flowArrowLine}>↓</span>
+    </div>
+  );
+}
+
+function VolumeAlgorithmFlowchart() {
+  return (
+    <div style={S.flowOuter}>
+      <div style={S.flowChart} aria-label="SVV and SVI volume responsive algorithm">
+        <div style={S.flowCenter}><FlowBox title="SVV > 13% ?" text="先確認數值是否能代表 preload responsiveness" tone="green" /></div>
+        <div style={S.flowSplit}>
+          <div style={{ ...S.flowBranch, ...S.flowRouteYes }}>
+            <div style={S.flowRouteTitle}>SVV 高路徑</div>
+            <FlowArrow label="YES" />
+            <FlowBox title="SVV 條件可信？" text="受控呼吸、規則心律、無自發呼吸、VT 足夠、無明顯 RV failure" tone="blue" />
+            <FlowArrow label="YES" />
+            <FlowBox title="Volume challenge" text="小量補液或 PLR，觀察 SV/CI 是否上升" tone="green" />
+          </div>
+          <div style={{ ...S.flowBranch, ...S.flowRouteNo }}>
+            <div style={S.flowRouteTitle}>SVV 不高或不可信路徑</div>
+            <FlowArrow label="NO 或不可信" />
+            <FlowBox title="改看 SVI" text="SVI = SV / BSA；用每搏輸出方向分流" tone="gray" />
+            <FlowArrow />
+            <div style={S.flowLeafGrid}>
+              <FlowBox title="SVI 40-50" text="流量尚可但低血壓：偏 pressor / SVR / vasoplegia" tone="amber" />
+              <FlowBox title="SVI <40" text="每搏輸出不足：偏 inotrope、echo、pump failure 評估" tone="red" />
+              <FlowBox title="SVI >50" text="流量不低：若鬱血明顯，偏 diuretic / fluid removal" tone="blue" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FloTracGuide() {
   const [tab, setTab] = useState<Tab>("calculator");
   const [hr, setHr] = useState("100");
@@ -120,6 +192,17 @@ export default function FloTracGuide() {
           ? "SVV >=13% 且條件符合：較支持 fluid responsive"
           : "SVV >=13%，但條件不完整，只能當警訊，不能單獨決定補水"
         : "SVV <13%：較不支持 fluid responsive，但仍要看限制條件與趨勢";
+    const sViAlgorithm = !strokeVolumeVariation || !svi
+      ? "請輸入 SVV、SV、BSA 後判讀。"
+      : strokeVolumeVariation >= 13
+        ? svvValid
+          ? "SVV >13%：若沒有 fluid overload / RV failure，可考慮 volume challenge，觀察 SV/CI 是否上升。"
+          : "SVV >13% 但條件不完整：先排除自發呼吸、心律不整、低 VT、高 PEEP、RV failure 等干擾。"
+        : svi < 40
+          ? "SVV 不高 + SVI <40：較像低每搏輸出，低血壓時常往 pump failure / inotrope / echo 評估。"
+          : svi <= 50
+            ? "SVV 不高 + SVI 40-50：若仍低血壓，較常往 vasoplegia / pressor / SVR 與感染控制評估。"
+            : "SVV 不高 + SVI >50：若有鬱血或液體過多，常往 diuresis / fluid removal 評估。";
 
     return {
       co,
@@ -132,6 +215,7 @@ export default function FloTracGuide() {
       pattern: shockPattern(ci, svr),
       ciText: classifyCi(ci),
       svrText: classifySvr(svr),
+      sViAlgorithm,
     };
   }, [adequateVt, bsa, controlledVent, cvp, hr, map, noRvFailure, noSpontaneous, regularRhythm, sv, svv]);
 
@@ -175,6 +259,7 @@ export default function FloTracGuide() {
             <ResultRow label="SVR" value={calc.svr ? `${Math.round(calc.svr)} dynes-sec/cm5` : "-"} note={calc.svrText} highlight />
             <ResultRow label="SVRI" value={calc.svri ? `${Math.round(calc.svri)} dynes-sec/cm5/m2` : "-"} note="SVRI = (MAP - CVP) / CI x 80。" />
             <ResultRow label="整體 pattern" value={calc.pattern} highlight />
+            <ResultRow label="SVV/SVI 流程" value={calc.sViAlgorithm} highlight />
           </section>
 
           <section style={S.section}>
@@ -203,21 +288,82 @@ export default function FloTracGuide() {
               "SV：每一下心跳打出去多少血。低 SV 可能是 preload 不足、收縮差、afterload 太高、RV/LV 問題。",
               "CO：每分鐘心臟總輸出量。CO = HR x SV。",
               "CI：CO 除以體表面積，比較適合不同體型之間比較。低 CI 通常要找低輸出原因。",
-              "SVV：正壓呼吸下，每搏輸出隨呼吸週期變動的程度。變動大代表心臟可能站在 Frank-Starling curve 比較陡的地方，補 preload 可能會增加 SV。",
+              "SVV：正壓呼吸下，每搏輸出隨呼吸週期上下波動的程度。數值高代表 SV 很容易被呼吸週期造成的 preload 改變影響，所以可能對補液有反應。",
               "SVR：全身血管阻力。低 SVR 常見於 sepsis/vasoplegia；高 SVR 可見於 hypovolemia/cardiogenic shock 或升壓劑作用。",
               "CVP：右心房壓的近似，不等於血容量，但會影響 SVR 計算，也可協助判斷右心與靜脈回流。",
             ]} />
           </NoteCard>
-          <NoteCard title="3. Fluid responsive 不是等於一定要補水" tone="amber">
+          <NoteCard title="3. SVV >13% 是什麼意思？" tone="green" open>
+            <p>把心臟想成一條 Frank-Starling curve：在比較陡的地方，回心血量只要多一點，SV 就會明顯上升；在比較平的平台期，回心血量再增加，SV 也不太會上升。</p>
+            <p>正壓呼吸每一次吸氣會改變胸腔壓、靜脈回流與左右心 preload。如果病人的心臟剛好站在 curve 比較陡的地方，這些呼吸週期造成的小幅 preload 變化，就會讓 SV 一下高、一下低，FloTrac 看到的 SVV 就會變大。</p>
+            <p>所以 SVV &gt;13% 的白話是：「這個病人的 stroke volume 對 preload 變化很敏感，若限制條件符合，給 fluid challenge 或 passive leg raise 後，SV/CI 有機會上升。」它不是直接等於脫水，也不是看到就一定補水；ARDS、肺水腫、RV failure 或 fluid overload 時仍要非常小心。</p>
+          </NoteCard>
+          <NoteCard title="4. 常用參數正常值" tone="blue">
+            <MiniTable
+              columns={["參數", "常見範圍", "意思"]}
+              rows={[
+                ["CO", "4.0-8.0 L/min", "每分鐘心輸出量，受 HR 與 SV 影響。"],
+                ["CI", "2.5-4.0 L/min/m2", "CO 校正體表面積，低 CI 常代表低輸出。"],
+                ["SV", "60-100 mL/beat", "每一下打出去的血量。"],
+                ["SVI", "33-47 mL/m2/beat", "SV 校正體表面積；部分 volume algorithm 會用 40-50 分層。"],
+                ["SVR", "800-1200 dynes-sec/cm5", "全身血管阻力；低偏 vasoplegia，高偏代償或升壓劑效果。"],
+                ["SVRI", "1970-2390 dynes-sec/cm5/m2", "SVR 校正體表面積。"],
+                ["SVV", "<15%；常用 10-13% 當 fluid responsiveness cutoff", "只在受控呼吸、規則心律等條件下較可信。"],
+                ["StO2", "60-80%", "組織氧飽和度，屬部分監測系統延伸參數。"],
+              ]}
+            />
+          </NoteCard>
+          <NoteCard title="5. SVV + SVI 的 volume responsive algorithm" tone="green">
+            <p>這張小卡的概念是先看 SVV 是否大於約 13%。如果 SVV 高且條件可信，表示可能對 preload 有反應，可以做 volume challenge；如果 SVV 不高，再用 SVI 粗分下一步方向。</p>
+            <VolumeAlgorithmFlowchart />
+            <MiniTable
+              columns={["條件", "常見判讀", "下一步方向"]}
+              rows={[
+                ["SVV >13%", "較支持 fluid responsive", "Volume challenge，觀察 SV/CI 是否上升。"],
+                ["SVV <=13% + SVI 40-50", "每搏輸出尚可但仍低血壓", "偏向 pressor / SVR / vasoplegia 評估。"],
+                ["SVV <=13% + SVI <40", "每搏輸出不足", "偏向 inotrope、echo、pump failure / RV failure 評估。"],
+                ["SVV <=13% + SVI >50", "流量不低，可能不缺 preload", "若鬱血明顯，考慮 diuretic / fluid removal。"],
+              ]}
+            />
+            <p style={S.smallNote}>這是決策輔助，不是固定醫囑。Sepsis、ARDS、RV failure、高 PEEP、AF、自發呼吸或血管張力劇烈變化時，SVV/SVI 都要降權判讀。</p>
+          </NoteCard>
+          <NoteCard title="6. Shock pattern 速查" tone="amber">
+            <MiniTable
+              columns={["型態", "MAP", "HR", "CO/CI", "SV", "SVV", "SVR", "重點"]}
+              rows={[
+                ["Hypovolemic 低血容量", "↓", "↑", "↓", "↓", "↑", "↑", "先想 preload 不足；確認 fluid responsiveness。"],
+                ["Obstructive 阻塞性", "↓", "↑", "↓↓", "↓", "↑", "↔/↑", "PE、tamponade、tension pneumothorax；不要只補水。"],
+                ["Cardiac dysfunction 心因性", "↓", "↔/↑", "↓↓", "↓", "↔", "↑", "pump failure；echo、inotrope、afterload/ischemia 處理。"],
+                ["Septic 分布性", "↓", "↔/↑", "早期↑、晚期↓", "↔/↑", "↑", "↓↓", "vasoplegia；source control、抗生素、pressor，補液看反應。"],
+                ["Anaphylactic 分布性", "↓", "↔/↑", "↑", "↑", "↑", "↓↓", "血管擴張與漏液；epinephrine 與 airway 優先。"],
+                ["Neurogenic 分布性", "↓", "↓", "↓", "↔/↑", "↑", "↓↓", "交感張力下降；bradycardia + hypotension 是線索。"],
+              ]}
+            />
+          </NoteCard>
+          <NoteCard title="7. Fluid responsive 不是等於一定要補水" tone="amber">
             <p>Fluid responsive 的意思是「給一點 preload，SV/CO 可能會上升」。但病人如果 ARDS、肺水腫、右心衰竭或已經 fluid overloaded，即使 responsive，也不代表補水就是最好選擇。實務上常搭配 passive leg raise、mini-fluid challenge、echo、尿量、乳酸、皮膚灌流與肺部情況一起決定。</p>
           </NoteCard>
-          <NoteCard title="4. Shock pattern 速記" tone="gray">
+          <NoteCard title="8. Shock pattern 速記" tone="gray">
             <Bullets items={[
               "Low CI + high SVR：先想 cardiogenic 或 hypovolemic。下一步用 echo、CVP/IVC、肺水、乳酸與尿量分辨。",
               "Normal/high CI + low SVR：先想 distributive shock，尤其 sepsis。重點是 source control、抗生素、norepinephrine，補液看 responsiveness。",
               "Low CI + low SVR：mixed shock，例如 septic cardiomyopathy、MI 合併 sepsis。通常不能只用一招處理。",
               "High SVV/PPV：只有在條件符合時才像 fluid responsive；條件不符合時先排錯。",
             ]} />
+          </NoteCard>
+          <NoteCard title="9. 手術姿勢會讓 FloTrac 數字改變" tone="blue">
+            <p>姿勢改變會重新分配靜脈回流與胸腹腔壓力，所以 FloTrac 數字可能跟著跳。重點是不要把「翻身後的生理變化」誤判成病人突然 shock 惡化。</p>
+            <MiniTable
+              columns={["姿勢", "CI", "SV", "SVV", "HR", "MAP", "SVR", "重點"]}
+              rows={[
+                ["仰臥", "↔", "↔", "↔", "↔", "↔", "↔", "常當作 baseline。"],
+                ["趴姿", "↓", "↓", "↑", "↑", "↑/↔", "↑", "先用平躺時 SVV 當基準；翻趴後 SVV 上升可形成新基準。"],
+                ["頭低腳高", "↑", "↑", "↓", "↑/↔", "↑/↔", "↑", "像短暫增加 venous return，可觀察 SV/CI 是否增加。"],
+                ["頭高腳低", "↓", "↓", "↑", "↑/↔", "↓/↔", "↑↑", "胸腹腔 volume 降、下肢滯留，可能看起來較缺 preload。"],
+                ["坐姿", "↓", "↓", "↑", "↑", "↓", "↑", "腦灌流更敏感，維持血壓很重要。"],
+                ["側臥", "↓", "↓", "↑", "↑", "↓", "↑", "可因 venous return 與壓迫改變而波動。"],
+              ]}
+            />
           </NoteCard>
         </section>
       )}
@@ -294,5 +440,26 @@ const S: Record<string, CSSProperties> = {
   noteBody: { color: "#334155", fontSize: 14, lineHeight: 1.75, marginTop: 10 },
   bullets: { margin: 0, paddingLeft: 20 },
   bullet: { marginBottom: 8 },
+  tableWrap: { overflowX: "auto", border: "1px solid #E2E8F0", borderRadius: 10, margin: "10px 0 6px" },
+  miniTable: { width: "100%", borderCollapse: "collapse", minWidth: 680, background: "#FFFFFF" },
+  th: { background: "#F8FAFC", color: "#475569", fontSize: 12, fontWeight: 900, textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #E2E8F0", whiteSpace: "nowrap" },
+  td: { color: "#334155", fontSize: 13, lineHeight: 1.55, padding: "10px 12px", borderBottom: "1px solid #E2E8F0", verticalAlign: "top" },
+  rowHeader: { color: "#0F172A", fontWeight: 900, whiteSpace: "nowrap" },
+  smallNote: { color: "#64748B", fontSize: 12, lineHeight: 1.6, margin: "10px 0 0" },
+  flowOuter: { overflowX: "auto", padding: "6px 0 12px", marginTop: 8 },
+  flowChart: { minWidth: 820, border: "1px solid #D1FAE5", borderRadius: 12, background: "#FFFFFF", padding: 14 },
+  flowCenter: { display: "flex", justifyContent: "center" },
+  flowSplit: { display: "grid", gridTemplateColumns: "0.95fr 1.45fr", gap: 34, alignItems: "stretch", marginTop: 10 },
+  flowBranch: { display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0, border: "1.5px dashed #CBD5E1", borderRadius: 12, padding: "10px 12px 12px" },
+  flowRouteYes: { background: "#F0FDFA", borderColor: "#99F6E4" },
+  flowRouteNo: { background: "#F8FAFC", borderColor: "#CBD5E1" },
+  flowRouteTitle: { alignSelf: "stretch", textAlign: "center", color: "#475569", fontSize: 12, fontWeight: 900, padding: "2px 0 8px", borderBottom: "1px solid rgba(148,163,184,0.35)", marginBottom: 2 },
+  flowLeafGrid: { display: "grid", gridTemplateColumns: "repeat(3, minmax(145px, 1fr))", gap: 10, width: "100%" },
+  flowBox: { width: "100%", maxWidth: 280, boxSizing: "border-box", border: "1.5px solid #E2E8F0", borderRadius: 10, padding: "11px 12px", textAlign: "center", boxShadow: "0 1px 2px rgba(15,23,42,0.04)" },
+  flowTitle: { fontSize: 14, fontWeight: 900, lineHeight: 1.35 },
+  flowText: { color: "#475569", fontSize: 12, lineHeight: 1.5, marginTop: 5 },
+  flowArrow: { minHeight: 34, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#0D9488", fontWeight: 900 },
+  flowArrowLabel: { color: "#64748B", fontSize: 11, letterSpacing: 0, lineHeight: 1 },
+  flowArrowLine: { color: "#0D9488", fontSize: 20, lineHeight: 1.05 },
   sourceBox: { color: "#64748B", fontSize: 12, lineHeight: 1.55, margin: "8px 2px 24px" },
 };

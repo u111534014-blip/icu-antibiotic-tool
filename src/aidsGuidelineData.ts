@@ -1,4 +1,4 @@
-export type AidsSectionId = "art" | "monitoring" | "oi" | "hepatitis" | "pep" | "sti" | "special";
+export type AidsSectionId = "art" | "artDrugs" | "artInteractions" | "monitoring" | "oi" | "hepatitis" | "pep" | "sti" | "special";
 
 export type AidsKeyPoint = {
   title: string;
@@ -48,7 +48,9 @@ export const aidsGuidelineMeta = {
 };
 
 export const aidsSections: { id: AidsSectionId; label: string; short: string }[] = [
-  { id: "art", label: "初始 ART", short: "當日治療" },
+  { id: "art", label: "初始 ART", short: "架構" },
+  { id: "artDrugs", label: "ART 藥物", short: "搜尋/分線" },
+  { id: "artInteractions", label: "ART 交互作用", short: "重大" },
   { id: "monitoring", label: "檢驗追蹤", short: "VL/CD4" },
   { id: "oi", label: "OI 預防/治療", short: "CD4 門檻" },
   { id: "hepatitis", label: "HBV/HCV", short: "共病" },

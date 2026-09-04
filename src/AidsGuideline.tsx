@@ -26,6 +26,7 @@ import {
 } from "./aidsGuidelineData";
 
 const ACCENT = "#7C3AED";
+type ArtDrugFilter = "all" | "firstLine" | "secondLine";
 
 function Source({ text }: { text: string }) {
   return <div style={S.source}>來源：{text}</div>;
@@ -63,6 +64,9 @@ function KeyPointCard({ item }: { item: AidsKeyPoint }) {
 }
 
 function RegimenCard({ regimen }: { regimen: AidsRegimen }) {
+  const componentFullNames = (regimen.components || [])
+    .filter((component) => component.generic)
+    .map((component) => `${component.abbr} = ${component.generic}`);
   const metaRows = [
     ["商品中文", regimen.localName],
     ["處方架構", regimen.regimenType],
@@ -96,6 +100,12 @@ function RegimenCard({ regimen }: { regimen: AidsRegimen }) {
               {component.dose ? ` ${component.dose}` : ""}
             </span>
           ))}
+        </div>
+      )}
+      {componentFullNames.length > 0 && (
+        <div style={S.fullNameBox}>
+          <span style={S.fullNameLabel}>成分全名</span>
+          <span style={S.fullNameText}>{componentFullNames.join("; ")}</span>
         </div>
       )}
       {metaRows.length > 0 && (
@@ -147,11 +157,30 @@ function SimpleTableCard({ table }: { table: AidsTable }) {
 }
 
 function ArtView() {
+  return (
+    <div>
+      <SectionHeader title="初始 ART 與快速治療" subtitle="以台灣第一線處方、開始治療前檢查與處方架構為核心。" />
+      {artPrinciples.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>處方選擇架構</div>
+      {artSelectionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
+      <SimpleTableCard table={artDrugClassTable} />
+      <div style={S.subhead}>縮寫原文</div>
+      <SimpleTableCard table={artAbbreviationTable} />
+    </div>
+  );
+}
+
+function ArtDrugsView() {
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<ArtDrugFilter>("all");
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return initialArtRegimens;
-    return initialArtRegimens.filter((regimen) =>
+    return initialArtRegimens.filter((regimen) => {
+      const isFirstLine = regimen.category.includes("第一線");
+      if (filter === "firstLine" && !isFirstLine) return false;
+      if (filter === "secondLine" && isFirstLine) return false;
+      if (!q) return true;
+      return (
       [
         regimen.name,
         regimen.localName,
@@ -165,18 +194,31 @@ function ArtView() {
         ...(regimen.components || []).map((component) => `${component.abbr} ${component.generic} ${component.drugClass}`),
         ...regimen.cautions,
       ].join(" ").toLowerCase().includes(q)
-    );
-  }, [query]);
+      );
+    });
+  }, [filter, query]);
+
+  const filterOptions: Array<{ id: ArtDrugFilter; label: string; hint: string }> = [
+    { id: "all", label: "全部", hint: `${initialArtRegimens.length} 種` },
+    { id: "firstLine", label: "第一線", hint: `${initialArtRegimens.filter((regimen) => regimen.category.includes("第一線")).length} 種` },
+    { id: "secondLine", label: "第二線 / 轉換", hint: `${initialArtRegimens.filter((regimen) => !regimen.category.includes("第一線")).length} 種` },
+  ];
 
   return (
     <div>
-      <SectionHeader title="初始 ART 與快速治療" subtitle="以台灣第一線處方與開始治療前檢查為核心。" />
-      {artPrinciples.map((item) => <KeyPointCard key={item.title} item={item} />)}
-      <div style={S.subhead}>處方選擇架構</div>
-      {artSelectionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
-      <SimpleTableCard table={artDrugClassTable} />
-      <div style={S.subhead}>ART 重大交互作用</div>
-      {artInteractionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
+      <SectionHeader title="ART 藥物速查" subtitle="用搜尋或第一線/第二線篩選，快速找到單錠處方與常見轉換處方。" />
+      <div style={S.filterRow}>
+        {filterOptions.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => setFilter(option.id)}
+            style={{ ...S.filterButton, ...(filter === option.id ? S.filterButtonActive : {}) }}
+          >
+            <span style={S.filterLabel}>{option.label}</span>
+            <span style={S.filterHint}>{option.hint}</span>
+          </button>
+        ))}
+      </div>
       <div style={S.subhead}>第一線與常見轉換處方</div>
       <input
         value={query}
@@ -186,6 +228,17 @@ function ArtView() {
       />
       {filtered.map((regimen) => <RegimenCard key={regimen.id} regimen={regimen} />)}
       {filtered.length === 0 && <div style={S.empty}>找不到符合的 ART 處方</div>}
+      <div style={S.subhead}>縮寫原文</div>
+      <SimpleTableCard table={artAbbreviationTable} />
+    </div>
+  );
+}
+
+function ArtInteractionsView() {
+  return (
+    <div>
+      <SectionHeader title="ART 重大交互作用" subtitle="把需要立即改藥、錯開、避免或加強監測的情境集中放在這裡。" />
+      {artInteractionTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <div style={S.subhead}>縮寫原文</div>
       <SimpleTableCard table={artAbbreviationTable} />
     </div>
@@ -269,6 +322,8 @@ function SpecialView() {
 
 function CurrentView({ active }: { active: AidsSectionId }) {
   if (active === "art") return <ArtView />;
+  if (active === "artDrugs") return <ArtDrugsView />;
+  if (active === "artInteractions") return <ArtInteractionsView />;
   if (active === "monitoring") return <MonitoringView />;
   if (active === "oi") return <OiView />;
   if (active === "hepatitis") return <HepatitisView />;
@@ -324,6 +379,11 @@ const S: Record<string, CSSProperties> = {
   tabActive: { border: `1.5px solid ${ACCENT}`, background: "#F5F3FF", color: "#6D28D9" },
   tabLabel: { display: "block", fontSize: 13, fontWeight: 850, whiteSpace: "nowrap" },
   tabShort: { display: "block", fontSize: 11, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap" },
+  filterRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))", gap: 8, margin: "4px 0 14px" },
+  filterButton: { border: "1.5px solid #E2E8F0", background: "#FFFFFF", borderRadius: 8, padding: "9px 10px", color: "#475569", cursor: "pointer", textAlign: "left" },
+  filterButtonActive: { borderColor: ACCENT, background: "#F5F3FF", color: "#6D28D9" },
+  filterLabel: { display: "block", fontSize: 14, fontWeight: 850, lineHeight: 1.25 },
+  filterHint: { display: "block", fontSize: 11, color: "#94A3B8", marginTop: 3, lineHeight: 1.25 },
   sectionHeader: { margin: "10px 0 12px" },
   sectionTitle: { fontSize: 18, fontWeight: 850, color: "#0F172A", lineHeight: 1.3 },
   sectionSubtitle: { fontSize: 13, color: "#64748B", lineHeight: 1.5, marginTop: 4 },
@@ -340,6 +400,9 @@ const S: Record<string, CSSProperties> = {
   tagWrap: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 },
   tag: { borderRadius: 999, padding: "5px 8px", background: "#F5F3FF", color: "#5B21B6", border: "1px solid #DDD6FE", fontSize: 11, fontWeight: 850, lineHeight: 1.2 },
   tagMuted: { color: "#7C3AED", fontWeight: 700 },
+  fullNameBox: { marginTop: 8, padding: "8px 10px", borderRadius: 8, background: "#FAF5FF", border: "1px solid #E9D5FF", color: "#4C1D95", fontSize: 12, lineHeight: 1.55 },
+  fullNameLabel: { display: "block", marginBottom: 3, color: "#7C3AED", fontWeight: 850 },
+  fullNameText: { display: "block", color: "#4C1D95", overflowWrap: "anywhere" },
   metaGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 8, marginTop: 11 },
   metaItem: { background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: 9, color: "#334155", fontSize: 12, lineHeight: 1.45 },
   label: { display: "block", color: "#64748B", fontSize: 10, fontWeight: 850, textTransform: "uppercase", letterSpacing: 0, marginBottom: 3 },

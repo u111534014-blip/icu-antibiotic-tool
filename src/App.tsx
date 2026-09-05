@@ -884,7 +884,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "amikacinTDM", "digoxinTDM", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "aclsTool"].includes(page);
+  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "aclsTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,

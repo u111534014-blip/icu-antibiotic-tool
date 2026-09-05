@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import DateTime24Input from "./DateTime24Input";
 
 const ACCENT = "#0D9488";
 
@@ -662,12 +663,7 @@ function Input({ label, value, onChange, suffix }: { label: string; value: strin
 }
 
 function DateTimeInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label>
-      <span style={S.label}>{label}</span>
-      <input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)} style={S.dateTimeInput} />
-    </label>
-  );
+  return <DateTime24Input label={label} value={value} onChange={onChange} labelStyle={S.label} inputStyle={S.dateTimeInput} />;
 }
 
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {

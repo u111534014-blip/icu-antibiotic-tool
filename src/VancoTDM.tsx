@@ -75,6 +75,9 @@ function formatDT(s: string): string {
   return `${mm}/${dd} ${hh}:${mi}`;
 }
 
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+
 // ── 1-compartment PK ────────────────────────────────────────
 function concAfterInfusion(dose: number, infTime: number, CL: number, V: number, tSinceStart: number): number {
   const kel = CL / V;
@@ -288,11 +291,49 @@ function PKCurve({ curveData, levels, t0, width = 360, height = 200 }: {
 function DateTimeInput({ label, value, onChange, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
+  const [datePart = "", timePart = ""] = value.split("T");
+  const [hourPart = "", minutePart = ""] = timePart.split(":");
+  const commit = (nextDate: string, nextHour: string, nextMinute: string) => {
+    if (!nextDate) {
+      onChange("");
+      return;
+    }
+    onChange(`${nextDate}T${nextHour || "00"}:${nextMinute || "00"}`);
+  };
+
   return (
     <div>
       <label style={S.label}>{label}</label>
-      <input type="datetime-local" value={value} onChange={e => onChange(e.target.value)}
-        style={{ ...S.input, fontSize: 13 }} placeholder={placeholder} />
+      <div style={S.dateTimeWrap}>
+        <input
+          type="date"
+          value={datePart}
+          onChange={e => commit(e.target.value, hourPart, minutePart)}
+          style={{ ...S.input, ...S.dateInput }}
+          placeholder={placeholder}
+        />
+        <select
+          value={hourPart}
+          onChange={e => commit(datePart, e.target.value, minutePart)}
+          style={S.timeSelect}
+          disabled={!datePart}
+          aria-label={`${label} 小時`}
+        >
+          <option value="">時</option>
+          {HOUR_OPTIONS.map(hour => <option key={hour} value={hour}>{hour}</option>)}
+        </select>
+        <span style={S.timeColon}>:</span>
+        <select
+          value={minutePart}
+          onChange={e => commit(datePart, hourPart, e.target.value)}
+          style={S.timeSelect}
+          disabled={!datePart}
+          aria-label={`${label} 分鐘`}
+        >
+          <option value="">分</option>
+          {MINUTE_OPTIONS.map(minute => <option key={minute} value={minute}>{minute}</option>)}
+        </select>
+      </div>
     </div>
   );
 }
@@ -1112,6 +1153,10 @@ const S: Record<string, React.CSSProperties> = {
   sectionTitle: { fontSize: 13, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 },
   label: { display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 4 },
   input: { width: "100%", padding: "9px 10px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 14, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box" as const },
+  dateTimeWrap: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 74px 10px 74px", gap: 6, alignItems: "center" },
+  dateInput: { minWidth: 0, fontSize: 13 },
+  timeSelect: { width: "100%", minHeight: 38, padding: "8px 7px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 13, fontWeight: 700, color: "#0F172A", background: "#fff", outline: "none", boxSizing: "border-box" as const },
+  timeColon: { textAlign: "center", color: "#64748B", fontSize: 15, fontWeight: 800 },
   toggleBtn: { flex: 1, padding: "9px 0", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 14, fontWeight: 600, cursor: "pointer" },
   toggleBtnActive: { background: "#0D9488", color: "#fff", borderColor: "#0D9488" },
   modeBtn: { flex: 1, padding: "10px 0", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: 13, fontWeight: 600, cursor: "pointer" },

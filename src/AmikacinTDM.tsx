@@ -687,7 +687,7 @@ const S: Record<string, CSSProperties> = {
   header: { textAlign: "center", padding: "16px 0 24px" },
   title: { fontSize: 26, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 },
   subtitle: { fontSize: 14, color: "#64748B", marginTop: 4, lineHeight: 1.5 },
-  section: { background: "#fff", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", boxSizing: "border-box", overflow: "hidden" },
+  section: { background: "#fff", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", boxSizing: "border-box" },
   sectionTitle: { fontSize: 13, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 },
   grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 },
   label: { display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 },

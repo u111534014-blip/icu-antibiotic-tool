@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 type ParsedDateTime = {
@@ -63,9 +63,11 @@ export default function DateTime24Input({
 }: DateTime24InputProps) {
   const parsed = parseDateTime(value);
   const now = useMemo(() => new Date(), []);
+  const fieldRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(parsed?.year ?? now.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? now.getMonth());
+  const [popoverBox, setPopoverBox] = useState<{ left: number; top: number; width: number; maxHeight: number } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -74,6 +76,30 @@ export default function DateTime24Input({
     setViewYear(base instanceof Date ? base.getFullYear() : base.year);
     setViewMonth(base instanceof Date ? base.getMonth() : base.month);
   }, [open, value]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePopoverBox = () => {
+      const field = fieldRef.current;
+      if (!field) return;
+      const rect = field.getBoundingClientRect();
+      const margin = 12;
+      const width = Math.min(620, window.innerWidth - margin * 2);
+      const left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin));
+      const top = Math.max(margin, rect.bottom + 6);
+      const maxHeight = Math.max(280, window.innerHeight - top - margin);
+      setPopoverBox({ left, top, width, maxHeight });
+    };
+
+    updatePopoverBox();
+    window.addEventListener("resize", updatePopoverBox);
+    window.addEventListener("scroll", updatePopoverBox, true);
+    return () => {
+      window.removeEventListener("resize", updatePopoverBox);
+      window.removeEventListener("scroll", updatePopoverBox, true);
+    };
+  }, [open]);
 
   const calendarCells = useMemo(() => {
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();
@@ -125,14 +151,14 @@ export default function DateTime24Input({
   };
 
   return (
-    <div style={styles.wrapper}>
+    <div style={{ ...styles.wrapper, zIndex: open ? 120 : 1 }}>
       <span style={labelStyle ?? styles.label}>{label}</span>
-      <button type="button" style={{ ...styles.field, ...inputStyle }} onClick={() => setOpen(prev => !prev)}>
+      <button ref={fieldRef} type="button" style={{ ...styles.field, ...inputStyle }} onClick={() => setOpen(prev => !prev)}>
         <span style={value ? styles.value : styles.placeholder}>{value ? formatDisplay(value) : placeholder}</span>
         <span style={styles.calendarIcon} aria-hidden="true">□</span>
       </button>
       {open && (
-        <div style={styles.popover}>
+        <div style={{ ...styles.popover, ...(popoverBox ?? {}) }}>
           <div style={styles.monthHeader}>
             <button type="button" style={styles.navButton} onClick={() => moveMonth(-1)} aria-label="上個月">↑</button>
             <strong style={styles.monthTitle}>{viewYear}年{pad2(viewMonth + 1)}月</strong>
@@ -240,29 +266,27 @@ const styles: Record<string, CSSProperties> = {
     boxSizing: "border-box",
   },
   popover: {
-    position: "absolute",
-    left: 0,
-    top: "calc(100% + 6px)",
+    position: "fixed",
     zIndex: 80,
-    width: "min(640px, calc(100vw - 36px))",
     padding: 16,
     border: "1px solid #CBD5E1",
     borderRadius: 14,
     background: "#fff",
     boxShadow: "0 22px 45px rgba(15, 23, 42, 0.18)",
     boxSizing: "border-box",
+    overflowY: "auto",
   },
   monthHeader: { display: "grid", gridTemplateColumns: "42px 1fr 42px", alignItems: "center", marginBottom: 10 },
   monthTitle: { textAlign: "center", fontSize: 16, color: "#0F172A" },
   navButton: { width: 36, height: 36, border: "none", borderRadius: 8, background: "#F8FAFC", color: "#0F172A", fontSize: 22, cursor: "pointer" },
-  pickerGrid: { display: "grid", gridTemplateColumns: "minmax(260px, 1fr) 188px", gap: 16, alignItems: "start" },
-  calendarGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 },
+  pickerGrid: { display: "grid", gridTemplateColumns: "minmax(180px, 1fr) minmax(126px, 160px)", gap: 12, alignItems: "start" },
+  calendarGrid: { minWidth: 0, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 },
   weekday: { height: 28, display: "grid", placeItems: "center", fontSize: 13, color: "#475569", fontWeight: 800 },
   dayButton: { height: 34, border: "1px solid transparent", borderRadius: 8, background: "#fff", color: "#0F172A", fontSize: 14, fontWeight: 700, cursor: "pointer" },
   mutedDay: { color: "#94A3B8" },
   todayDay: { borderColor: "#99F6E4" },
   selectedDay: { background: "#0D9488", color: "#fff", borderColor: "#0D9488" },
-  timeGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  timeGrid: { minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
   timeLabel: { height: 28, display: "grid", placeItems: "center", fontSize: 13, fontWeight: 850, color: "#475569" },
   timeColumn: { maxHeight: 238, overflowY: "auto", display: "grid", gap: 4, paddingRight: 2 },
   timeOption: { minHeight: 34, border: "1px solid transparent", borderRadius: 8, background: "#F8FAFC", color: "#0F172A", fontSize: 15, fontWeight: 800, cursor: "pointer" },

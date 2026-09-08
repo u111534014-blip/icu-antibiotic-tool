@@ -68,6 +68,7 @@ export default function DateTime24Input({
   const [viewYear, setViewYear] = useState(parsed?.year ?? now.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? now.getMonth());
   const [popoverBox, setPopoverBox] = useState<{ left: number; top: number; width: number; maxHeight: number } | null>(null);
+  const isCompact = (popoverBox?.width ?? 620) < 430;
 
   useEffect(() => {
     if (!open) return;
@@ -158,16 +159,16 @@ export default function DateTime24Input({
         <span style={styles.calendarIcon} aria-hidden="true">□</span>
       </button>
       {open && (
-        <div style={{ ...styles.popover, ...(popoverBox ?? {}) }}>
-          <div style={styles.monthHeader}>
-            <button type="button" style={styles.navButton} onClick={() => moveMonth(-1)} aria-label="上個月">↑</button>
-            <strong style={styles.monthTitle}>{viewYear}年{pad2(viewMonth + 1)}月</strong>
-            <button type="button" style={styles.navButton} onClick={() => moveMonth(1)} aria-label="下個月">↓</button>
+        <div style={{ ...styles.popover, ...(isCompact ? styles.popoverCompact : {}), ...(popoverBox ?? {}) }}>
+          <div style={{ ...styles.monthHeader, ...(isCompact ? styles.monthHeaderCompact : {}) }}>
+            <button type="button" style={{ ...styles.navButton, ...(isCompact ? styles.navButtonCompact : {}) }} onClick={() => moveMonth(-1)} aria-label="上個月">↑</button>
+            <strong style={{ ...styles.monthTitle, ...(isCompact ? styles.monthTitleCompact : {}) }}>{viewYear}年{pad2(viewMonth + 1)}月</strong>
+            <button type="button" style={{ ...styles.navButton, ...(isCompact ? styles.navButtonCompact : {}) }} onClick={() => moveMonth(1)} aria-label="下個月">↓</button>
           </div>
-          <div style={styles.pickerGrid}>
-            <div style={styles.calendarGrid}>
+          <div style={{ ...styles.pickerGrid, ...(isCompact ? styles.pickerGridCompact : {}) }}>
+            <div style={{ ...styles.calendarGrid, ...(isCompact ? styles.calendarGridCompact : {}) }}>
               {WEEKDAYS.map(day => (
-                <div key={day} style={styles.weekday}>{day}</div>
+                <div key={day} style={{ ...styles.weekday, ...(isCompact ? styles.weekdayCompact : {}) }}>{day}</div>
               ))}
               {calendarCells.map(cell => {
                 const target = new Date(viewYear, viewMonth + cell.monthOffset, cell.day);
@@ -183,6 +184,7 @@ export default function DateTime24Input({
                     key={`${cell.monthOffset}-${cell.day}`}
                     style={{
                       ...styles.dayButton,
+                      ...(isCompact ? styles.dayButtonCompact : {}),
                       ...(cell.monthOffset !== 0 ? styles.mutedDay : {}),
                       ...(isToday ? styles.todayDay : {}),
                       ...(isSelected ? styles.selectedDay : {}),
@@ -194,12 +196,12 @@ export default function DateTime24Input({
                 );
               })}
             </div>
-            <div style={styles.timeGrid}>
-              <TimeColumn label="時" options={HOUR_OPTIONS} value={selectedHour} onSelect={(hour) => selectTime(hour, selectedMinute)} />
-              <TimeColumn label="分" options={MINUTE_OPTIONS} value={selectedMinute} onSelect={(minute) => selectTime(selectedHour, minute)} />
+            <div style={{ ...styles.timeGrid, ...(isCompact ? styles.timeGridCompact : {}) }}>
+              <TimeColumn compact={isCompact} label="時" options={HOUR_OPTIONS} value={selectedHour} onSelect={(hour) => selectTime(hour, selectedMinute)} />
+              <TimeColumn compact={isCompact} label="分" options={MINUTE_OPTIONS} value={selectedMinute} onSelect={(minute) => selectTime(selectedHour, minute)} />
             </div>
           </div>
-          <div style={styles.footer}>
+          <div style={{ ...styles.footer, ...(isCompact ? styles.footerCompact : {}) }}>
             <button type="button" style={styles.linkButton} onClick={() => onChange("")}>清除</button>
             <button type="button" style={styles.linkButton} onClick={setToday}>今天</button>
             <button type="button" style={styles.doneButton} onClick={() => setOpen(false)}>完成</button>
@@ -210,7 +212,8 @@ export default function DateTime24Input({
   );
 }
 
-function TimeColumn({ label, options, value, onSelect }: {
+function TimeColumn({ compact, label, options, value, onSelect }: {
+  compact: boolean;
   label: string;
   options: string[];
   value: string;
@@ -218,13 +221,13 @@ function TimeColumn({ label, options, value, onSelect }: {
 }) {
   return (
     <div>
-      <div style={styles.timeLabel}>{label}</div>
-      <div style={styles.timeColumn}>
+      <div style={{ ...styles.timeLabel, ...(compact ? styles.timeLabelCompact : {}) }}>{label}</div>
+      <div style={{ ...styles.timeColumn, ...(compact ? styles.timeColumnCompact : {}) }}>
         {options.map(option => (
           <button
             type="button"
             key={option}
-            style={{ ...styles.timeOption, ...(option === value ? styles.selectedTime : {}) }}
+            style={{ ...styles.timeOption, ...(compact ? styles.timeOptionCompact : {}), ...(option === value ? styles.selectedTime : {}) }}
             onClick={() => onSelect(option)}
           >
             {option}
@@ -276,22 +279,35 @@ const styles: Record<string, CSSProperties> = {
     boxSizing: "border-box",
     overflowY: "auto",
   },
+  popoverCompact: { padding: 10, borderRadius: 12 },
   monthHeader: { display: "grid", gridTemplateColumns: "42px 1fr 42px", alignItems: "center", marginBottom: 10 },
+  monthHeaderCompact: { gridTemplateColumns: "34px 1fr 34px", marginBottom: 6 },
   monthTitle: { textAlign: "center", fontSize: 16, color: "#0F172A" },
+  monthTitleCompact: { fontSize: 14 },
   navButton: { width: 36, height: 36, border: "none", borderRadius: 8, background: "#F8FAFC", color: "#0F172A", fontSize: 22, cursor: "pointer" },
+  navButtonCompact: { width: 32, height: 32, fontSize: 18 },
   pickerGrid: { display: "grid", gridTemplateColumns: "minmax(180px, 1fr) minmax(126px, 160px)", gap: 12, alignItems: "start" },
+  pickerGridCompact: { gridTemplateColumns: "minmax(0, 1fr) 104px", gap: 8 },
   calendarGrid: { minWidth: 0, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 },
+  calendarGridCompact: { gap: 2 },
   weekday: { height: 28, display: "grid", placeItems: "center", fontSize: 13, color: "#475569", fontWeight: 800 },
-  dayButton: { height: 34, border: "1px solid transparent", borderRadius: 8, background: "#fff", color: "#0F172A", fontSize: 14, fontWeight: 700, cursor: "pointer" },
+  weekdayCompact: { height: 22, fontSize: 11 },
+  dayButton: { height: 34, minWidth: 0, padding: 0, border: "1px solid transparent", borderRadius: 8, background: "#fff", color: "#0F172A", fontSize: 14, fontWeight: 700, cursor: "pointer" },
+  dayButtonCompact: { height: 27, borderRadius: 7, fontSize: 12 },
   mutedDay: { color: "#94A3B8" },
   todayDay: { borderColor: "#99F6E4" },
   selectedDay: { background: "#0D9488", color: "#fff", borderColor: "#0D9488" },
   timeGrid: { minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  timeGridCompact: { gap: 6 },
   timeLabel: { height: 28, display: "grid", placeItems: "center", fontSize: 13, fontWeight: 850, color: "#475569" },
+  timeLabelCompact: { height: 22, fontSize: 11 },
   timeColumn: { maxHeight: 238, overflowY: "auto", display: "grid", gap: 4, paddingRight: 2 },
-  timeOption: { minHeight: 34, border: "1px solid transparent", borderRadius: 8, background: "#F8FAFC", color: "#0F172A", fontSize: 15, fontWeight: 800, cursor: "pointer" },
+  timeColumnCompact: { maxHeight: 198, gap: 4, paddingRight: 0 },
+  timeOption: { minHeight: 34, minWidth: 0, padding: 0, border: "1px solid transparent", borderRadius: 8, background: "#F8FAFC", color: "#0F172A", fontSize: 15, fontWeight: 800, cursor: "pointer" },
+  timeOptionCompact: { minHeight: 28, borderRadius: 7, fontSize: 12 },
   selectedTime: { background: "#0D9488", color: "#fff" },
   footer: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 14 },
+  footerCompact: { marginTop: 8 },
   linkButton: { border: "none", background: "transparent", color: "#0D9488", fontSize: 14, fontWeight: 850, cursor: "pointer", padding: "8px 10px" },
   doneButton: { marginLeft: "auto", border: "none", borderRadius: 8, background: "#0D9488", color: "#fff", fontSize: 14, fontWeight: 850, cursor: "pointer", padding: "9px 14px" },
 };

@@ -26,7 +26,7 @@ const compareRows = [
   },
   {
     topic: "MRA",
-    esc: "ESC 2026：MRA 推到 symptomatic HF independent of LVEF；HFrEF 用 steroidal MRA，HFpEF 可考慮 steroidal 或 non-steroidal MRA。",
+    esc: "ESC 2026：有症狀的 chronic HF 不管 LVEF 是 <50% 或 >=50%，都要想到 MRA。HFrEF 用 steroidal MRA；HFpEF 可考慮 steroidal 或 non-steroidal MRA。",
     aha: "AHA 2022：HFrEF 為 Class I；HFpEF/HFmrEF 則較偏選擇性使用，證據強度較低。",
     take: "這是 2026 ESC 比 AHA 2022 更新、也更積極的地方。臨床仍要先看 K、eGFR、血壓與院內品項。",
   },
@@ -71,8 +71,8 @@ const gdmtRows = [
   },
   {
     className: "MRA",
-    examples: "Spironolactone、eplerenone；ESC 2026 HFpEF 也納入 non-steroidal MRA 概念",
-    role: "HFrEF 降死亡與住院；ESC 2026 對 symptomatic HF independent of LVEF 更積極。",
+    examples: "Spironolactone、eplerenone；HFpEF 可把 finerenone 這類 non-steroidal MRA 納入考量",
+    role: "HFrEF 降死亡與住院；ESC 2026 把 MRA 推到有症狀 chronic HF、independent of LVEF，也就是 EF <50% 或 >=50% 都要評估。",
     watch: "K、eGFR、Cr。高血鉀或腎功能差時最容易被卡住；spironolactone 可能 gynecomastia，eplerenone 較少。",
   },
   {
@@ -98,9 +98,9 @@ const sameClassRows = [
   },
   {
     group: "MRA",
-    drugs: "Spironolactone vs eplerenone vs finerenone",
-    compare: "Spironolactone 便宜常用，但 gynecomastia、乳房痛等內分泌副作用較多。Eplerenone 較 selective，內分泌副作用少。Finerenone 是 non-steroidal MRA，較常從 CKD/DM 與 HFpEF 新證據脈絡去想。",
-    pearls: "同類都要看 K/eGFR/Cr。不是 eplerenone 就不會高血鉀，只是 endocrine side effect 比 spironolactone 少。",
+    drugs: "Spironolactone vs eplerenone；finerenone",
+    compare: "Spironolactone 便宜常用，但 gynecomastia、乳房痛等內分泌副作用較多。Eplerenone 較 selective，內分泌副作用少，常在病人無法忍受 spironolactone 內分泌副作用時考慮。HFpEF 可把 finerenone 這類 non-steroidal MRA 納入考量。",
+    pearls: "同類都要看 K/eGFR/Cr。不是換成 eplerenone 或 finerenone 就不會高血鉀，只是副作用與證據族群不同。",
   },
   {
     group: "SGLT2 inhibitor",
@@ -152,7 +152,7 @@ const therapyTermRows = [
     term: "FMT",
     full: "Foundational medical therapy",
     meaning: "ESC 2026 用來指心衰竭基礎藥物治療。可以把它理解成：有 outcome benefit、應盡早補齊並 titrate 的核心藥物框架。",
-    examples: "HFrEF 常會想到 ARNI/ACE-I/ARB、beta-blocker、MRA、SGLT2-I；ESC 2026 對 symptomatic HF independent of LVEF 的 SGLT2-I/MRA 也更積極。",
+    examples: "HFrEF 常會想到 ARNI/ACE-I/ARB、beta-blocker、MRA、SGLT2-I；ESC 2026 對有症狀 chronic HF 的 SGLT2-I/MRA 更積極，不只限於低 EF。",
   },
   {
     term: "GDIT",
@@ -371,7 +371,23 @@ export default function HeartFailureGuide() {
             ]} />
           </NoteCard>
           <NoteCard title="6. HFpEF / 2026 ESC 更新重點">
-            <p>ESC 2026 對 symptomatic HF independent of LVEF 的 MRA 更積極，並把肥胖 HFpEF 的 semaglutide/tirzepatide 納入建議。這些多半不是 ICU 立即處置核心，但出院後門診銜接很重要。</p>
+            <p><strong>symptomatic HF independent of LVEF</strong> 的意思是：病人有 chronic HF 症狀時，不管 LVEF 是 &lt;50% 或 &gt;=50%，都要評估是否適合 MRA；不是只有 HFrEF 才能想到 MRA。</p>
+            <SmallTable
+              columns={["LVEF 分類", "MRA 選擇", "怎麼想"]}
+              rows={[
+                {
+                  "LVEF 分類": "HFrEF：LVEF <50%",
+                  "MRA 選擇": "優先 steroidal MRA：spironolactone 或 eplerenone",
+                  "怎麼想": "屬於基礎治療的一部分；若 K/eGFR/血壓允許，應盡量補上並追蹤。",
+                },
+                {
+                  "LVEF 分類": "HFpEF：LVEF >=50%",
+                  "MRA 選擇": "可考慮 steroidal 或 non-steroidal MRA，如 finerenone",
+                  "怎麼想": "重點是 ESC 2026 不再把 MRA 只放在低 EF；選藥仍要看 K、eGFR、血壓與院內可近性。",
+                },
+              ]}
+            />
+            <p>同一段 ESC 更新也把肥胖 HFpEF 的 semaglutide/tirzepatide 納入建議。這些多半不是 ICU 立即處置核心，但出院後門診銜接很重要。</p>
           </NoteCard>
         </section>
       )}

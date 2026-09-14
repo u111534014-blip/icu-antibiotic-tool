@@ -20,8 +20,9 @@ import ARDSTool from './ARDSTool';
 import FloTracGuide from './FloTracGuide';
 import HeartFailureGuide from './HeartFailureGuide';
 import ACLSTool from './ACLSTool';
+import LoopDiureticTool from './LoopDiureticTool';
 
-type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide" | "aclsTool";
+type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide" | "loopDiureticTool" | "aclsTool";
 type MenuIconName = "pill" | "chart" | "syringe" | "book" | "alert" | "lungs" | "heart" | "drop" | "shield" | "bolt" | "lab";
 
 const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
@@ -38,6 +39,7 @@ const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
   { id: "ardsTool", label: "ARDS / 呼吸器", icon: "lungs" },
   { id: "flotracGuide", label: "FloTrac / 血流動力學", icon: "chart" },
   { id: "hfGuide", label: "HF guideline 對照", icon: "heart" },
+  { id: "loopDiureticTool", label: "Loop diuretic 轉換", icon: "drop" },
   { id: "insulinTool", label: "血糖 / Insulin 調整", icon: "drop" },
   { id: "heparinTool", label: "抗凝血 / 逆轉工具", icon: "shield" },
   { id: "electrolyteTool", label: "電解質異常工具", icon: "bolt" },
@@ -884,7 +886,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "aclsTool"].includes(page);
+  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "loopDiureticTool", "aclsTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -943,6 +945,8 @@ export default function App() {
           <FloTracGuide />
         ) : page === "hfGuide" ? (
           <HeartFailureGuide />
+        ) : page === "loopDiureticTool" ? (
+          <LoopDiureticTool />
         ) : page === "insulinTool" ? (
           <InsulinTool />
         ) : page === "heparinTool" ? (

@@ -494,7 +494,7 @@ export default function InsulinTool() {
           "ADA 2026：ICU persistent hyperglycemia >=180 mg/dL 時啟動或加強 insulin；多數 ICU 目標 140-180 mg/dL。",
           "ADA 2026：非 ICU 多數目標 100-180 mg/dL；進食良好者以 basal + prandial + correction 為偏好架構。院內若 basal 多為 HS 給藥，隔日 fasting BG 是主要調整依據。",
           "非 ICU 吃很少/NPO：basal insulin 或 basal + correction 為偏好；若院內採 HS basal，仍需依夜間/清晨低血糖風險調整。避免 prolonged SSI alone。",
-          "TDD 常用 0.3-0.6 units/kg/day 起始；低血糖高風險用較低，steroid/感染/肥胖或 insulin resistance 用較高。",
+          "體重估算 TDD 不是固定公式：0.2-0.3 units/kg/day 可用於高齡、CKD/eGFR 低、吃很少或低血糖風險高；0.4 units/kg/day 是一般病人、血糖中度偏高時的常用起始估算；0.5-0.6 units/kg/day 可用於感染、systemic steroid、肥胖、insulin resistance 或血糖明顯偏高。",
           "IV insulin 轉 SC：可用最近 6-8 小時平均 rate × 24 推估，再取約 60% 作為初始 SC TDD；basal 需在停 drip 前先給，避免 insulin gap。",
         ]} />
         <div style={S.source}>

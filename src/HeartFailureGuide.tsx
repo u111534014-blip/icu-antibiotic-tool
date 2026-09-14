@@ -219,6 +219,29 @@ const diureticRows = [
   },
 ];
 
+const diureticResponseRows = [
+  {
+    timing: "給藥前",
+    target: "確認仍有 congestion：JVP、肺水腫、下肢水腫、腹水、體重上升、I/O positive",
+    action: "若已低灌流、低血壓或偏乾，不要只加 loop；先重評 hemodynamics。",
+  },
+  {
+    timing: "2 小時",
+    target: "尿量 >=300 mL，或 spot urine sodium 約 >=50-70 mmol/L",
+    action: "最適合早期調整。若尿少/尿鈉低且仍 wet，下一劑加量 50-100% 或直接加倍。",
+  },
+  {
+    timing: "6-8 小時",
+    target: "累積尿量 >=1200 mL，或前 6 小時約 >100-150 mL/hr",
+    action: "看這一劑是否撐得住。若有尿但很快失效，增加頻率到 q8h/q6h 或考慮 pump。",
+  },
+  {
+    timing: "24 小時",
+    target: "體重下降約 >=1 kg/day、net negative，Cr/Na/K/Mg 可接受",
+    action: "看整天 decongestion 是否達標；若仍 wet，評估 diuretic resistance、sequential blockade 或 RRT。",
+  },
+];
+
 function NoteCard({ title, children, open = false }: { title: string; children: ReactNode; open?: boolean }) {
   return (
     <details open={open} style={S.noteCard}>
@@ -411,7 +434,18 @@ export default function HeartFailureGuide() {
                 重評重點: row.reassess,
               }))}
             />
+            <SmallTable
+              columns={["時間點", "反應足夠", "反應不足時"]}
+              rows={diureticResponseRows.map((row) => ({
+                時間點: row.timing,
+                反應足夠: row.target,
+                反應不足時: row.action,
+              }))}
+            />
             <Bullets items={[
+              "這些不是擇一個時間點就結束，也不是每個時間點都硬要達標才算成功；它們是連續的安全檢查點。",
+              "最常用來早期調整的是 2 小時 spot urine sodium；沒有尿鈉時，就看 2 小時尿量與前 6 小時尿量。",
+              "24 小時體重、net balance 與症狀改善用來確認整體去鬱血結果，不應等到隔天才第一次發現利尿不足。",
               "床邊常用目標：給 IV loop 後 2 小時尿鈉若仍低（常用 cutoff 約 <50-70 mEq/L）或前 6 小時尿量不足，代表 natriuretic/diuretic response 不佳。",
               "尿量粗抓：若沒有休克或嚴重 AKI，常期待至少約 100-150 mL/hr 的早期尿量反應；但要和 fluid intake、血壓、腎功能一起看。",
               "反應不好不要只等到隔天：ESC 2026 提到可用早期 urinary sodium guided strategy，目的就是早點加強利尿，而不是看一天 I/O 後才發現沒退水。",
@@ -525,11 +559,11 @@ const S: Record<string, CSSProperties> = {
   tabButtonActive: { borderColor: ACCENT, background: "#ECFDF5", color: ACCENT },
   section: { background: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", overflow: "hidden", boxSizing: "border-box" },
   sectionTitle: { fontSize: 13, color: "#94A3B8", fontWeight: 900, letterSpacing: 0, marginBottom: 14 },
-  tableWrap: { overflowX: "auto", border: "1px solid #E2E8F0", borderRadius: 10 },
-  table: { width: "100%", borderCollapse: "collapse", minWidth: 840 },
-  th: { textAlign: "left", background: "#F8FAFC", color: "#475569", padding: "10px 12px", borderBottom: "1px solid #E2E8F0", fontSize: 13 },
-  td: { verticalAlign: "top", padding: "11px 12px", borderBottom: "1px solid #E2E8F0", color: "#334155", fontSize: 13, lineHeight: 1.6 },
-  tdStrong: { verticalAlign: "top", padding: "11px 12px", borderBottom: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 900, lineHeight: 1.6 },
+  tableWrap: { overflowX: "auto", border: "1px solid #E2E8F0", borderRadius: 10, WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: 840, tableLayout: "fixed", WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
+  th: { textAlign: "left", background: "#F8FAFC", color: "#475569", padding: "10px 12px", borderBottom: "1px solid #E2E8F0", fontSize: 13, lineHeight: 1.45, wordBreak: "break-word", WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
+  td: { verticalAlign: "top", padding: "11px 12px", borderBottom: "1px solid #E2E8F0", color: "#334155", fontSize: 13, lineHeight: 1.6, wordBreak: "break-word", WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
+  tdStrong: { verticalAlign: "top", padding: "11px 12px", borderBottom: "1px solid #E2E8F0", color: "#0F172A", fontSize: 13, fontWeight: 900, lineHeight: 1.6, wordBreak: "break-word", WebkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
   pillRow: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   pill: { display: "inline-flex", borderRadius: 999, background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#047857", padding: "6px 10px", fontSize: 12, fontWeight: 900 },
   noteCard: { border: "1px solid #E2E8F0", borderRadius: 10, padding: "10px 12px", marginBottom: 10, background: "#FFFFFF" },

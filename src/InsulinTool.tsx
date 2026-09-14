@@ -145,22 +145,24 @@ export default function InsulinTool() {
     const roundedTdd = units(tdd);
     let basal = 0;
     let mealBolus = 0;
+    let q6hNutritionTotal = 0;
     let q6hNutrition = 0;
     let planNote = "";
 
     if (nutrition === "eating") {
       basal = units(tdd * 0.5);
       mealBolus = units((tdd * 0.5) / 3);
-      planNote = "有規則進食：TDD 約 50% basal + 50% prandial 分三餐，另加 correction。";
+      planNote = "有規則進食：TDD 約 50% basal + 50% 餐前 bolus 分三餐，另加 correction。";
     } else if (nutrition === "tube") {
       basal = units(tdd * 0.4);
-      q6hNutrition = units((tdd * 0.6) / 4);
+      q6hNutritionTotal = Math.max(0, roundedTdd - basal);
+      q6hNutrition = round(q6hNutritionTotal / 4, 1);
       planNote = "連續營養：可用 basal + q6h nutritional insulin + correction；若 tube feeding 中斷需預防低血糖。";
     } else {
       basal = units(tdd * 0.5);
       planNote = nutrition === "npo"
         ? "NPO：保留 basal + correction；不給固定餐前 bolus。"
-        : "食量不穩：以 basal + correction 為主；prandial 可依實際吃完比例給。";
+        : "食量不穩：以 basal + correction 為主；餐前 bolus 可依實際吃完比例給。";
     }
 
     const cf = correctionFactor(Math.max(roundedTdd, 1));
@@ -171,6 +173,7 @@ export default function InsulinTool() {
       tdd: roundedTdd,
       basal,
       mealBolus,
+      q6hNutritionTotal,
       q6hNutrition,
       sourceNote,
       planNote,
@@ -184,7 +187,7 @@ export default function InsulinTool() {
   }, [weight, currentBg, targetBg, homeTdd, dripRate, doseSource, sensitivity, steroid, nutrition]);
 
   const targetText = careArea === "icu"
-    ? "ICU：多數病人目標 140-180 mg/dL；persistent BG >=180 mg/dL 時啟動/加強 insulin。"
+    ? "ICU：多數病人目標 140-180 mg/dL；persistent BG >=180 mg/dL 時啟動/加強 insulin。若病況不穩、vasopressor 增加或營養變動大，通常優先使用 IV insulin protocol；下列 SC 劑量較適合穩定病人或 drip 轉 SC 粗估。"
     : "非 ICU：多數病人目標 100-180 mg/dL；若 >=180 mg/dL 持續出現，考慮 scheduled insulin。";
 
   const dailyAdjustment = useMemo(() => {
@@ -221,9 +224,9 @@ export default function InsulinTool() {
       }
       const start = startingBolusFromPattern(row.bg, calc.mealBolus);
       if (start > 0) {
-        return `${start} units（目前未使用固定 bolus；對應血糖偏高，可考慮新增保守 prandial 起始劑量，並保留 correction）`;
+        return `${start} units（目前未使用固定 bolus；對應血糖偏高，可考慮新增保守餐前 bolus 起始劑量，並保留 correction）`;
       }
-      return "0 units（目前未使用固定 bolus；血糖未達新增固定 prandial 門檻，先觀察或用 correction）";
+      return "0 units（目前未使用固定 bolus；血糖未達新增固定餐前 bolus 門檻，先觀察或用 correction）";
     }
     return `${row.next} units（${row.label}）`;
   }
@@ -336,9 +339,9 @@ export default function InsulinTool() {
           <div style={S.targetBox}>{targetText}</div>
           <Row label="Estimated TDD" value={`${calc.tdd} units/day`} note={calc.sourceNote || "請輸入體重、home TDD 或 drip rate。"} />
           <Row label="Basal insulin HS" value={`${calc.basal} units HS`} note="院內 basal 多為 HS 給藥；本工具以隔日 fasting BG 作為 HS basal 調整依據。" />
-          {nutrition === "eating" && <Row label="Prandial insulin" value={`${calc.mealBolus} units AC each meal`} note="三餐規則進食時使用；未進食不給固定餐前 bolus。" />}
-          {nutrition === "tube" && <Row label="Nutritional insulin" value={`${calc.q6hNutrition} units q6h`} note="連續管灌/TPN 可用；營養中斷時要有 hypoglycemia prevention plan。" />}
-          {(nutrition === "poor" || nutrition === "npo") && <Row label="Scheduled prandial" value="hold" note={calc.planNote} />}
+          {nutrition === "eating" && <Row label="餐前 bolus" value={`${calc.mealBolus} units AC each meal`} note="三餐規則進食時使用；未進食不給固定餐前 bolus。" />}
+          {nutrition === "tube" && <Row label="Nutritional insulin" value={`${calc.q6hNutritionTotal} units/day (~${calc.q6hNutrition} units q6h)`} note="連續管灌/TPN 可用；q6h 劑量需依院內可給單位取整。營養中斷時要有 hypoglycemia prevention plan。" />}
+          {(nutrition === "poor" || nutrition === "npo") && <Row label="固定餐前 bolus" value="hold" note={calc.planNote} />}
           <Row label="Correction factor" value={calc.cf ? `1 unit ↓ ~${calc.cf} mg/dL` : "—"} note={`目前依 TDD 分類為 ${calc.scale}；correction 不等於單獨 sliding scale 長期使用。`} />
           <Row label="Current BG correction" value={`${calc.correction} units`} note={`以 BG ${calc.bg || "—"}、target ${calc.target || "—"} mg/dL 粗估；單點血糖只影響 correction，不自動改 basal/bolus。`} />
           <div style={S.warningBox}>
@@ -456,7 +459,7 @@ export default function InsulinTool() {
           </table>
         </div>
         <div style={S.source}>
-          此區以常用 10-20% 調整邏輯做 bedside 粗估；若 NPO/吃很少，固定 prandial bolus 通常應暫停或依實際進食比例給。
+          此區以常用 10-20% 調整邏輯做 bedside 粗估；若 NPO/吃很少，固定餐前 bolus 通常應暫停或依實際進食比例給。
         </div>
       </InfoCard>
 
@@ -473,8 +476,8 @@ export default function InsulinTool() {
             <tbody>
               {[
                 ["Fasting / 清晨血糖高", "調 HS basal 10-20%", "先確認半夜沒有低血糖反彈、睡前點心或 steroid 影響。"],
-                ["餐前血糖高", "看前一餐 prandial/correction，調餐前 bolus 10-20%", "若上一餐沒吃完，不要只看血糖就硬加。"],
-                ["餐後高", "調同一餐 prandial 或 carb ratio", "steroid 常造成午晚餐前/餐後高。"],
+                ["餐前血糖高", "看前一餐 bolus/correction，調餐前 bolus 10-20%", "若上一餐沒吃完，不要只看血糖就硬加。"],
+                ["餐後高", "調同一餐 bolus 或 carb ratio", "steroid 常造成午晚餐前/餐後高。"],
                 ["半夜/清晨低血糖", "降 HS basal 10-20% 或更多", "腎功能變差、吃少、steroid 減量都會增加風險。"],
                 ["NPO 仍反覆高血糖", "保留 HS basal + q4-6h correction", "不要給固定餐前 bolus；若 ICU 持續 >=180 可考慮 IV insulin protocol。"],
               ].map((row) => (
@@ -489,11 +492,53 @@ export default function InsulinTool() {
         </div>
       </InfoCard>
 
+      <InfoCard title="住院 / ICU TDD 拆分速查">
+        <div style={S.tableWrap}>
+          <table style={{ ...S.table, minWidth: 920 }}>
+            <thead>
+              <tr>
+                <th style={S.th}>場域</th>
+                <th style={S.th}>營養狀態</th>
+                <th style={S.th}>常用架構</th>
+                <th style={S.th}>TDD 拆法</th>
+                <th style={S.th}>重點提醒</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["非 ICU", "規則進食", "Basal + 餐前 bolus + correction", "約 50% basal；約 50% 餐前 bolus 分三餐。", "餐前 bolus 要跟實際進食搭配；若吃不完，避免照原 bolus 全給。"],
+                ["非 ICU", "吃很少 / 食量不穩", "Basal + correction；餐前 bolus 可餐後依比例補", "Basal 約 40-50%；固定餐前 bolus 先保守或暫緩。", "適合用 correction 觀察趨勢；若餐前/餐後持續高，再逐步加餐前 bolus。"],
+                ["非 ICU", "NPO", "Basal + q4-6h correction", "Basal 約 40-50%；不給固定餐前 bolus。", "Type 1 DM 仍需 basal；若反覆低血糖、CKD 或吃少，basal 要下修。"],
+                ["非 ICU", "連續管灌 / TPN", "Basal + q4-6h nutritional + correction", "Basal 約 30-40%；其餘作為 q4-6h nutritional insulin。", "營養中斷時要停 nutritional insulin，並有 D10 或 hypoglycemia prevention plan。"],
+                ["ICU", "規則進食且穩定", "可用 SC basal + 餐前 bolus + correction", "可類似非 ICU：約 50% basal + 50% 餐前 bolus。", "若 persistent BG >=180、病況變動或需要快速調整，改想 IV insulin protocol。"],
+                ["ICU", "吃很少 / NPO / 血流動力不穩", "IV insulin protocol 優先；穩定後才轉 SC", "若暫用 SC：保留 basal 或 basal + correction；不給固定餐前 bolus。", "Vasopressor、steroid、AKI、感染變動會讓需求快速改變；不要只靠一次 TDD。"],
+                ["ICU", "連續管灌 / TPN", "IV insulin protocol 或 basal + q4-6h nutritional + correction", "穩定可用 basal 約 30-40%；其餘作 nutritional q4-6h。", "管灌/TPN 中斷是低血糖高風險；營養速率改變時 insulin 也要同步重估。"],
+                ["Drip 轉 SC", "任一營養狀態", "先估 SC TDD，再依營養狀態拆分", "最近穩定 6-8 hr drip rate × 24，再取約 60-80%；本工具用 60% 較保守。", "Basal 通常要在停 drip 前約 2 hr 給，避免 insulin gap 與 rebound hyperglycemia。"],
+              ].map((row) => (
+                <tr key={`${row[0]}-${row[1]}`}>
+                  <td style={S.tdStrong}>{row[0]}</td>
+                  <td style={S.tdStrong}>{row[1]}</td>
+                  <td style={S.td}>{row[2]}</td>
+                  <td style={S.td}>{row[3]}</td>
+                  <td style={S.td}>{row[4]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={S.source}>
+          這張表是 bedside 拆分邏輯整理；實際劑量仍需依低血糖風險、腎功能、steroid、感染、營養變動與院內 protocol 調整。
+        </div>
+      </InfoCard>
+
       <InfoCard title="臨床參考">
         <Bullets items={[
           "ADA 2026：ICU persistent hyperglycemia >=180 mg/dL 時啟動或加強 insulin；多數 ICU 目標 140-180 mg/dL。",
-          "ADA 2026：非 ICU 多數目標 100-180 mg/dL；進食良好者以 basal + prandial + correction 為偏好架構。院內若 basal 多為 HS 給藥，隔日 fasting BG 是主要調整依據。",
-          "非 ICU 吃很少/NPO：basal insulin 或 basal + correction 為偏好；若院內採 HS basal，仍需依夜間/清晨低血糖風險調整。避免 prolonged SSI alone。",
+          "ADA 2026：非 ICU 多數目標 100-180 mg/dL；進食良好者以 basal + 餐前 bolus + correction 為偏好架構。院內若 basal 多為 HS 給藥，隔日 fasting BG 是主要調整依據。",
+          "非 ICU、規則進食：TDD 常拆成約 50% basal + 50% 餐前 bolus；餐前 bolus 再分三餐，並加 correction。例：TDD 24 units/day → basal 12 units HS + bolus 4 units AC each meal。",
+          "非 ICU、吃很少或 NPO：偏好 basal insulin 或 basal + correction；通常不給固定餐前 bolus，若恢復進食再依實際吃飯比例補餐前 bolus。避免 prolonged SSI alone。",
+          "連續管灌/TPN：不適合用三餐 bolus 思維；可抓 basal 約 30-40%，其餘作為 q4-6h nutritional insulin，再加 correction。營養中斷時要有 hypoglycemia prevention plan。",
+          "ICU：若病況不穩、vasopressor 增加、營養變動大或血糖持續偏高，通常優先考慮 IV insulin protocol；SC basal/nutritional/correction 拆法較適合穩定病人或 drip 轉 SC 粗估。",
           "體重估算 TDD 不是固定公式：0.2-0.3 units/kg/day 可用於高齡、CKD/eGFR 低、吃很少或低血糖風險高；0.4 units/kg/day 是一般病人、血糖中度偏高時的常用起始估算；0.5-0.6 units/kg/day 可用於感染、systemic steroid、肥胖、insulin resistance 或血糖明顯偏高。",
           "IV insulin 轉 SC：可用最近 6-8 小時平均 rate × 24 推估，再取約 60% 作為初始 SC TDD；basal 需在停 drip 前先給，避免 insulin gap。",
         ]} />

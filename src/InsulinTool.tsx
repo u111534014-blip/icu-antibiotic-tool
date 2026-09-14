@@ -46,6 +46,18 @@ function adjustedDose(base: number, pct: number) {
   return units(base * (1 + pct));
 }
 
+function startingBolusFromPattern(bg: number, estimatedMealBolus: number) {
+  if (!bg || bg <= 180) return 0;
+  if (bg > 250) return Math.max(1, estimatedMealBolus);
+  return Math.max(1, Math.ceil(estimatedMealBolus / 2));
+}
+
+function doseOrFallback(value: string, fallback: number) {
+  if (value.trim() === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 const nutritionLabels: Record<NutritionStatus, string> = {
   eating: "有規則進食",
   poor: "吃很少 / 食量不穩",
@@ -176,10 +188,10 @@ export default function InsulinTool() {
     : "非 ICU：多數病人目標 100-180 mg/dL；若 >=180 mg/dL 持續出現，考慮 scheduled insulin。";
 
   const dailyAdjustment = useMemo(() => {
-    const basalBase = Number(currentBasal) || calc.basal;
-    const breakfastBase = Number(breakfastBolus) || calc.mealBolus;
-    const lunchBase = Number(lunchBolus) || calc.mealBolus;
-    const dinnerBase = Number(dinnerBolus) || calc.mealBolus;
+    const basalBase = doseOrFallback(currentBasal, calc.basal);
+    const breakfastBase = doseOrFallback(breakfastBolus, calc.mealBolus);
+    const lunchBase = doseOrFallback(lunchBolus, calc.mealBolus);
+    const dinnerBase = doseOrFallback(dinnerBolus, calc.mealBolus);
 
     const basalAdj = bgAdjustment(Number(fastingBg), hadHypo);
     const breakfastAdj = bgAdjustment(Number(preLunchBg), hadHypo);
@@ -187,12 +199,34 @@ export default function InsulinTool() {
     const dinnerAdj = bgAdjustment(Number(bedtimeBg), hadHypo);
 
     return {
-      basal: { base: basalBase, next: adjustedDose(basalBase, basalAdj.pct), ...basalAdj },
-      breakfast: { base: breakfastBase, next: adjustedDose(breakfastBase, breakfastAdj.pct), ...breakfastAdj },
-      lunch: { base: lunchBase, next: adjustedDose(lunchBase, lunchAdj.pct), ...lunchAdj },
-      dinner: { base: dinnerBase, next: adjustedDose(dinnerBase, dinnerAdj.pct), ...dinnerAdj },
+      basal: { base: basalBase, next: adjustedDose(basalBase, basalAdj.pct), bg: Number(fastingBg), ...basalAdj },
+      breakfast: { base: breakfastBase, next: adjustedDose(breakfastBase, breakfastAdj.pct), bg: Number(preLunchBg), ...breakfastAdj },
+      lunch: { base: lunchBase, next: adjustedDose(lunchBase, lunchAdj.pct), bg: Number(preDinnerBg), ...lunchAdj },
+      dinner: { base: dinnerBase, next: adjustedDose(dinnerBase, dinnerAdj.pct), bg: Number(bedtimeBg), ...dinnerAdj },
     };
   }, [currentBasal, breakfastBolus, lunchBolus, dinnerBolus, fastingBg, preLunchBg, preDinnerBg, bedtimeBg, hadHypo, calc.basal, calc.mealBolus]);
+
+  const adjustmentRows = [
+    ["Basal HS", "隔日 fasting / 清晨血糖", dailyAdjustment.basal],
+    ["早餐 bolus", "午餐前血糖", dailyAdjustment.breakfast],
+    ["午餐 bolus", "晚餐前血糖", dailyAdjustment.lunch],
+    ["晚餐 bolus", "睡前血糖", dailyAdjustment.dinner],
+  ] as const;
+
+  function adjustmentSuggestion(name: string, row: typeof dailyAdjustment.basal) {
+    const isBolus = name.includes("bolus");
+    if (isBolus && row.base === 0) {
+      if (nutrition !== "eating") {
+        return "0 units（目前未使用固定 bolus；NPO/吃很少時通常不新增固定餐前 bolus，先用 correction 或依實際進食比例）";
+      }
+      const start = startingBolusFromPattern(row.bg, calc.mealBolus);
+      if (start > 0) {
+        return `${start} units（目前未使用固定 bolus；對應血糖偏高，可考慮新增保守 prandial 起始劑量，並保留 correction）`;
+      }
+      return "0 units（目前未使用固定 bolus；血糖未達新增固定 prandial 門檻，先觀察或用 correction）";
+    }
+    return `${row.next} units（${row.label}）`;
+  }
 
   return (
     <div>
@@ -317,66 +351,77 @@ export default function InsulinTool() {
         <div style={S.helpBox}>
           Basal / bolus 調整看的是「型態」而不是單點血糖：院內 basal 多為 HS 給藥，因此隔日 fasting BG 主要用來調 HS basal；午餐前反映早餐 bolus；晚餐前反映午餐 bolus；睡前大致反映晚餐 bolus。
         </div>
-        <div style={S.inputGrid}>
-          <label style={S.inputLabel}>
-            <span>目前 basal HS</span>
-            <div style={S.inputWrap}>
-              <input value={currentBasal} onChange={(e) => setCurrentBasal(e.target.value)} inputMode="decimal" placeholder={`${calc.basal}`} style={S.input} />
-              <span style={S.inputSuffix}>units HS</span>
-            </div>
-          </label>
-          <label style={S.inputLabel}>
-            <span>早餐前 bolus</span>
-            <div style={S.inputWrap}>
-              <input value={breakfastBolus} onChange={(e) => setBreakfastBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
-              <span style={S.inputSuffix}>units</span>
-            </div>
-          </label>
-          <label style={S.inputLabel}>
-            <span>午餐前 bolus</span>
-            <div style={S.inputWrap}>
-              <input value={lunchBolus} onChange={(e) => setLunchBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
-              <span style={S.inputSuffix}>units</span>
-            </div>
-          </label>
-          <label style={S.inputLabel}>
-            <span>晚餐前 bolus</span>
-            <div style={S.inputWrap}>
-              <input value={dinnerBolus} onChange={(e) => setDinnerBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
-              <span style={S.inputSuffix}>units</span>
-            </div>
-          </label>
+        <div style={S.helpBox}>
+          每日調整門檻：此區粗估以 100-180 mg/dL 視為目標內；181-250 mg/dL 約上調 10%；&gt;250 mg/dL 約上調 20%；&lt;100 mg/dL 下修，&lt;70 mg/dL 或有症狀低血糖先降 20%。這裡看的是 basal/bolus 型態，不等同 correction dose 的目標血糖；若有規則進食、目前固定 bolus 是 0，且對應血糖持續 &gt;180，會提示可保守新增餐前 bolus。
         </div>
+        <div style={S.adjustmentInputGrid}>
+          <div style={S.adjustmentPair}>
+            <label style={S.inputLabel}>
+              <span>目前 basal HS</span>
+              <div style={S.inputWrap}>
+                <input value={currentBasal} onChange={(e) => setCurrentBasal(e.target.value)} inputMode="decimal" placeholder={`${calc.basal}`} style={S.input} />
+                <span style={S.inputSuffix}>units HS</span>
+              </div>
+            </label>
+            <label style={S.inputLabel}>
+              <span>Fasting / 清晨血糖</span>
+              <div style={S.inputWrap}>
+                <input value={fastingBg} onChange={(e) => setFastingBg(e.target.value)} inputMode="decimal" style={S.input} />
+                <span style={S.inputSuffix}>mg/dL</span>
+              </div>
+            </label>
+          </div>
 
-        <div style={S.inputGrid}>
-          <label style={S.inputLabel}>
-            <span>Fasting / 清晨血糖</span>
-            <div style={S.inputWrap}>
-              <input value={fastingBg} onChange={(e) => setFastingBg(e.target.value)} inputMode="decimal" style={S.input} />
-              <span style={S.inputSuffix}>mg/dL</span>
-            </div>
-          </label>
-          <label style={S.inputLabel}>
-            <span>午餐前血糖</span>
-            <div style={S.inputWrap}>
-              <input value={preLunchBg} onChange={(e) => setPreLunchBg(e.target.value)} inputMode="decimal" style={S.input} />
-              <span style={S.inputSuffix}>mg/dL</span>
-            </div>
-          </label>
-          <label style={S.inputLabel}>
-            <span>晚餐前血糖</span>
-            <div style={S.inputWrap}>
-              <input value={preDinnerBg} onChange={(e) => setPreDinnerBg(e.target.value)} inputMode="decimal" style={S.input} />
-              <span style={S.inputSuffix}>mg/dL</span>
-            </div>
-          </label>
-          <label style={S.inputLabel}>
-            <span>睡前血糖</span>
-            <div style={S.inputWrap}>
-              <input value={bedtimeBg} onChange={(e) => setBedtimeBg(e.target.value)} inputMode="decimal" style={S.input} />
-              <span style={S.inputSuffix}>mg/dL</span>
-            </div>
-          </label>
+          <div style={S.adjustmentPair}>
+            <label style={S.inputLabel}>
+              <span>早餐前 bolus</span>
+              <div style={S.inputWrap}>
+                <input value={breakfastBolus} onChange={(e) => setBreakfastBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
+                <span style={S.inputSuffix}>units</span>
+              </div>
+            </label>
+            <label style={S.inputLabel}>
+              <span>午餐前血糖</span>
+              <div style={S.inputWrap}>
+                <input value={preLunchBg} onChange={(e) => setPreLunchBg(e.target.value)} inputMode="decimal" style={S.input} />
+                <span style={S.inputSuffix}>mg/dL</span>
+              </div>
+            </label>
+          </div>
+
+          <div style={S.adjustmentPair}>
+            <label style={S.inputLabel}>
+              <span>午餐前 bolus</span>
+              <div style={S.inputWrap}>
+                <input value={lunchBolus} onChange={(e) => setLunchBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
+                <span style={S.inputSuffix}>units</span>
+              </div>
+            </label>
+            <label style={S.inputLabel}>
+              <span>晚餐前血糖</span>
+              <div style={S.inputWrap}>
+                <input value={preDinnerBg} onChange={(e) => setPreDinnerBg(e.target.value)} inputMode="decimal" style={S.input} />
+                <span style={S.inputSuffix}>mg/dL</span>
+              </div>
+            </label>
+          </div>
+
+          <div style={S.adjustmentPair}>
+            <label style={S.inputLabel}>
+              <span>晚餐前 bolus</span>
+              <div style={S.inputWrap}>
+                <input value={dinnerBolus} onChange={(e) => setDinnerBolus(e.target.value)} inputMode="decimal" placeholder={`${calc.mealBolus}`} style={S.input} />
+                <span style={S.inputSuffix}>units</span>
+              </div>
+            </label>
+            <label style={S.inputLabel}>
+              <span>睡前血糖</span>
+              <div style={S.inputWrap}>
+                <input value={bedtimeBg} onChange={(e) => setBedtimeBg(e.target.value)} inputMode="decimal" style={S.input} />
+                <span style={S.inputSuffix}>mg/dL</span>
+              </div>
+            </label>
+          </div>
         </div>
 
         <label style={S.checkRow}>
@@ -395,19 +440,15 @@ export default function InsulinTool() {
               </tr>
             </thead>
             <tbody>
-              {[
-                ["Basal HS", "隔日 fasting / 清晨血糖", dailyAdjustment.basal],
-                ["早餐 bolus", "午餐前血糖", dailyAdjustment.breakfast],
-                ["午餐 bolus", "晚餐前血糖", dailyAdjustment.lunch],
-                ["晚餐 bolus", "睡前血糖", dailyAdjustment.dinner],
-              ].map(([name, basis, item]) => {
+              {adjustmentRows.map(([name, basis, item]) => {
                 const row = item as typeof dailyAdjustment.basal;
+                const suggestion = adjustmentSuggestion(name, row);
                 return (
                   <tr key={name as string}>
                     <td style={S.tdStrong}>{name as string}</td>
                     <td style={S.td}>{basis as string}</td>
                     <td style={S.td}>{row.base} units</td>
-                    <td style={S.td}>{row.next} units（{row.label}）</td>
+                    <td style={S.td}>{suggestion}</td>
                   </tr>
                 );
               })}
@@ -477,6 +518,8 @@ const S: Record<string, CSSProperties> = {
   cardTitle: { fontSize: 15, fontWeight: 850, color: "#0F172A", lineHeight: 1.35, marginBottom: 10 },
   label: { display: "block", color: "#64748B", fontSize: 12, fontWeight: 850, margin: "12px 0 6px" },
   inputGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 },
+  adjustmentInputGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 },
+  adjustmentPair: { minWidth: 0 },
   inputLabel: { display: "block", color: "#475569", fontSize: 12, fontWeight: 800, marginTop: 10 },
   inputWrap: { display: "flex", alignItems: "center", marginTop: 5, border: "1.5px solid #DDE7EE", borderRadius: 8, background: "#fff", overflow: "hidden" },
   input: { flex: 1, minWidth: 0, border: "none", outline: "none", padding: "10px 10px", fontSize: 14, color: "#0F172A" },

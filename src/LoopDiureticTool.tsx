@@ -332,6 +332,9 @@ export default function LoopDiureticTool() {
             <div style={S.pearlBox}>
               <strong>適用：</strong>主要用在住院 IV diuresis，尤其 ADHF 或 AKI/CKD 合併鬱血。慢性口服維持則以症狀、體重趨勢與電解質/腎功能追蹤為主。
             </div>
+            <div style={S.pearlBox}>
+              <strong>時間點怎麼看：</strong>不是三選一，也不是每個時間點都硬要達標才算成功。2 小時用來早期調整；6-8 小時看這一劑是否撐得住；24 小時看整天 decongestion 是否達標。最常用來早期決策的是 2 小時 spot urine sodium；沒有尿鈉時看 2 小時尿量與前 6 小時尿量。
+            </div>
             <MiniTable
               columns={["時間點", "反應足夠", "反應不足時"]}
               rows={[
@@ -415,6 +418,7 @@ export default function LoopDiureticTool() {
               ]}
             />
             <p style={S.smallNote}>簡單說：不是看到尿少就叫 resistance；要先確定「病人仍 wet + IV loop 劑量足夠 + 客觀尿量/尿鈉/體重沒有達標」。</p>
+            <p style={S.smallNote}>時間點不是擇一：2 小時是早期調整點，6-8 小時是同一劑的輸出反應，24 小時是整天去鬱血結果。若要最快決定是否加量，最常看 2 小時 spot urine sodium；沒有尿鈉時看 2 小時尿量與前 6 小時尿量。</p>
           </NoteCard>
           <NoteCard title="5. IV bolus fail 怎麼辦？">
             <MiniTable

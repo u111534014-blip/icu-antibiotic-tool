@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 const ACCENT = "#0D9488";
 const FREE_LOW = 5;
 const FREE_HIGH = 17;
+const FREE_DOSE_TARGET_HIGH = 15;
 
 type LevelCategory = "low" | "target" | "high" | "unknown";
 type LevelTiming = "trough" | "random" | "postLoad";
@@ -21,8 +22,15 @@ type DoseRecommendation = {
     hoursMax: number;
     restartTarget: number;
   };
-  suggestedDailyDose?: number;
-  suggestedPerDose?: number;
+  suggestedDailyDoseRange?: {
+    min: number;
+    max: number;
+    perDoseMin: number;
+    perDoseMax: number;
+    proportionalMin: number;
+    proportionalMax: number;
+    capped?: boolean;
+  };
 };
 
 const FORMULATION_LABELS: Record<Formulation, string> = {
@@ -37,6 +45,12 @@ const TIMING_LABELS: Record<LevelTiming, string> = {
   postLoad: "Post-load / distribution 未完成",
 };
 
+const TIMING_NOTE_LABELS: Record<LevelTiming, string> = {
+  trough: "Trough / pre-dose",
+  random: "Random level",
+  postLoad: "Post-load / incomplete distribution phase",
+};
+
 function n(value: string): number {
   return parseFloat(value) || 0;
 }
@@ -47,6 +61,38 @@ function round1(value: number): number {
 
 function roundTo250(value: number): number {
   return Math.max(250, Math.round(value / 250) * 250);
+}
+
+function doseRangeText(min: number, max: number, unit = "mg/day"): string {
+  return min === max ? `${min} ${unit}` : `${min}-${max} ${unit}`;
+}
+
+function estimateMaintenanceRange(activeFree: number, dailyDose: number, interval: number, capIncrease = false): DoseRecommendation["suggestedDailyDoseRange"] {
+  const dosesPerDay = 24 / Math.max(1, interval || 24);
+  const proportionalMin = roundTo250(dailyDose * FREE_LOW / activeFree);
+  const proportionalMax = roundTo250(dailyDose * FREE_DOSE_TARGET_HIGH / activeFree);
+  let min = Math.min(proportionalMin, proportionalMax);
+  let max = Math.max(proportionalMin, proportionalMax);
+  let capped = false;
+
+  if (capIncrease) {
+    const cappedMax = roundTo250(dailyDose * 1.25);
+    if (max > cappedMax) {
+      max = cappedMax;
+      capped = true;
+    }
+    min = Math.min(Math.max(dailyDose + 250, min), max);
+  }
+
+  return {
+    min,
+    max,
+    perDoseMin: round1(min / dosesPerDay),
+    perDoseMax: round1(max / dosesPerDay),
+    proportionalMin,
+    proportionalMax,
+    capped,
+  };
 }
 
 function toneColor(tone: DoseRecommendation["tone"]): { color: string; bg: string; border: string } {
@@ -69,6 +115,20 @@ function interpretTotal(value: number): { label: string; color: string } {
   if (value < 50) return { label: "total VPA 偏低", color: "#1D4ED8" };
   if (value > 125) return { label: "total VPA 偏高", color: "#B91C1C" };
   return { label: "total VPA 50-125 mcg/mL", color: "#047857" };
+}
+
+function interpretFreeNote(value: number): string {
+  if (!Number.isFinite(value)) return "not available";
+  if (value < FREE_LOW) return "below reference range";
+  if (value > FREE_HIGH) return "above reference range / toxicity risk";
+  return "within reference range";
+}
+
+function interpretTotalNote(value: number): string {
+  if (!value) return "not entered";
+  if (value < 50) return "below usual total VPA range";
+  if (value > 125) return "above usual total VPA range";
+  return "within usual total VPA range 50-125 mcg/mL";
 }
 
 function calcFraserFree(total: number, albumin: number, bun: number, propofol: boolean, aspirin: boolean): number {
@@ -124,8 +184,8 @@ function buildDoseRecommendation({
         summary: `${levelSource} ${round1(activeFree)} mcg/mL markedly exceeds target range.`,
         detail: [
           "Current regimen not entered, so dose-specific hold count cannot be estimated.",
-          "建議先 hold next scheduled dose，通知醫師並評估 mental status、ammonia、LFT、platelet、pancreatitis symptoms。",
-          "若為 seizure indication，避免無替代抗癲癇 coverage 下長時間 abrupt discontinuation；請同步評估 rescue/bridge AED。",
+          "Hold the next scheduled dose and notify the prescriber; assess mental status, ammonia, liver function tests, platelet count, and pancreatitis symptoms.",
+          "If valproate is being used for seizure control, avoid prolonged abrupt discontinuation without alternative antiepileptic coverage; assess need for rescue/bridge therapy.",
           commonCaution,
         ],
       };
@@ -133,76 +193,64 @@ function buildDoseRecommendation({
     return {
       title: "尚未產生劑量建議",
       tone: "gray",
-      summary: "輸入目前每次劑量與頻率後，note 會加入 dose recommendation。",
-      detail: ["目前仍可使用濃度判讀；劑量建議需要 current regimen。"],
+      summary: "Current dose and interval are required to generate a dose recommendation.",
+      detail: ["Concentration interpretation is available, but dose adjustment requires the current regimen."],
     };
   }
 
   const needsHold = activeFree >= 25 || toxicityConcern;
-  const severeHold = activeFree >= 34 || (toxicityConcern && activeFree > FREE_HIGH);
-
   if ((!steadyState || levelTiming !== "trough") && !needsHold) {
     return {
       title: "先不直接調整維持劑量",
       tone: "amber",
-      summary: "濃度抽血條件不適合直接用比例法調整。",
+      summary: "The level is not appropriate for direct proportional maintenance-dose adjustment.",
       detail: [
         `Current regimen: ${dailyDose} mg/day.`,
         `Active level: ${round1(activeFree)} mcg/mL (${levelSource}).`,
         steadyState ? "Steady state: yes." : "Steady state: no/unknown.",
-        `Level timing: ${TIMING_LABELS[levelTiming]}.`,
-        "建議先確認抽血時間、最後一次給藥時間與臨床狀態；若仍需 TDM 調整，建議補 trough/free VPA 後再評估。",
+        `Level timing: ${TIMING_NOTE_LABELS[levelTiming]}.`,
+        "Confirm sampling time, last dose time, and clinical status. If TDM-guided adjustment is still needed, repeat a steady-state trough/free VPA level before adjusting maintenance therapy.",
       ],
     };
   }
 
   if (activeFree > FREE_HIGH) {
-    const target = toxicityConcern ? 12 : 15;
-    const restartTarget = severeHold ? 12 : 15;
+    const restartTarget = FREE_DOSE_TARGET_HIGH;
     const holdPlan = needsHold ? estimateHoldPlan(activeFree, restartTarget, interval) : undefined;
-    const rawDaily = dailyDose * target / activeFree;
-    const suggestedDailyDose = Math.min(dailyDose - 250, roundTo250(rawDaily));
-    const safeDailyDose = Math.max(250, suggestedDailyDose);
-    const suggestedPerDose = round1(safeDailyDose / (24 / interval));
+    const suggestedDailyDoseRange = estimateMaintenanceRange(activeFree, dailyDose, interval);
     return {
       title: needsHold ? "建議先 hold，再以較低劑量重啟" : "建議降低劑量",
       tone: needsHold ? "red" : "amber",
-      summary: `${levelSource} ${round1(activeFree)} mcg/mL > ${FREE_HIGH} mcg/mL。`,
+      summary: `${levelSource} ${round1(activeFree)} mcg/mL is above ${FREE_HIGH} mcg/mL.`,
       holdPlan,
-      suggestedDailyDose: safeDailyDose,
-      suggestedPerDose,
+      suggestedDailyDoseRange,
       detail: [
         `Current regimen: ${dailyDose} mg/day.`,
         holdPlan ? `Hold valproate for approximately ${holdPlan.dosesMin}${holdPlan.dosesMin === holdPlan.dosesMax ? "" : `-${holdPlan.dosesMax}`} scheduled dose(s) (~${holdPlan.hoursMin}-${holdPlan.hoursMax} hours) before restart consideration.` : "",
-        holdPlan ? `Recheck trough/free VPA before restart when feasible; consider restarting once free VPA is near ${holdPlan.restartTarget}-${FREE_HIGH} mcg/mL and toxicity is improving.` : "",
-        `Suggested maintenance target for calculation: free VPA ~${target} mcg/mL.`,
-        `Estimated new total daily dose: about ${safeDailyDose} mg/day (${suggestedPerDose} mg q${interval}h if same interval).`,
-        toxicityConcern ? "若有 encephalopathy、marked sedation、tremor、thrombocytopenia 或 hyperammonemia，建議通知醫師並檢查 ammonia、LFT、platelet；若 ammonia 上升或 pancreatitis/hepatic dysfunction，應評估停用 valproate。" : "若無毒性但 free VPA 明顯偏高，可先 hold 後降劑量；若僅輕度偏高，可直接保守降劑量並複測 trough/free VPA。",
+        holdPlan ? `Recheck trough/free VPA before restart when feasible; consider restarting once free VPA is within/near ${FREE_LOW}-${FREE_DOSE_TARGET_HIGH} mcg/mL and toxicity is improving.` : "",
+        `Maintenance calculation target range: free VPA ${FREE_LOW}-${FREE_DOSE_TARGET_HIGH} mcg/mL (mg/L).`,
+        suggestedDailyDoseRange ? `Estimated new total daily dose range: about ${doseRangeText(suggestedDailyDoseRange.min, suggestedDailyDoseRange.max)} (${doseRangeText(suggestedDailyDoseRange.perDoseMin, suggestedDailyDoseRange.perDoseMax, `mg q${interval}h`)} if same interval).` : "",
+        toxicityConcern ? "If encephalopathy, marked sedation, tremor, thrombocytopenia, or hyperammonemia is present, notify the prescriber and check ammonia, liver function tests, and platelet count. If ammonia is elevated or pancreatitis/hepatic dysfunction is suspected, reassess whether valproate should be continued." : "If there is no clinical toxicity but free VPA is clearly elevated, consider holding then restarting at a lower dose. If elevation is mild, a conservative dose reduction with repeat trough/free VPA monitoring may be reasonable.",
         "Hold estimate uses adult valproate half-life ~9-16 hr and is approximate; ICU, hepatic disease, interacting drugs, overdose, or ER formulation may prolong decline.",
-        "若 valproate 是為 major seizure prevention，避免無替代抗癲癇 coverage 下長時間 abrupt discontinuation；請同步評估 bridge/rescue AED。",
+        "If valproate is used for major seizure prevention, avoid prolonged abrupt discontinuation without alternative antiepileptic coverage; assess need for bridge/rescue therapy.",
         commonCaution,
       ].filter(Boolean),
     };
   }
 
   if (activeFree < FREE_LOW) {
-    const target = seizureConcern ? 10 : 8;
-    const rawDaily = dailyDose * target / activeFree;
-    const cappedDaily = Math.min(rawDaily, dailyDose * 1.25);
-    const suggestedDailyDose = Math.max(dailyDose + 250, roundTo250(cappedDaily));
-    const suggestedPerDose = round1(suggestedDailyDose / (24 / interval));
+    const suggestedDailyDoseRange = estimateMaintenanceRange(activeFree, dailyDose, interval, true);
     return {
       title: "可考慮增加劑量",
       tone: "blue",
-      summary: `${levelSource} ${round1(activeFree)} mcg/mL < ${FREE_LOW} mcg/mL。`,
-      suggestedDailyDose,
-      suggestedPerDose,
+      summary: `${levelSource} ${round1(activeFree)} mcg/mL is below ${FREE_LOW} mcg/mL.`,
+      suggestedDailyDoseRange,
       detail: [
         `Current regimen: ${dailyDose} mg/day.`,
-        `Suggested maintenance target for calculation: free VPA ~${target} mcg/mL.`,
-        `Conservative new total daily dose: about ${suggestedDailyDose} mg/day (${suggestedPerDose} mg q${interval}h if same interval).`,
-        rawDaily > dailyDose * 1.25 ? `Proportional estimate would be ${roundTo250(rawDaily)} mg/day, but the displayed recommendation caps the increase at ~25% for safety.` : "建議依 seizure control / indication 與可用劑型調整。",
-        "Dose increase後建議達 steady state 再複測 trough/free VPA；若 seizure uncontrolled，可依臨床需要更積極處理。",
+        `Maintenance calculation target range: free VPA ${FREE_LOW}-${FREE_DOSE_TARGET_HIGH} mcg/mL (mg/L).`,
+        suggestedDailyDoseRange ? `Conservative new total daily dose range: about ${doseRangeText(suggestedDailyDoseRange.min, suggestedDailyDoseRange.max)} (${doseRangeText(suggestedDailyDoseRange.perDoseMin, suggestedDailyDoseRange.perDoseMax, `mg q${interval}h`)} if same interval).` : "",
+        suggestedDailyDoseRange?.capped ? `Full proportional estimate to ${FREE_LOW}-${FREE_DOSE_TARGET_HIGH} mcg/mL would be ${doseRangeText(suggestedDailyDoseRange.proportionalMin, suggestedDailyDoseRange.proportionalMax)}, but the displayed recommendation caps the increase at ~25% for safety.` : "Adjust based on seizure control, indication, available formulation, and clinical context.",
+        "After dose increase, repeat trough/free VPA after steady state is reached. If seizures remain uncontrolled, more urgent clinical management may be needed.",
         commonCaution,
       ],
     };
@@ -214,8 +262,8 @@ function buildDoseRecommendation({
     summary: `${levelSource} ${round1(activeFree)} mcg/mL is within ${FREE_LOW}-${FREE_HIGH} mcg/mL.`,
     detail: [
       `Current regimen: ${dailyDose} mg/day.`,
-      toxicityConcern ? "雖 free VPA 在參考範圍內，但有毒性疑慮時仍建議評估其他原因、ammonia、LFT、platelet，必要時可考慮降劑量。" : "若臨床反應穩定且無毒性，建議維持目前 regimen。",
-      seizureConcern ? "若仍有 seizure 或目標症狀控制不佳，可依臨床狀態考慮較高目標區間或其他抗癲癇藥調整。" : "建議依 indication、clinical response 與 adverse effects 持續追蹤。",
+      toxicityConcern ? "Although free VPA is within the reference range, ongoing toxicity concern should prompt evaluation for other causes and review of ammonia, liver function tests, and platelet count; dose reduction may still be considered if clinically appropriate." : "If clinical response is stable and there is no toxicity concern, continue the current regimen.",
+      seizureConcern ? "If seizures persist or target symptoms remain uncontrolled, consider whether a higher target within the reference range or additional antiepileptic adjustment is clinically appropriate." : "Continue monitoring based on indication, clinical response, and adverse effects.",
       commonCaution,
     ],
   };
@@ -300,7 +348,7 @@ function ClinicalReferenceBox() {
   const sections = [
     {
       heading: "濃度參考範圍",
-      body: "Total VPA：常用 trough plasma concentration 50-125 mcg/mL；不同 indication、院內 lab 與臨床目標可能略有差異。\nFree VPA：本工具採 Fraser 2023 使用的分類：<5 mcg/mL 偏低、5-17 mcg/mL 為參考範圍、>17 mcg/mL 偏高。\n一般 free fraction 約 5-10%，但 ICU、低白蛋白、uremia、propofol/lipid therapy、aspirin 等情境可明顯上升。",
+      body: "Total VPA：常用 trough plasma concentration 50-125 mcg/mL；不同 indication、院內 lab 與臨床目標可能略有差異。\nFree VPA：本工具採 Fraser 2023 使用的分類：<5 mcg/mL 偏低、5-17 mcg/mL 為參考範圍、>17 mcg/mL 偏高。用比例法推算維持劑量時，本工具以 free VPA 5-15 mcg/mL（mg/L）作為計算目標範圍，不預設單一 target。\n一般 free fraction 約 5-10%，但 ICU、低白蛋白、uremia、propofol/lipid therapy、aspirin 等情境可明顯上升。",
     },
     {
       heading: "半衰期與 hold 估算",
@@ -400,14 +448,14 @@ export default function DepakineTDM() {
   const warnings = useMemo(() => {
     const items: string[] = [];
     if (!result) return items;
-    if (result.estimatedFree < 0) items.push("估算 free VPA 為負值，代表輸入資料或模型適用性可能有問題，請以實測 free VPA 為準。");
-    if (albuminNum < 3.5) items.push("低白蛋白會增加 free fraction，total VPA 可能低估活性濃度。");
-    if (bunNum >= 25) items.push("BUN 偏高時可能有 uremic toxin 競爭 albumin binding，free fraction 可能上升。");
-    if (totalNum > 100) items.push("total VPA >100 mcg/mL 時可能出現 protein binding saturation；Fraser cohort 多數 total VPAC 較低，解讀要保守。");
-    if (propofol) items.push("Propofol 或其他 lipid-containing therapy 可能增加 valproate free fraction。");
-    if (aspirin) items.push("Aspirin 可能 displacement valproate albumin binding，使 free VPA 上升。");
+    if (result.estimatedFree < 0) items.push("Estimated free VPA is negative, which suggests possible input error or poor model fit; use measured free VPA when available.");
+    if (albuminNum < 3.5) items.push("Hypoalbuminemia can increase the free fraction; total VPA may underestimate active exposure.");
+    if (bunNum >= 25) items.push("Elevated BUN may reflect uremic toxin competition for albumin binding and can increase the free fraction.");
+    if (totalNum > 100) items.push("Total VPA >100 mcg/mL may be associated with protein-binding saturation; interpret the Fraser estimate conservatively.");
+    if (propofol) items.push("Propofol or other lipid-containing therapy may increase the valproate free fraction.");
+    if (aspirin) items.push("Aspirin may displace valproate from albumin binding and increase free VPA.");
     if (measuredFreeNum > 0 && Math.abs(measuredFreeNum - result.estimatedFree) >= 5) {
-      items.push("實測 free VPA 與估算值差距 >=5 mcg/mL，劑量調整請優先採用實測值。");
+      items.push("Measured free VPA differs from the Fraser estimate by >=5 mcg/mL; prioritize measured free VPA for dose adjustment.");
     }
     return items;
   }, [result, albuminNum, bunNum, totalNum, propofol, aspirin, measuredFreeNum]);
@@ -421,23 +469,23 @@ export default function DepakineTDM() {
       currentDoseNum > 0 && currentIntervalNum > 0
         ? `${FORMULATION_LABELS[formulation]} ${currentDoseNum} mg q${currentIntervalNum}h (TDD ~${dailyDose} mg/day)`
         : "Current regimen not entered.",
-      `Level timing: ${TIMING_LABELS[levelTiming]}; steady state: ${steadyState ? "Yes" : "No/unknown"}`,
+      `Level timing: ${TIMING_NOTE_LABELS[levelTiming]}; steady state: ${steadyState ? "Yes" : "No/unknown"}`,
       `Clinical concern: ${toxicityConcern ? "toxicity concern; " : ""}${seizureConcern ? "ongoing seizure/poor control" : ""}${!toxicityConcern && !seizureConcern ? "none entered" : ""}`,
       "",
       "--- Concentrations / Binding Risk ---",
-      `Total VPA: ${totalNum} mcg/mL (${totalInterp.label})`,
+      `Total VPA: ${totalNum} mcg/mL (${interpretTotalNote(totalNum)})`,
       `Albumin: ${albuminNum} g/dL`,
       `BUN: ${bunNum} mg/dL`,
       `Propofol exposure within 24h: ${propofol ? "Yes" : "No"}`,
       `Aspirin exposure within 24h: ${aspirin ? "Yes" : "No"}`,
       "",
       "Fraser 2023 estimated free VPA:",
-      `${round1(result.estimatedFree)} mcg/mL (${freeInterp.label}; reference category 5-17 mcg/mL)`,
+      `${round1(result.estimatedFree)} mcg/mL (${interpretFreeNote(result.estimatedFree)}; reference category 5-17 mcg/mL)`,
       `Estimated free fraction: ${round1(result.freeFraction)}%`,
     ];
     if (measuredFreeNum > 0) {
       lines.push("");
-      lines.push(`Measured free VPA: ${measuredFreeNum} mcg/mL (${interpretFree(measuredFreeNum).label})`);
+      lines.push(`Measured free VPA: ${measuredFreeNum} mcg/mL (${interpretFreeNote(measuredFreeNum)})`);
       lines.push(`Estimated vs measured difference: ${round1(result.estimatedFree - measuredFreeNum)} mcg/mL`);
     }
     lines.push("");
@@ -448,14 +496,15 @@ export default function DepakineTDM() {
         const hp = doseRecommendation.holdPlan;
         lines.push("");
         lines.push(`>> Hold plan: hold ${hp.dosesMin}${hp.dosesMin === hp.dosesMax ? "" : `-${hp.dosesMax}`} scheduled dose(s) (~${hp.hoursMin}-${hp.hoursMax} hr).`);
-        lines.push(`   Recheck trough/free VPA before restart if feasible; consider restart when free VPA is near ${hp.restartTarget}-${FREE_HIGH} mcg/mL and toxicity is improving.`);
+        lines.push(`   Recheck trough/free VPA before restart if feasible; consider restart when free VPA is within/near ${FREE_LOW}-${FREE_DOSE_TARGET_HIGH} mcg/mL and toxicity is improving.`);
       }
       doseRecommendation.detail.forEach(item => lines.push(`- ${item}`));
-      if (doseRecommendation.suggestedDailyDose) {
+      if (doseRecommendation.suggestedDailyDoseRange) {
+        const range = doseRecommendation.suggestedDailyDoseRange;
         lines.push("");
-        lines.push(`>> Suggested restart/maintenance regimen: valproate ~${doseRecommendation.suggestedDailyDose} mg/day`);
-        if (doseRecommendation.suggestedPerDose && currentIntervalNum > 0) {
-          lines.push(`   If keeping q${currentIntervalNum}h: ~${doseRecommendation.suggestedPerDose} mg/dose; round to available formulation and clinical context.`);
+        lines.push(`>> Suggested restart/maintenance range: valproate ~${doseRangeText(range.min, range.max)}`);
+        if (currentIntervalNum > 0) {
+          lines.push(`   If keeping q${currentIntervalNum}h: ~${doseRangeText(range.perDoseMin, range.perDoseMax, "mg/dose")}; round to available formulation and clinical context.`);
         }
       }
     } else {
@@ -608,10 +657,10 @@ export default function DepakineTDM() {
                     <span style={S.holdPlanSub}>約 {doseRecommendation.holdPlan.hoursMin}-{doseRecommendation.holdPlan.hoursMax} 小時後複測/評估重啟</span>
                   </div>
                 )}
-                {doseRecommendation.suggestedDailyDose && (
+                {doseRecommendation.suggestedDailyDoseRange && (
                   <div style={S.suggestedDose}>
-                    重啟/維持約 {doseRecommendation.suggestedDailyDose} mg/day
-                    {doseRecommendation.suggestedPerDose ? `（若維持 q${currentIntervalNum}h：約 ${doseRecommendation.suggestedPerDose} mg/dose）` : ""}
+                    重啟/維持約 {doseRangeText(doseRecommendation.suggestedDailyDoseRange.min, doseRecommendation.suggestedDailyDoseRange.max)}
+                    {currentIntervalNum > 0 ? `（若維持 q${currentIntervalNum}h：約 ${doseRangeText(doseRecommendation.suggestedDailyDoseRange.perDoseMin, doseRecommendation.suggestedDailyDoseRange.perDoseMax, "mg/dose")}）` : ""}
                   </div>
                 )}
               </div>

@@ -23,8 +23,10 @@ import ACLSTool from './ACLSTool';
 import LoopDiureticTool from './LoopDiureticTool';
 import ThyroidStormTool from './ThyroidStormTool';
 import CriticalCareNutritionTool from './CriticalCareNutritionTool';
+import TransplantTDM from './TransplantTDM';
+import TheophyllineTDM from './TheophyllineTDM';
 
-type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide" | "loopDiureticTool" | "aclsTool" | "thyroidStormTool" | "criticalNutritionTool";
+type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "transplantTDM" | "theophyllineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide" | "loopDiureticTool" | "aclsTool" | "thyroidStormTool" | "criticalNutritionTool";
 type MenuIconName = "pill" | "chart" | "syringe" | "book" | "alert" | "lungs" | "heart" | "drop" | "shield" | "bolt" | "lab" | "nutrition";
 
 const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
@@ -33,6 +35,8 @@ const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
   { id: "amikacinTDM", label: "Amikacin TDM", icon: "chart" },
   { id: "digoxinTDM", label: "Digoxin TDM", icon: "chart" },
   { id: "depakineTDM", label: "Depakine TDM", icon: "chart" },
+  { id: "transplantTDM", label: "Tacrolimus / Everolimus TDM", icon: "chart" },
+  { id: "theophyllineTDM", label: "Theophylline TDM", icon: "chart" },
   { id: "prepRef", label: "院內針劑泡製速查", icon: "syringe" },
   { id: "tbGuideline", label: "結核病診治指引", icon: "book" },
   { id: "aidsGuideline", label: "AIDS 治療指引", icon: "book" },
@@ -891,7 +895,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "loopDiureticTool", "aclsTool", "thyroidStormTool", "criticalNutritionTool"].includes(page);
+  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "transplantTDM", "theophyllineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "loopDiureticTool", "aclsTool", "thyroidStormTool", "criticalNutritionTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -936,6 +940,10 @@ export default function App() {
           <DigoxinTDM />
         ) : page === "depakineTDM" ? (
           <DepakineTDM />
+        ) : page === "transplantTDM" ? (
+          <TransplantTDM />
+        ) : page === "theophyllineTDM" ? (
+          <TheophyllineTDM />
         ) : page === "tbGuideline" ? (
           <TbGuideline />
         ) : page === "aidsGuideline" ? (

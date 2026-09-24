@@ -21,9 +21,11 @@ import FloTracGuide from './FloTracGuide';
 import HeartFailureGuide from './HeartFailureGuide';
 import ACLSTool from './ACLSTool';
 import LoopDiureticTool from './LoopDiureticTool';
+import ThyroidStormTool from './ThyroidStormTool';
+import CriticalCareNutritionTool from './CriticalCareNutritionTool';
 
-type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide" | "loopDiureticTool" | "aclsTool";
-type MenuIconName = "pill" | "chart" | "syringe" | "book" | "alert" | "lungs" | "heart" | "drop" | "shield" | "bolt" | "lab";
+type Page = "dose" | "vancoTDM" | "amikacinTDM" | "digoxinTDM" | "depakineTDM" | "prepRef" | "tbGuideline" | "aidsGuideline" | "septicShock" | "insulinTool" | "heparinTool" | "electrolyteTool" | "acidBaseTool" | "ardsTool" | "flotracGuide" | "hfGuide" | "loopDiureticTool" | "aclsTool" | "thyroidStormTool" | "criticalNutritionTool";
+type MenuIconName = "pill" | "chart" | "syringe" | "book" | "alert" | "lungs" | "heart" | "drop" | "shield" | "bolt" | "lab" | "nutrition";
 
 const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
   { id: "dose", label: "抗生素劑量及給藥方法", icon: "pill" },
@@ -44,6 +46,8 @@ const MENU_ITEMS: Array<{ id: Page; label: string; icon: MenuIconName }> = [
   { id: "heparinTool", label: "抗凝血 / 逆轉工具", icon: "shield" },
   { id: "electrolyteTool", label: "電解質異常工具", icon: "bolt" },
   { id: "acidBaseTool", label: "酸鹼異常 / ABG", icon: "lab" },
+  { id: "thyroidStormTool", label: "甲狀腺風暴", icon: "alert" },
+  { id: "criticalNutritionTool", label: "重症營養", icon: "nutrition" },
 ];
 
 function MenuIcon({ name, active }: { name: MenuIconName; active: boolean }) {
@@ -62,6 +66,7 @@ function MenuIcon({ name, active }: { name: MenuIconName; active: boolean }) {
       {name === "shield" && <><path {...common} d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6Z" /><path {...common} d="M8 12h8" /></>}
       {name === "bolt" && <><path {...common} d="M13 2 4 14h7l-1 8 10-13h-7Z" /></>}
       {name === "lab" && <><path {...common} d="M9 3h6" /><path {...common} d="M10 3v5l-5 9a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 17l-5-9V3" /><path {...common} d="M8 15h8" /></>}
+      {name === "nutrition" && <><path {...common} d="M12 21V10" /><path {...common} d="M12 14c-4 0-7-2.5-7-6 4 0 7 2 7 6Z" /><path {...common} d="M12 10c4 0 7-2.5 7-6-4 0-7 2-7 6Z" /></>}
     </svg>
   );
 }
@@ -886,7 +891,7 @@ export default function App() {
 
   const drugList: DrugListItem[] = Object.entries(DRUG_REGISTRY).map(([id, cfg]) => ({ id, ...cfg }));
   const isDesktop = viewportWidth >= 900;
-  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "loopDiureticTool", "aclsTool"].includes(page);
+  const widePages = ["dose", "vancoTDM", "amikacinTDM", "digoxinTDM", "depakineTDM", "prepRef", "tbGuideline", "aidsGuideline", "septicShock", "insulinTool", "heparinTool", "electrolyteTool", "acidBaseTool", "ardsTool", "flotracGuide", "hfGuide", "loopDiureticTool", "aclsTool", "thyroidStormTool", "criticalNutritionTool"].includes(page);
   const containerStyle = {
     ...S.container,
     maxWidth: isDesktop ? (widePages ? 1040 : 760) : 460,
@@ -903,7 +908,7 @@ export default function App() {
             ☰
           </button>
           {menuOpen && (
-            <div style={{ position: "absolute", top: 46, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 99, minWidth: 246, overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 46, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 99, minWidth: 246, maxHeight: "76vh", overflowY: "auto", overscrollBehavior: "contain" }}>
               {MENU_ITEMS.map((item) => {
                 const active = page === item.id;
                 return (
@@ -955,6 +960,10 @@ export default function App() {
           <ElectrolyteTool />
         ) : page === "acidBaseTool" ? (
           <AcidBaseTool />
+        ) : page === "thyroidStormTool" ? (
+          <ThyroidStormTool />
+        ) : page === "criticalNutritionTool" ? (
+          <CriticalCareNutritionTool />
         ) : page === "prepRef" ? (
           <PrepQuickRef />
         ) : (

@@ -164,7 +164,7 @@ export const emblaveo: Drug = {
         heading: "IDSA 2026 抗藥菌定位",
         body:
           "NDM-producing Enterobacterales：aztreonam-avibactam 或 cefiderocol 為 preferred options。Avibactam 可抑制共存的 ESBL、AmpC、KPC、OXA-48-like 等 serine beta-lactamases，讓本來不易被 MBL 水解的 aztreonam 保留活性。\n\n" +
-          "MBL-producing Pseudomonas aeruginosa：IDSA 不建議 aztreonam-avibactam，因活性有限；不要因為同樣寫 MBL 就直接套用 NDM-Enterobacterales 路徑。\n\n" +
+          "MBL-producing Pseudomonas aeruginosa：IDSA 不建議 aztreonam-avibactam，因活性有限；不要因為同樣寫 MBL 就直接套用 NDM-Enterobacterales 路徑。這類綠膿桿菌感染通常優先評估 cefiderocol；若 cefiderocol 也無法使用，再由感染科依完整藥敏、感染部位與 source control 設計替代方案。\n\n" +
           "Invasive S. maltophilia：屬 alternative option，通常先與第二個 active agent 合併，資料仍有限。",
       },
       {

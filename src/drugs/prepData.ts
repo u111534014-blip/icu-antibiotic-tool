@@ -100,6 +100,15 @@ export const PREP_DATA: Record<string, PrepInfo> = {
     diluent: "取全量加入 100 mL 輸注袋（NS / D5W / LR），稀釋至 ceftazidime 8–40 mg/mL",
     finalNote: "調配小瓶應立即使用；稀釋後 ceftazidime 8 mg/mL 可 2–8℃ ≤12 hr 後室溫 ≤4 hr，>8–40 mg/mL 室溫 ≤4 hr",
   },
+  emblaveo: {
+    brand: "Emblaveo",
+    subtitle: "Aztreonam / Avibactam",
+    vial: "乾粉 2 g/Vial（Aztreonam 1.5 g / Avibactam 0.5 g）",
+    reconstitution: "每瓶加 10 mL sterile water；回溶後約 11.4 mL → aztreonam 131.2 mg/mL + avibactam 43.7 mg/mL",
+    diluent: "NS / D5W / LR，稀釋至 final volume 50–250 mL。取量：2.67 g→15.2 mL；2 g→11.4 mL；1.8 g→10.3 mL；1.33 g→7.6 mL；1 g→5.7 mL；0.9 g→5.1 mL",
+    finalNote: "開始回溶至完成輸注液製備 ≤30 min；final bag 冷藏 2–8°C ≤24 hr，取出後 D5W 在 ≤30°C ≤6 hr、NS/LR ≤12 hr；單次使用，勿與其他藥混合",
+    infusionTime: "每一劑 3 hr",
+  },
   teicoplanin: { // Teicod
     vial: "乾粉 200 mg/Vial（附注射用水）",
     reconstitution: "附帶注射用水（約 3 mL）緩慢沿壁加入、輕轉溶解、避免起泡（→ 200 mg/3 mL）；起泡靜置 ~15 min",

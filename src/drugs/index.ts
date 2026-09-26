@@ -44,6 +44,7 @@ import { micafungin } from './micafungin';
 import { amphotericinB } from './AmphotericinB';
 import { vancomycin } from './vancomycin';
 import { polymyxinB } from './polymyxinB';
+import { emblaveo } from './emblaveo';
 
 export const DRUG_REGISTRY: Record<string, Drug> = {
   bactrim,
@@ -76,4 +77,5 @@ export const DRUG_REGISTRY: Record<string, Drug> = {
   amphotericinB,
   vancomycin,
   polymyxinB,
+  emblaveo,
 };

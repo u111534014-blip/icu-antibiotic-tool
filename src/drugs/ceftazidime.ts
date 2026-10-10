@@ -107,6 +107,7 @@ export const ceftazidime: Drug = {
     "fortum",
     "復達欣",
     "ceftazidime", "tatumcef", "祐坦賜褔", "fortum",
+    "Sintum", "信騰",
   ],
 
   needsRenal: true,

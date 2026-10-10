@@ -73,6 +73,7 @@ export const mepem: Drug = {
     "美平",
     "mepem", "meropenem", "carbapenem",
     "麥羅", "美平",
+    "Melopen", "美保平",
   ],
 
   indications: [

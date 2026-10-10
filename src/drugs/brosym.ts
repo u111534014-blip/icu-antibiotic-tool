@@ -24,7 +24,7 @@ export const brosym: Drug = {
   needsHepatic: false,
   searchTerms: [
     "brosym", "cefoperazone", "sulbactam", "cefoperazone/sulbactam",
-    "博益欣", "cps",
+    "博益欣", "Burotam", "布洛坦",
   ],
 
   indications: [

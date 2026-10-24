@@ -17,6 +17,9 @@ import {
   pepCards,
   pepFollowUpTable,
   pepRegimens,
+  prepCards,
+  prepFollowUpTable,
+  prepRegimens,
   specialCards,
   stiTables,
   type AidsKeyPoint,
@@ -290,6 +293,93 @@ function HepatitisView() {
   );
 }
 
+type PrepExposure = "maleSexual" | "otherSexual" | "injection";
+
+function PrepView() {
+  const [recentExposure, setRecentExposure] = useState(false);
+  const [acuteSymptoms, setAcuteSymptoms] = useState(false);
+  const [exposure, setExposure] = useState<PrepExposure>("maleSexual");
+  const [hbv, setHbv] = useState(false);
+  const [canPlan, setCanPlan] = useState(true);
+  const [crcl, setCrcl] = useState("90");
+  const renal = Number(crcl);
+
+  const decision = useMemo(() => {
+    if (recentExposure) {
+      return {
+        tone: "urgent",
+        title: "先評估 PEP，不要只開 PrEP",
+        body: "若高風險暴露仍在 72 小時內，應儘快啟動 PEP 評估；完成 28 天療程並排除 HIV 後，可無縫銜接 PrEP。",
+      };
+    }
+    if (acuteSymptoms) {
+      return {
+        tone: "urgent",
+        title: "先排除急性 HIV 感染",
+        body: "暫緩 PrEP，安排 HIV Ag/Ab 與 HIV RNA/NAAT；不能只靠快速抗體陰性就開始。",
+      };
+    }
+    if (Number.isFinite(renal) && renal < 30) {
+      return {
+        tone: "caution",
+        title: "不建議口服 tenofovir-based PrEP",
+        body: "eCrCl <30 mL/min 時不建議 TDF/FTC 或 TAF/FTC；可由專科評估 CAB-LA、交互作用與回診可行性。",
+      };
+    }
+    const dailyReason = exposure !== "maleSexual" || hbv || !canPlan;
+    const oral = renal >= 60 ? "TDF/FTC daily" : "TAF/FTC daily（僅限適用族群）";
+    if (dailyReason) {
+      return {
+        tone: "ok",
+        title: "優先每日型 PrEP",
+        body: `${oral}；若不適合口服或偏好長效，可評估 CAB-LA。${hbv ? "慢性 HBV 不採間歇 2-1-1，停藥也要規劃 HBV 追蹤。" : ""}`,
+      };
+    }
+    return {
+      tone: "ok",
+      title: "每日型或 TDF/FTC 2-1-1 都可進一步評估",
+      body: renal >= 60
+        ? "若屬符合指引的成人、能預先安排性行為且沒有慢性 HBV，可選每日 TDF/FTC 或 2-1-1；若容易漏算，仍以每日型較直覺。"
+        : "eCrCl 30-59 mL/min 不適合 TDF/FTC，因此不能用 2-1-1；僅在適用族群評估每日 TAF/FTC，或考慮 CAB-LA。",
+    };
+  }, [acuteSymptoms, canPlan, exposure, hbv, recentExposure, renal]);
+
+  const toneStyle = decision.tone === "urgent" ? S.decisionUrgent : decision.tone === "caution" ? S.decisionCaution : S.decisionOk;
+
+  return (
+    <div>
+      <SectionHeader title="PrEP 暴露前預防性投藥" subtitle="先排除近期暴露與急性 HIV，再依暴露型態、HBV、腎功能與服藥習慣選每日、2-1-1 或 CAB-LA。" />
+      <section style={S.decisionPanel}>
+        <div style={S.cardTitle}>方式判斷</div>
+        <div style={S.questionGrid}>
+          <label style={S.checkRow}><input type="checkbox" checked={recentExposure} onChange={(e) => setRecentExposure(e.target.checked)} />72 小時內剛發生高風險暴露</label>
+          <label style={S.checkRow}><input type="checkbox" checked={acuteSymptoms} onChange={(e) => setAcuteSymptoms(e.target.checked)} />近期暴露合併疑似急性 HIV 症狀</label>
+          <label style={S.fieldLabel}>主要暴露型態
+            <select value={exposure} onChange={(e) => setExposure(e.target.value as PrepExposure)} style={S.select}>
+              <option value="maleSexual">符合指引的成人男性性暴露</option>
+              <option value="otherSexual">順性別女性 / 跨性別族群性暴露</option>
+              <option value="injection">注射藥物/血液暴露</option>
+            </select>
+          </label>
+          <label style={S.fieldLabel}>eCrCl (mL/min)
+            <input type="number" min="0" value={crcl} onChange={(e) => setCrcl(e.target.value)} style={S.input} />
+          </label>
+          <label style={S.checkRow}><input type="checkbox" checked={hbv} onChange={(e) => setHbv(e.target.checked)} />慢性 HBV / HBsAg positive</label>
+          <label style={S.checkRow}><input type="checkbox" checked={canPlan} onChange={(e) => setCanPlan(e.target.checked)} />能在性行為前 2-24 小時安排首劑</label>
+        </div>
+        <div style={{ ...S.decisionResult, ...toneStyle }}>
+          <div style={S.decisionTitle}>{decision.title}</div>
+          <div>{decision.body}</div>
+        </div>
+      </section>
+      {prepCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
+      <div style={S.subhead}>處方方式</div>
+      {prepRegimens.map((regimen) => <RegimenCard key={regimen.id} regimen={regimen} />)}
+      <SimpleTableCard table={prepFollowUpTable} />
+    </div>
+  );
+}
+
 function PepView() {
   return (
     <div>
@@ -327,6 +417,7 @@ function CurrentView({ active }: { active: AidsSectionId }) {
   if (active === "monitoring") return <MonitoringView />;
   if (active === "oi") return <OiView />;
   if (active === "hepatitis") return <HepatitisView />;
+  if (active === "prep") return <PrepView />;
   if (active === "pep") return <PepView />;
   if (active === "sti") return <StiView />;
   return <SpecialView />;
@@ -413,4 +504,15 @@ const S: Record<string, CSSProperties> = {
   tdStrong: { padding: "9px 8px", borderBottom: "1px solid #F1F5F9", color: "#0F172A", fontWeight: 850, verticalAlign: "top", minWidth: 120 },
   searchInput: { width: "100%", padding: "11px 12px", borderRadius: 8, border: "1.5px solid #DDE7EE", background: "#fff", color: "#0F172A", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 },
   empty: { textAlign: "center", color: "#94A3B8", fontSize: 13, padding: 18 },
+  decisionPanel: { background: "#fff", border: "1px solid #DDD6FE", borderRadius: 8, padding: 14, marginBottom: 12 },
+  questionGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10, marginTop: 12 },
+  checkRow: { minHeight: 42, display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid #E2E8F0", borderRadius: 8, color: "#334155", fontSize: 13, fontWeight: 700 },
+  fieldLabel: { display: "grid", gap: 5, color: "#475569", fontSize: 12, fontWeight: 800 },
+  select: { width: "100%", minHeight: 42, padding: "8px 10px", border: "1px solid #CBD5E1", borderRadius: 8, background: "#fff", color: "#0F172A", fontSize: 13 },
+  input: { width: "100%", minHeight: 42, padding: "8px 10px", border: "1px solid #CBD5E1", borderRadius: 8, background: "#fff", color: "#0F172A", fontSize: 13, boxSizing: "border-box" },
+  decisionResult: { marginTop: 12, borderRadius: 8, padding: 12, fontSize: 13, lineHeight: 1.6 },
+  decisionTitle: { fontWeight: 850, marginBottom: 3 },
+  decisionOk: { background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#065F46" },
+  decisionCaution: { background: "#FFFBEB", border: "1px solid #FDE68A", color: "#92400E" },
+  decisionUrgent: { background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B" },
 };

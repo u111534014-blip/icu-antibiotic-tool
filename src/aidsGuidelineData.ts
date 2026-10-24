@@ -1,4 +1,4 @@
-export type AidsSectionId = "art" | "artDrugs" | "artInteractions" | "monitoring" | "oi" | "hepatitis" | "pep" | "sti" | "special";
+export type AidsSectionId = "art" | "artDrugs" | "artInteractions" | "monitoring" | "oi" | "hepatitis" | "prep" | "pep" | "sti" | "special";
 
 export type AidsKeyPoint = {
   title: string;
@@ -42,9 +42,9 @@ export const aidsGuidelineMeta = {
   title: "愛滋病檢驗及治療指引",
   subtitle: "Taiwan HIV/AIDS Guideline Quick Reference",
   source:
-    "台灣愛滋病學會 / 衛生福利部疾病管制署：第 1 章 2024/10/16；第 2 章 2025/02/07；第 3 章 2022/12/26；第 5 章 2025/02/03；第 6 章 2024/12/18；第 9、11 章 2025/12/23；第 12 章 2022/05/12。",
+    "台灣愛滋病學會 / 衛生福利部疾病管制署：HIV 治療指引各章最新版；臺灣 PrEP 指引第三版 2025/04/01。",
   notice:
-    "此頁是臨床速查，不取代完整指引、藥物交互作用資料庫、健保/疾管署給付規範或 HIV 專家會診。PEP、懷孕、治療失敗、抗藥、CNS OI、HBV/HCV 共病與複雜交互作用請務必核對最新版文件。",
+    "此頁是臨床速查，不取代完整指引、藥物交互作用資料庫、健保/疾管署補助規範或 HIV 專家會診。PrEP/PEP、懷孕、治療失敗、抗藥、CNS OI、HBV/HCV 共病與複雜交互作用請務必核對最新版文件。",
 };
 
 export const aidsSections: { id: AidsSectionId; label: string; short: string }[] = [
@@ -54,10 +54,115 @@ export const aidsSections: { id: AidsSectionId; label: string; short: string }[]
   { id: "monitoring", label: "檢驗追蹤", short: "VL/CD4" },
   { id: "oi", label: "OI 預防/治療", short: "CD4 門檻" },
   { id: "hepatitis", label: "HBV/HCV", short: "共病" },
+  { id: "prep", label: "PrEP", short: "暴露前" },
   { id: "pep", label: "PEP / nPEP", short: "72 hr" },
   { id: "sti", label: "STD", short: "篩檢治療" },
   { id: "special", label: "特殊情境", short: "孕產/癌症/物質" },
 ];
+
+export const prepCards: AidsKeyPoint[] = [
+  {
+    title: "開始前先確認不是急性 HIV 感染",
+    body: "PrEP 只適用於尚未感染 HIV、但未來仍有持續暴露風險的人。若 72 小時內剛發生高風險暴露，先走 PEP；若近期暴露合併發燒、皮疹、咽痛、淋巴結腫大等急性 HIV 症狀，先暫緩 PrEP 並加做 HIV RNA/NAAT。",
+    bullets: [
+      "基線：HIV Ag/Ab；近期暴露、疑似急性感染或正在/剛停 PEP/PrEP 時加做 HIV RNA/NAAT。",
+      "同時評估 eCrCl、urinalysis、HBsAg/anti-HBs/anti-HBc、HCV、梅毒、淋病/披衣菌與懷孕可能性。",
+      "已感染 HIV 者若只使用 PrEP 的 1-2 種成分，可能選出抗藥性。",
+    ],
+    source: "臺灣 PrEP 指引 5.2.1、5.3.4；疾管署 PrEP 資源專區",
+  },
+  {
+    title: "每日與 2-1-1 怎麼選",
+    body: "每日型最不容易算錯，也適用族群最廣。2-1-1 只能使用 TDF/FTC，適合能預先知道性行為時間、沒有慢性 HBV，且暴露型態符合指引的成人；不是把任一種 PrEP 都照 2-1-1 吃。",
+    bullets: [
+      "臺灣指引建議順性別女性、跨性別族群、HBV 帶原者、無法預先安排性行為或容易混淆服法者使用每日型。",
+      "TAF/FTC 只建議每日使用；臺灣指引建議對象為 MSM/跨性別女性，不能把資料外推到陰道暴露。",
+      "2-1-1：性行為前 2-24 小時 2 顆，首次服藥後 24、48 小時各 1 顆；若持續有性行為，之後每 24 小時 1 顆，直到最後一次性行為後再吃 2 天。",
+    ],
+    source: "臺灣 PrEP 指引 3.1-3.2、5.3.3",
+  },
+  {
+    title: "PrEP 不能取代其他預防措施",
+    body: "規律使用能大幅降低 HIV 感染風險，但不能預防梅毒、淋病、披衣菌等其他 STI，也不是 100% 保護。仍要搭配保險套、水性潤滑液、定期 HIV/STI 篩檢與不共用針具。",
+    source: "臺灣 PrEP 指引 5.3.1；衛生福利部疾病管制署 PrEP 資源專區",
+  },
+];
+
+export const prepRegimens: AidsRegimen[] = [
+  {
+    id: "prep-tdf-ftc-daily",
+    name: "TDF/FTC daily",
+    category: "每日口服 PrEP",
+    dose: "TDF 300 mg/FTC 200 mg PO QD",
+    regimenType: "Fixed-dose oral PrEP",
+    components: [
+      { abbr: "TDF", generic: "tenofovir disoproxil fumarate", drugClass: "NRTI", dose: "300 mg" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg" },
+    ],
+    renal: "eCrCl >=60 mL/min；低於 60 不建議使用 TDF/FTC PrEP。",
+    hbv: "對 HBV 有活性；慢性 HBV 可用每日型，但停藥前須規劃肝功能/HBV 追蹤，避免 hepatitis flare。",
+    whenToUse: "資料與適用族群最完整，可用於有性暴露風險或注射藥物風險者；固定時間每日 1 顆。",
+    cautions: ["注意腎功能、尿蛋白與骨質風險；避免疊加腎毒性藥物。", "服藥後仍需固定追蹤 HIV 與 STI。"],
+    source: "臺灣 PrEP 指引 3.1.1、5.3.3.2、5.3.4",
+  },
+  {
+    id: "prep-taf-ftc-daily",
+    name: "TAF/FTC daily",
+    category: "每日口服 PrEP",
+    dose: "TAF 25 mg/FTC 200 mg PO QD",
+    regimenType: "Fixed-dose oral PrEP",
+    components: [
+      { abbr: "TAF", generic: "tenofovir alafenamide", drugClass: "NRTI", dose: "25 mg" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg" },
+    ],
+    renal: "eCrCl >=30 mL/min。",
+    hbv: "對 HBV 有活性；停藥仍需留意 HBV flare。",
+    whenToUse: "臺灣指引強烈建議於 MSM 與跨性別女性；每日使用，不採 2-1-1。",
+    cautions: ["目前不將有效性資料外推到 receptive vaginal exposure。", "留意 rifamycin 與強 P-gp/CYP3A inducer。"],
+    source: "臺灣 PrEP 指引 3.1.2、5.3.2、5.3.4",
+  },
+  {
+    id: "prep-tdf-ftc-211",
+    name: "TDF/FTC 2-1-1",
+    category: "依需求口服 PrEP",
+    dose: "2 tabs -> 1 tab at 24 hr -> 1 tab at 48 hr",
+    regimenType: "Event-driven oral PrEP",
+    components: [
+      { abbr: "TDF", generic: "tenofovir disoproxil fumarate", drugClass: "NRTI", dose: "300 mg/tab" },
+      { abbr: "FTC", generic: "emtricitabine", drugClass: "NRTI", dose: "200 mg/tab" },
+    ],
+    renal: "eCrCl >=60 mL/min。",
+    hbv: "慢性 HBV 不建議間歇使用，避免反覆停藥造成 hepatitis flare。",
+    whenToUse: "可預先知道性行為時間且符合臺灣指引族群時考慮；首劑必須在性行為前 2-24 小時。",
+    cautions: ["只適用 TDF/FTC，不能改用 TAF/FTC。", "順性別女性、跨性別族群、注射藥物風險者使用每日型。", "連續性行為時每日 1 顆，直到最後一次性行為後再持續 2 天。"],
+    source: "臺灣 PrEP 指引 3.2、5.3.1、5.3.3.3",
+  },
+  {
+    id: "prep-cab-la",
+    name: "CAB-LA",
+    category: "長效注射 PrEP",
+    dose: "600 mg IM month 0, month 1, then q2 months",
+    regimenType: "Long-acting injectable PrEP",
+    components: [{ abbr: "CAB", generic: "cabotegravir", drugClass: "INSTI", dose: "600 mg/3 mL" }],
+    renal: "不需依腎功能調整；重度腎功能不全仍應加強不良反應監測。",
+    whenToUse: "不適合或不希望每日口服、但能規律回診注射者可評估；口服導入期非必要。",
+    cautions: ["第 1 針後 1 個月打第 2 針，此後每 2 個月。", "漏打或停藥會有 long tail，需安排口服橋接與持續 HIV 檢驗。", "rifampin、rifabutin、rifapentine 與多種強誘導劑不得併用。"],
+    source: "臺灣 PrEP 指引 3.3、5.3.2、5.3.3.1、5.4.4",
+  },
+];
+
+export const prepFollowUpTable: AidsTable = {
+  title: "PrEP 追蹤時程",
+  source: "臺灣 PrEP 指引 5.4-5.6",
+  columns: ["時間", "口服 PrEP", "CAB-LA", "重點"],
+  rows: [
+    ["每次/每 3 個月", "HIV test、急性 HIV 症狀、遵囑性/副作用；有懷孕可能者驗孕", "每次注射前 HIV Ag/Ab；依臨床考量加 HIV RNA", "若疑似 seroconversion，停用 PrEP 單獨處方並立即轉 HIV 專家。"],
+    ["腎功能", "開始後 3 個月，再每 6 個月；DM/HTN/CKD 或下降趨勢更頻繁", "約每年", "TDF/FTC eCrCl >=60；TAF/FTC eCrCl >=30 mL/min。"],
+    ["STI", "至少每 6 個月；依部位做梅毒、淋病、披衣菌", "依風險每 2-4 個月", "有症狀或高風險暴露不必等固定回診。"],
+    ["HCV", "每年", "每年", "注射藥物、MSM 或持續風險者依情境加密。"],
+    ["是否續用", "至少每年重評", "每次注射都確認回診與停藥計畫", "風險降低、無法耐受、遵囑性差或確認 HIV 感染時重評。"],
+  ],
+};
 
 export const artPrinciples: AidsKeyPoint[] = [
   {

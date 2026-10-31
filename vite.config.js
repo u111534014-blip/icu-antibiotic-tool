@@ -3,7 +3,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  base: "/icu-antibiotic-tool/",
+  base: process.env.CF_PAGES
+  ? "/"
+  : "/icu-antibiotic-tool/",
   plugins: [
     react(),
     VitePWA({

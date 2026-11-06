@@ -322,6 +322,8 @@ export default function ElectrolyteTool() {
   const [sodiumOngoingLoss, setSodiumOngoingLoss] = useState("0");
   const [sodiumCorrectionHours, setSodiumCorrectionHours] = useState("24");
   const [hypertonicVolume, setHypertonicVolume] = useState("100");
+  const [hypertonicInputMode, setHypertonicInputMode] = useState("rate");
+  const [hypertonicRate, setHypertonicRate] = useState("");
   const [hypertonicInfusionMinutes, setHypertonicInfusionMinutes] = useState("60");
 
   const calc = useMemo(() => {
@@ -615,11 +617,14 @@ export default function ElectrolyteTool() {
     const nsNaChangePerL = tbw > 0 ? (NS_NA_MEQ_PER_L - na) / (tbw + 1) : 0;
     const hypertonicVolMl = n(hypertonicVolume);
     const hypertonicMinutes = n(hypertonicInfusionMinutes);
-    const hypertonicPumpRate = hypertonicVolMl > 0 && hypertonicMinutes > 0 ? hypertonicVolMl / (hypertonicMinutes / 60) : 0;
+    const hypertonicPumpRate = hypertonicInputMode === "rate"
+      ? Math.max(0, n(hypertonicRate))
+      : hypertonicVolMl > 0 && hypertonicMinutes > 0 ? hypertonicVolMl / (hypertonicMinutes / 60) : 0;
     const hypertonicNaLoad = hypertonicVolMl * HYPERTONIC_SALINE_NA_MEQ_PER_ML;
     const hypertonicEstimatedRise = naRisePer100Ml3 > 0 ? (hypertonicVolMl / 100) * naRisePer100Ml3 : 0;
-    const hypertonicEstimatedRise24 = hypertonicMinutes > 0 ? hypertonicEstimatedRise * (1440 / hypertonicMinutes) : 0;
-    const hypertonicOverLimit = hypertonicEstimatedRise > correctionLimit24 || hypertonicEstimatedRise24 > correctionLimit24;
+    const hypertonicEstimatedRiseHourly = na > 0 && tbw > 0 ? naRisePerL3 * hypertonicPumpRate / 1000 : 0;
+    const hypertonicEstimatedRise24 = hypertonicEstimatedRiseHourly * 24;
+    const hypertonicOverLimit = (hypertonicInputMode === "volume" && hypertonicEstimatedRise > correctionLimit24) || hypertonicEstimatedRise24 > correctionLimit24;
     const suggestedContinuousWindowHours = 6;
     const suggestedHypertonicVolumeMl = sodiumMode !== "hyponatremia"
       ? 0
@@ -693,13 +698,13 @@ export default function ElectrolyteTool() {
       na, targetInput, weight, age, tbwFactor, tbw, severity, correctionLimit24, correctionGoal24,
       desiredNa, deltaNa, naRisePerL3, naRisePer100Ml3, estimated3PercentMl, bolusCount,
       nsNaChangePerL, hypertonicVolMl, hypertonicMinutes, hypertonicPumpRate, hypertonicNaLoad,
-      hypertonicEstimatedRise, hypertonicEstimatedRise24, hypertonicOverLimit,
+      hypertonicEstimatedRise, hypertonicEstimatedRiseHourly, hypertonicEstimatedRise24, hypertonicOverLimit,
       suggestedContinuousWindowHours, suggestedHypertonicVolumeMl, suggestedHypertonicMinutes, suggestedHypertonicPumpRate,
       suggestedHypertonicRise, suggestedHypertonicTimeText, suggestedHypertonicNote,
       freeWaterDeficit, ongoingLossL, totalWaterPlan, waterRate, hours,
       sodiumRenalSafetyNote, sodiumMonitoringText, hyperCorrectionLimit24, mechanismTitle, mechanismItems,
     };
-  }, [serumNa, targetNa, sodiumWeight, sodiumAge, sodiumSex, sodiumMode, sodiumDuration, sodiumVolumeStatus, sodiumRenalRisk, sodiumSevereSymptoms, sodiumOdsRisk, sodiumOngoingLoss, sodiumCorrectionHours, hypertonicVolume, hypertonicInfusionMinutes]);
+  }, [serumNa, targetNa, sodiumWeight, sodiumAge, sodiumSex, sodiumMode, sodiumDuration, sodiumVolumeStatus, sodiumRenalRisk, sodiumSevereSymptoms, sodiumOdsRisk, sodiumOngoingLoss, sodiumCorrectionHours, hypertonicVolume, hypertonicInfusionMinutes, hypertonicInputMode, hypertonicRate]);
 
   return (
     <div>
@@ -1594,14 +1599,24 @@ export default function ElectrolyteTool() {
                   <input type="checkbox" checked={sodiumOdsRisk} onChange={(e) => setSodiumOdsRisk(e.target.checked)} />
                   <span>ODS 高風險：Na ≤105、酒精使用疾患、營養不良、肝病、低血鉀等</span>
                 </label>
-                <div style={S.grid2}>
+                <Field label="3% NaCl 計算方式">
+                  <select value={hypertonicInputMode} onChange={(e) => setHypertonicInputMode(e.target.value)} style={S.select}>
+                    <option value="rate">直接輸入流速（mL/hr）</option>
+                    <option value="volume">體積與輸注時間</option>
+                  </select>
+                </Field>
+                {hypertonicInputMode === "rate" ? (
+                  <Field label="3% NaCl 流速" hint="mL/hr；不需輸入總體積或總療程時間。此為醫囑流速檢查，不代表一定需要高張鹽水。">
+                    <input value={hypertonicRate} onChange={(e) => setHypertonicRate(e.target.value)} inputMode="decimal" style={S.input} />
+                  </Field>
+                ) : <div style={S.grid2}>
                   <Field label="3% NaCl 預計體積" hint="院內品項 500 mL/bot；嚴重症狀常用 100 mL bolus，非嚴重症狀則依醫囑小心調速。">
                     <input value={hypertonicVolume} onChange={(e) => setHypertonicVolume(e.target.value)} inputMode="decimal" style={S.input} />
                   </Field>
                   <Field label="3% NaCl 輸注時間" hint="分鐘；例如 bolus 10 min，或連續輸注 60-240 min。">
                     <input value={hypertonicInfusionMinutes} onChange={(e) => setHypertonicInfusionMinutes(e.target.value)} inputMode="decimal" style={S.input} />
                   </Field>
-                </div>
+                </div>}
               </>
             )}
             {sodiumMode === "hypernatremia" && (
@@ -1647,14 +1662,21 @@ export default function ElectrolyteTool() {
               <div style={S.resultCard}>
                 <div style={S.cardTitle}>3% NaCl 泡製 / 流速檢查</div>
                 <ResultRow label="院內品項" value="3% 高濃度 NaCl 500 mL；513 mEq/L" note="等於 0.513 mEq/mL；100 mL 約 51.3 mEq Na。" highlight />
+                {hypertonicInputMode === "volume" && <>
                 <ResultRow label={sodiumSevereSymptoms ? "建議體積" : "前 6 hr 建議體積"} value={sodiumCalc.suggestedHypertonicVolumeMl ? `約 ${round(sodiumCalc.suggestedHypertonicVolumeMl)} mL（${round(sodiumCalc.suggestedHypertonicVolumeMl / 500, 2)} bot）` : "通常不需 3% NaCl"} note={sodiumCalc.suggestedHypertonicNote} highlight />
                 <ResultRow label="建議輸注時間" value={sodiumCalc.suggestedHypertonicVolumeMl ? sodiumCalc.suggestedHypertonicTimeText : "依病因處理"} />
                 <ResultRow label="建議流速" value={sodiumCalc.suggestedHypertonicPumpRate ? `約 ${round(sodiumCalc.suggestedHypertonicPumpRate, 1)} mL/hr` : "不適用"} note={sodiumSevereSymptoms ? "100 mL over 10 min 換算約 600 mL/hr；可用 infusion pump 或依院內急救給法。" : "先跑 6 hr 或更早複查 Na；若上升太快就降速或停用。"} highlight />
                 <ResultRow label="建議量估計上升" value={sodiumCalc.suggestedHypertonicRise ? `約 +${round(sodiumCalc.suggestedHypertonicRise, 2)} mEq/L` : "請輸入 Na/體重/目標"} note="用 Adrogue-Madias 公式粗估；補鉀、水利尿或低血容積矯正後可能上升更快。" />
                 <ResultRow label="本次 3% NaCl 量" value={sodiumCalc.hypertonicVolMl ? `${round(sodiumCalc.hypertonicVolMl)} mL（約 ${round(sodiumCalc.hypertonicNaLoad, 1)} mEq Na）` : "請輸入體積"} />
-                <ResultRow label="Pump rate" value={sodiumCalc.hypertonicPumpRate ? `${round(sodiumCalc.hypertonicPumpRate)} mL/hr` : "請輸入體積與時間"} note={sodiumSevereSymptoms ? "嚴重症狀 bolus 常見 100 mL over 10 min；每次後重評。" : "非嚴重症狀連續輸注需依 Na trend 調速，通常 q2-4h 追蹤。"} highlight />
-                <ResultRow label="本次估計 Na 上升" value={sodiumCalc.hypertonicEstimatedRise ? `約 +${round(sodiumCalc.hypertonicEstimatedRise, 2)} mEq/L` : "請輸入 Na/體重/體積"} note="Adrogue-Madias 粗估；實際可能因水利尿而上升更快。" highlight={sodiumCalc.hypertonicEstimatedRise > sodiumCalc.correctionLimit24} />
-                <ResultRow label="若同速率跑 24 hr" value={sodiumCalc.hypertonicEstimatedRise24 ? `約 +${round(sodiumCalc.hypertonicEstimatedRise24, 1)} mEq/L/day` : "請輸入輸注時間"} note={`目前 24 hr 上限設定：+${sodiumCalc.correctionLimit24} mEq/L/day。`} highlight={sodiumCalc.hypertonicOverLimit} />
+                </>}
+                <ResultRow label="Pump rate" value={sodiumCalc.hypertonicPumpRate ? `${round(sodiumCalc.hypertonicPumpRate, 1)} mL/hr` : "請輸入有效流速，或體積與時間"} note={sodiumSevereSymptoms ? "嚴重神經症狀優先依 bolus 流程處理，不以連續輸注取代急救；每次後重評。" : "非嚴重症狀連續輸注需依 Na trend 調速，通常 q2-4h 追蹤。"} highlight />
+                {hypertonicInputMode === "volume" && <ResultRow label="本次估計 Na 上升" value={sodiumCalc.hypertonicEstimatedRise ? `約 +${round(sodiumCalc.hypertonicEstimatedRise, 2)} mEq/L` : "請輸入 Na/體重/體積"} note="Adrogue-Madias 粗估；實際可能因水利尿而上升更快。" highlight={sodiumCalc.hypertonicEstimatedRise > sodiumCalc.correctionLimit24} />}
+                {hypertonicInputMode === "rate" && <>
+                  <ResultRow label="每小時估計 Na 上升" value={sodiumCalc.hypertonicEstimatedRiseHourly > 0 ? `約 +${round(sodiumCalc.hypertonicEstimatedRiseHourly, 2)} mEq/L/hr` : "請輸入 Na、體重與正值流速"} note="Adrogue-Madias 每公升估值依流速換算；不含尿液損失、補鉀與其他輸液，不能取代實測。" highlight />
+                  <ResultRow label="2 / 4 小時估計累積上升" value={sodiumCalc.hypertonicEstimatedRiseHourly > 0 ? `約 +${round(sodiumCalc.hypertonicEstimatedRiseHourly * 2, 2)} / +${round(sodiumCalc.hypertonicEstimatedRiseHourly * 4, 2)} mEq/L` : "請輸入 Na、體重與正值流速"} note="這是複查前的粗估，不是必須輸注 2 或 4 小時；症狀改善、Na 上升過快或尿量突增時，應提早重評。" />
+                  <ResultRow label="未設定結束時間的醫囑" value="仍需設定複查與停用條件，不可無限期照同速率輸注。" note="通常 q2-4h 複查 Na，並追蹤每小時尿量；高風險者更密集。24 小時校正量須包含開始治療後已上升的 Na，不能每次重算就重新起算。" />
+                </>}
+                <ResultRow label="同速率 24 hr 外推（非醫囑）" value={sodiumCalc.hypertonicEstimatedRise24 ? `約 +${round(sodiumCalc.hypertonicEstimatedRise24, 1)} mEq/L/day` : "請輸入 Na、體重與流速"} note={`僅用來警示持續輸注風險，不可據此固定跑滿 24 hr。工具採保守上限 +${sodiumCalc.correctionLimit24} mEq/L/day；低於此值也不保證安全。`} highlight={sodiumCalc.hypertonicOverLimit} />
                 <ResultRow label="安全監測" value="建議 q2-4h Na；若低血容積補液後、尿量突然增加或正在補 K，要更小心 overcorrection。" />
               </div>
             )}

@@ -128,15 +128,45 @@ const vasopressorTable: SimpleTable = {
     ["Vasopressin", "NE 升高仍 MAP 不足時 add-on", "Septic shock：0.01 units/min 起始，每 10-15 min 增 0.005；max 0.07 units/min。ICU add-on 常用固定 0.03 units/min。", "缺血、腸胃道/皮膚灌流、Na；通常不是單獨第一線。"],
     ["Epinephrine", "NE + vasopressin 後仍不足，或需較多 inotropy 時", "0.05-2 mcg/kg/min，依 MAP titrate。", "HR/arrhythmia、lactate 可能上升、高血糖、末梢灌流。"],
     ["Dobutamine", "心肌功能差且 adequate MAP/volume 後仍 hypoperfusion", "0.5-1 mcg/kg/min 起始；常用 2-20 mcg/kg/min，依反應調整。", "可能低血壓、tachyarrhythmia；需搭配 vasopressor 維持 MAP，不是用來替代 NE。"],
+    ["Dopamine", "SSC 2026 明確建議 NE 優先於 dopamine；不是常規第一線或 NE 後加藥", "藥品仿單：2-5 mcg/kg/min 起始，依灌流與耐受性調整；非 sepsis 指引推薦的標準階梯。", "比 NE 更易 tachyarrhythmia；不可為『腎臟保護』給低劑量 dopamine。僅在 NE 無法取得等特殊情境，由團隊個別評估。"],
   ],
   notes: [
     "SSC 2026：NE 為第一線；NE escalation 時加 vasopressin；NE + vasopressin 仍 MAP 不足時加 epinephrine。",
     "有 cardiac dysfunction 且 despite adequate volume/MAP 仍 hypoperfusion，可加 inotrope；可選 dobutamine 加 NE 或 epinephrine alone。",
+    "Dopamine 不是 dobutamine 的同義詞：前者有隨劑量改變的升壓/加快心跳作用；後者主要用於改善低心輸出。SSC 2026 對 septic shock 明確優先選 NE 而非 dopamine。",
   ],
-  source: "SSC 2026 Vasopressors / Inotropes；DailyMed norepinephrine, vasopressin, epinephrine, dobutamine labels",
+  source: "SSC 2026 Vasopressors / Inotropes；DailyMed dopamine and other vasoactive drug labels",
+};
+
+const vasoactivePreparationTable: SimpleTable = {
+  title: "升壓劑 / inotrope 泡製濃度速查（非院內標準）",
+  columns: ["藥物", "文獻 / 仿單可見的最終濃度例", "算 pump 時要注意"],
+  rows: [
+    ["Norepinephrine", "4 mg 補至 250 mL = 16 mcg/mL；另有 8 mg/250 mL = 32 mcg/mL。", "核對標籤是 norepinephrine base equivalent 還是 bitartrate；同藥不同濃度不可沿用舊 flow。"],
+    ["Vasopressin", "20 units 補至 200 mL = 0.1 units/mL；或 20 units 補至 20 mL = 1 unit/mL。", "0.03 units/min = 1.8 units/hr；前者 18 mL/hr，後者 1.8 mL/hr。務必確認實際濃度。"],
+    ["Epinephrine", "4 mg 補至 250 mL = 16 mcg/mL。", "敗血性休克是連續輸注，與 ACLS 的 IV push 濃度/醫囑不同；以 mcg/kg/min 核對。"],
+    ["Dobutamine", "250 mg 補至 250 mL = 1 mg/mL = 1000 mcg/mL。", "以 mcg/kg/min 換算；監測 HR、心律、MAP、尿量與低灌流指標。"],
+    ["Dopamine", "400 mg 補至 250 mL = 1.6 mg/mL = 1600 mcg/mL。", "以 mcg/kg/min 換算；避免與 sodium bicarbonate 走同一輸注管路，注意心律與外滲。"],
+  ],
+  notes: [
+    "以上是『補至最終體積』的濃度計算示例，不代表直接將安瓿加入已裝滿的 250 mL 輸液袋；若未先移除等量液體，實際濃度會不同。",
+    "流速：mcg/kg/min × 體重(kg) × 60 ÷ 濃度(mcg/mL) = mL/hr；vasopressin 則用 units/min × 60 ÷ units/mL。",
+    "各院安瓿規格、稀釋液、有效期限、周邊/中央輸注政策及幫浦藥庫可能不同；開立前與護理、藥師核對。這裡不是院內核准泡製單。",
+  ],
+  source: "DailyMed norepinephrine, vasopressin, epinephrine, dobutamine, dopamine labels（最終濃度例）；SSC 2026（臨床角色）",
 };
 
 const hemodynamicCards: KeyCard[] = [
+  {
+    title: "Dopamine 為何不列常規 sepsis 階梯？",
+    body: "SSC 2026 直接比較第一線升壓劑時，強烈建議選 norepinephrine 而非 dopamine；這不表示 dopamine 完全不能用，而是沒有證據支持在 septic shock 常規先用它或取代 NE。",
+    bullets: [
+      "Dopamine 隨劑量增加會有較多 β1 與 α1 作用，可能同時提高心率、收縮力與血管阻力；dobutamine 主要是 inotrope，兩者不能互換。",
+      "SOAP II 隨機試驗中 dopamine 組心律不整 24.1%，NE 組 12.4%；整體 28 天死亡率差異未達顯著。這是混合型休克研究，不應誤稱為 septic shock 單獨死亡率證據。",
+      "若另有 ACLS 症狀性緩脈，dopamine 可能有其他角色；那是不同演算法，不能拿來推導 septic shock 首選藥。",
+    ],
+    source: "SSC 2026 Vasopressors / Inotropes；SOAP II (NEJM 2010)；DailyMed dopamine label",
+  },
   {
     title: "輸液選擇原則",
     body: "成人 sepsis / septic shock 的初始復甦液體以 crystalloids 為第一線；若是 initial resuscitation，SSC 2026 建議優先選 balanced crystalloids 而非 0.9% saline。",
@@ -741,6 +771,7 @@ function HemodynamicsView() {
       {hemodynamicCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
       {fluidTypeTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <SimpleTableCard table={vasopressorTable} />
+      <SimpleTableCard table={vasoactivePreparationTable} />
     </div>
   );
 }

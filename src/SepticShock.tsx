@@ -156,17 +156,18 @@ const vasoactivePreparationTable: SimpleTable = {
   source: "DailyMed norepinephrine, vasopressin, epinephrine, dobutamine, dopamine labels（最終濃度例）；SSC 2026（臨床角色）",
 };
 
+const dopamineRoleCard: KeyCard = {
+  title: "Dopamine 為何不列常規 sepsis 階梯？",
+  body: "SSC 2026 直接比較第一線升壓劑時，強烈建議選 norepinephrine 而非 dopamine；這不表示 dopamine 完全不能用，而是沒有證據支持在 septic shock 常規先用它或取代 NE。",
+  bullets: [
+    "Dopamine 隨劑量增加會有較多 β1 與 α1 作用，可能同時提高心率、收縮力與血管阻力；dobutamine 主要是 inotrope，兩者不能互換。",
+    "SOAP II 隨機試驗中 dopamine 組心律不整 24.1%，NE 組 12.4%；整體 28 天死亡率差異未達顯著。這是混合型休克研究，不應誤稱為 septic shock 單獨死亡率證據。",
+    "若另有 ACLS 症狀性緩脈，dopamine 可能有其他角色；那是不同演算法，不能拿來推導 septic shock 首選藥。",
+  ],
+  source: "SSC 2026 Vasopressors / Inotropes；SOAP II (NEJM 2010)；DailyMed dopamine label",
+};
+
 const hemodynamicCards: KeyCard[] = [
-  {
-    title: "Dopamine 為何不列常規 sepsis 階梯？",
-    body: "SSC 2026 直接比較第一線升壓劑時，強烈建議選 norepinephrine 而非 dopamine；這不表示 dopamine 完全不能用，而是沒有證據支持在 septic shock 常規先用它或取代 NE。",
-    bullets: [
-      "Dopamine 隨劑量增加會有較多 β1 與 α1 作用，可能同時提高心率、收縮力與血管阻力；dobutamine 主要是 inotrope，兩者不能互換。",
-      "SOAP II 隨機試驗中 dopamine 組心律不整 24.1%，NE 組 12.4%；整體 28 天死亡率差異未達顯著。這是混合型休克研究，不應誤稱為 septic shock 單獨死亡率證據。",
-      "若另有 ACLS 症狀性緩脈，dopamine 可能有其他角色；那是不同演算法，不能拿來推導 septic shock 首選藥。",
-    ],
-    source: "SSC 2026 Vasopressors / Inotropes；SOAP II (NEJM 2010)；DailyMed dopamine label",
-  },
   {
     title: "輸液選擇原則",
     body: "成人 sepsis / septic shock 的初始復甦液體以 crystalloids 為第一線；若是 initial resuscitation，SSC 2026 建議優先選 balanced crystalloids 而非 0.9% saline。",
@@ -771,6 +772,7 @@ function HemodynamicsView() {
       {hemodynamicCards.map((item) => <KeyPointCard key={item.title} item={item} />)}
       {fluidTypeTables.map((table) => <SimpleTableCard key={table.title} table={table} />)}
       <SimpleTableCard table={vasopressorTable} />
+      <KeyPointCard item={dopamineRoleCard} />
       <SimpleTableCard table={vasoactivePreparationTable} />
     </div>
   );
